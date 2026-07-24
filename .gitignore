@@ -20,4 +20,6 @@ xcuserdata/
 .pbx_ids.json
 *.mlmodel
 *.mlpackage
-Models/
+# On-device ML model bundles (not Swift Domain/Models)
+/Models/
+**/MLModels/
