@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */; };
+		3A4B5C6D7E8F901A2B3C4D5E /* ImagePackDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */; };
+		18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */; };
+		F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */; };
+		D4E5F60718293A4B5C6D7E8F /* ScenePromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */; };
+		B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */; };
 		E2F5A93B7C8D9E0123B4C5D6 /* VoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */; };
 		C8F3B02D5E6F708192A3B4C5 /* StoryDraftRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */; };
 		D83AAA5A9B2B486CA409E33F /* UnavailableLLMStoryPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */; };
@@ -53,6 +59,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipExtractor.swift; sourceTree = "<group>"; };
+		293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePackDownloader.swift; sourceTree = "<group>"; };
+		0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLDiffusionIllustrator.swift; sourceTree = "<group>"; };
+		E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePackStore.swift; sourceTree = "<group>"; };
+		C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePromptBuilder.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralKidsIllustrator.swift; sourceTree = "<group>"; };
 		D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCatalog.swift; sourceTree = "<group>"; };
 		B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryDraftRepair.swift; sourceTree = "<group>"; };
 		65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnavailableLLMStoryPlanner.swift; sourceTree = "<group>"; };
@@ -157,6 +169,12 @@
 				28DD12703BF84565AD317311 /* StoryGenerationService.swift */,
 				5772F6D0F21049F7ABE45AB2 /* MockServices.swift */,
 				A453C58A80944C5282701639 /* StorySceneTags.swift */,
+				293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */,
+				1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */,
+				0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */,
+				E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */,
+				C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */,
+				A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */,
 				D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */,
 				B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */,
 				65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */,
@@ -290,6 +308,9 @@
 			dependencies = (
 			);
 			name = Vovozinha;
+			packageProductDependencies = (
+				B8C7D6E5F4030201AABBCCDD /* StableDiffusion */,
+			);
 			productName = Vovozinha;
 			productReference = 19424526AEE446CF853F9CD1 /* Vovozinha.app */;
 			productType = "com.apple.product-type.application";
@@ -332,6 +353,9 @@
 			productRefGroup = BD4806846B73472E943EEFB7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
+			);
 			targets = (
 				DC4CA369A4514D278F03F085 /* Vovozinha */,
 				F9F259236675465EBDDE98FC /* VovozinhaTests */,
@@ -371,6 +395,12 @@
 				D003FD3263A34D9D9B83D576 /* CharacterProfile.swift in Sources */,
 				18A7C300296040FD9C60D659 /* StoryDraftInput.swift in Sources */,
 				9C1DAA28718341DFBCDCCEBA /* StorySceneTags.swift in Sources */,
+				3A4B5C6D7E8F901A2B3C4D5E /* ImagePackDownloader.swift in Sources */,
+				2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */,
+				18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */,
+				F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */,
+				D4E5F60718293A4B5C6D7E8F /* ScenePromptBuilder.swift in Sources */,
+				B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */,
 				E2F5A93B7C8D9E0123B4C5D6 /* VoiceCatalog.swift in Sources */,
 				C8F3B02D5E6F708192A3B4C5 /* StoryDraftRepair.swift in Sources */,
 				D83AAA5A9B2B486CA409E33F /* UnavailableLLMStoryPlanner.swift in Sources */,
@@ -612,6 +642,26 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
+
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/ml-stable-diffusion.git";
+			requirement = {
+				kind = branch;
+				branch = main;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B8C7D6E5F4030201AABBCCDD /* StableDiffusion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
+			productName = StableDiffusion;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "Vovozinha" */ = {

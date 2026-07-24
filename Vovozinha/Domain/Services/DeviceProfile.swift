@@ -136,7 +136,9 @@ struct DeviceProfile: Sendable {
         var lines: [String] = []
         lines.append(deviceLine(lang))
         lines.append(plannerLine(lang))
-        if !canRunGraphics {
+        if canRunGraphics {
+            lines.append(ImagePackStore.statusSummary(lang: lang))
+        } else {
             let g = availability(for: .graphicsPipeline, lang: lang)
             lines.append(g.userMessage(lang))
         }

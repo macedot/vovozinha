@@ -133,9 +133,8 @@ struct ReaderView: View {
     private func pageView(_ page: StoryPage) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // TEXT_ONLY_PHASE: show art only if a page image exists and graphics are enabled.
-                if FeatureFlags.graphicsEnabled,
-                   let path = page.imagePath,
+                // Prefer stored page art (works for new stories even if flag toggles later).
+                if let path = page.imagePath,
                    let image = FileStorage.shared.loadImage(relativePath: path) {
                     Image(uiImage: image)
                         .resizable()
@@ -143,6 +142,20 @@ struct ReaderView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 320)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                } else if FeatureFlags.graphicsEnabled {
+                    HStack(spacing: 10) {
+                        Image(systemName: "paintbrush.pointed.fill")
+                            .foregroundStyle(VovoTheme.amber)
+                        Text(L10n.t(.readerArtPending, lang))
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(VovoTheme.cream.opacity(0.55))
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(VovoTheme.cardFill)
+                    )
                 } else {
                     HStack(spacing: 10) {
                         Image(systemName: "text.book.closed.fill")

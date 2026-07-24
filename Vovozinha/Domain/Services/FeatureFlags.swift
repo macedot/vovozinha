@@ -2,9 +2,8 @@ import Foundation
 
 /// Feature toggles for phased delivery.
 enum FeatureFlags {
-    /// TEXT_ONLY_PHASE: illustrations disabled until we ship a local image-model pack.
-    /// Set to `true` to re-enable the illustrator pipeline (ProceduralKidsIllustrator / future diffusion).
-    static let graphicsEnabled = false
+    /// Offline page art via `ProceduralKidsIllustrator` (scene-aware). Neural pack can replace later.
+    static let graphicsEnabled = true
 
     /// Fixed narrative length for the text-quality phase.
     static let fixedPageCount = 10

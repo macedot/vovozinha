@@ -86,7 +86,7 @@ struct StoryCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                if FeatureFlags.graphicsEnabled, let image = story.coverUIImage() {
+                if let image = story.coverUIImage() {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()

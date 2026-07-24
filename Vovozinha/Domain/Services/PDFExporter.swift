@@ -26,13 +26,13 @@ enum PDFExporter {
         bg.setFill()
         UIRectFill(rect)
 
-        // TEXT_ONLY_PHASE: optional cover image only if graphics produced one.
-        if FeatureFlags.graphicsEnabled, let image = story.coverUIImage(storage: storage) {
+        let hasCover = story.coverUIImage(storage: storage) != nil
+        if let image = story.coverUIImage(storage: storage) {
             let imageRect = CGRect(x: 72, y: 100, width: rect.width - 144, height: 320)
             image.draw(in: imageRect)
         }
 
-        let titleY: CGFloat = FeatureFlags.graphicsEnabled ? 450 : 220
+        let titleY: CGFloat = hasCover ? 450 : 220
         let title = story.title as NSString
         let titleAttrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 28, weight: .bold),
@@ -62,8 +62,7 @@ enum PDFExporter {
         UIRectFill(rect)
 
         var textTop: CGFloat = 48
-        if FeatureFlags.graphicsEnabled,
-           let path = page.imagePath,
+        if let path = page.imagePath,
            let image = storage.loadImage(relativePath: path) {
             let imageRect = CGRect(x: 48, y: 40, width: rect.width - 96, height: 300)
             image.draw(in: imageRect)

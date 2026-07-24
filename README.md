@@ -9,7 +9,7 @@ Offline-first **children’s bedtime stories** for iOS (StoryKit-inspired): desc
 | **Devices** | **iPhone 15+** |
 | **AI** | **Strictly on-device** (no cloud generation) |
 | **Languages** | **pt-BR / en-US / es-ES** (language bar; default = system) |
-| **This phase** | **Text-only** stories (illustrations deferred) |
+| **This phase** | Stories + **offline procedural page art** (neural pack later) |
 
 ## Story generation (this phase)
 
@@ -18,7 +18,7 @@ Offline-first **children’s bedtime stories** for iOS (StoryKit-inspired): desc
 - **10 pages** = one continuous chronological story split into 10 paragraphs.
 - Target **~280 words** total (band ~150–480); **3–5 short sentences per page** with sensory scene detail.
 - **Kids content filter** with rewrite retries until pass.
-- **Graphics / image models:** off (`FeatureFlags.graphicsEnabled = false`); local image pack later.
+- **Graphics:** on-device art per page — **Core ML Stable Diffusion pack** when installed (text2img + img2img continuity), else **procedural** fallback. Install: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`).
 
 ### Who can generate today
 
@@ -65,7 +65,8 @@ xcodebuild -scheme Vovozinha -destination 'platform=iOS Simulator,name=iPhone 17
 - Protocols: `CharacterAnalyzing`, `StoryPlanning`, `Illustrating`  
 - Product planner: `FoundationModelsStoryPlanner` or `UnavailableLLMStoryPlanner`  
 - Scene beat labels: `StorySceneTags` (not a story body source)  
-- Illustrator (`ProceduralKidsIllustrator`) present but **disabled** until a local image pack  
+- Illustrator: scene-aware **procedural** art; swap-in for local neural pack later  
+
 
 See `docs/SPIKE.md` and `AGENTS.md`.
 

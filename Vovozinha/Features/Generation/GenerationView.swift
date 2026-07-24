@@ -124,7 +124,7 @@ struct GenerationView: View {
         case .analyzingCharacter: return L10n.t(.genStepCharacter, lang) + "…"
         case .planningStory: return L10n.t(.genStepStory, lang) + "…"
         case .illustrating(let page, let total):
-            return "\(page)/\(total)"
+            return "\(L10n.t(.genStepArt, lang)) (\(page)/\(total))…"
         case .saving: return L10n.t(.genStepSave, lang) + "…"
         case .finished: return L10n.t(.genReady, lang)
         case .failed(let message): return message
@@ -132,13 +132,7 @@ struct GenerationView: View {
     }
 
     private var progressBlock: some View {
-        VStack(spacing: 14) {
-            if service.isRunning {
-                ProgressView()
-                    .controlSize(.large)
-                    .tint(VovoTheme.amber)
-            }
-
+        VStack(spacing: 12) {
             ProgressView(value: max(service.stage.progress, service.isRunning ? 0.05 : 0))
                 .tint(VovoTheme.amber)
                 .scaleEffect(x: 1, y: 1.4, anchor: .center)
@@ -312,8 +306,7 @@ struct GenerationView: View {
     }
 
     private var illustrationStepTitle: String {
-        // Graphics path is off in text-only phase; keep localized for when it returns.
-        let base = L10n.t(.genStepStory, lang)
+        let base = L10n.t(.genStepArt, lang)
         if case .illustrating(let page, let total) = service.stage {
             return "\(base) (\(page)/\(total))"
         }

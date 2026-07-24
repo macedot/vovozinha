@@ -9,36 +9,40 @@ enum ArtStyle: String, Codable, CaseIterable, Identifiable, Sendable {
 
     func title(_ lang: AppLanguage) -> String {
         switch (self, lang) {
-        case (.watercolor, .portugueseBrazil): return "Aquarela"
-        case (.watercolor, .englishUS): return "Watercolor"
-        case (.watercolor, .spanishSpain): return "Acuarela"
-        case (.cartoon, .portugueseBrazil), (.cartoon, .englishUS), (.cartoon, .spanishSpain):
-            return "Cartoon"
-        case (.pastel, .portugueseBrazil), (.pastel, .englishUS): return "Pastel"
-        case (.pastel, .spanishSpain): return "Pastel"
+        case (.watercolor, .portugueseBrazil): return "Anime aquarela"
+        case (.watercolor, .englishUS): return "Anime watercolor"
+        case (.watercolor, .spanishSpain): return "Anime acuarela"
+        case (.cartoon, .portugueseBrazil): return "Anime"
+        case (.cartoon, .englishUS): return "Anime"
+        case (.cartoon, .spanishSpain): return "Anime"
+        case (.pastel, .portugueseBrazil): return "Anime pastel"
+        case (.pastel, .englishUS): return "Anime pastel"
+        case (.pastel, .spanishSpain): return "Anime pastel"
         }
     }
 
+    /// English fragments only — image models are prompted in EN.
     func promptFragment(_ lang: AppLanguage) -> String {
-        switch (self, lang) {
-        case (.watercolor, .portugueseBrazil):
-            return "ilustração infantil em aquarela suave, cores quentes, contornos delicados"
-        case (.watercolor, .englishUS):
-            return "soft watercolor children's illustration, warm colors, delicate outlines"
-        case (.watercolor, .spanishSpain):
-            return "ilustración infantil en acuarela suave, colores cálidos, contornos delicados"
-        case (.cartoon, .portugueseBrazil):
-            return "ilustração cartoon infantil, traços redondos, cores vivas e alegres"
-        case (.cartoon, .englishUS):
-            return "children's cartoon illustration, round shapes, bright cheerful colors"
-        case (.cartoon, .spanishSpain):
-            return "ilustración cartoon infantil, trazos redondos, colores vivos y alegres"
-        case (.pastel, .portugueseBrazil):
-            return "ilustração infantil em tons pastel, textura macia, clima de hora de dormir"
-        case (.pastel, .englishUS):
-            return "pastel-tone children's illustration, soft texture, bedtime mood"
-        case (.pastel, .spanishSpain):
-            return "ilustración infantil en tonos pastel, textura suave, clima de hora de dormir"
+        _ = lang
+        switch self {
+        case .watercolor:
+            return """
+            soft hand-painted Japanese anime still, watercolor and gouache anime backgrounds, \
+            gentle brush texture, warm natural light, storybook anime composition
+            """
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        case .cartoon:
+            return """
+            bright Japanese kids anime, clean cel shading, crisp linework, \
+            cheerful anime character design, clear silhouettes, vibrant but soft colors
+            """
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        case .pastel:
+            return """
+            soft pastel Japanese anime, gentle bedtime anime mood, muted dreamy palette, \
+            soft cel shading, cozy night-story atmosphere
+            """
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         }
     }
 }

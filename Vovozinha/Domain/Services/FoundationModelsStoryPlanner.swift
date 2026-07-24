@@ -245,11 +245,18 @@ extension GenerableKidsStory {
         case .spanishSpain: narration = soft ? "lento y cariñoso" : "calmo y expresivo"
         }
 
-        let style = input.artStyle.promptFragment(input.language)
         let pages: [StoryPlanPage] = texts.enumerated().map { index, text in
             let tag = index < tags.count ? tags[index] : tags[tags.count - 1]
-            let imagePrompt =
-                "\(style). \(character.lockedDescription) in \(input.trimmedSetting), gentle kids book moment, soft colors, safe."
+            let imagePrompt = ScenePromptBuilder.prompt(
+                pageText: text,
+                sceneTag: tag,
+                character: character,
+                setting: input.trimmedSetting,
+                artStyle: input.artStyle,
+                language: input.language,
+                pageIndex: index,
+                totalPages: texts.count
+            )
             return StoryPlanPage(
                 index: index,
                 text: text,

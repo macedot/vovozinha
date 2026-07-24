@@ -118,6 +118,11 @@ struct QuickCreateStoryView: View {
                 icon: "paintbrush.pointed",
                 text: graphics.userMessage(lang)
             )
+        } else if !ImagePackStore.isNeuralPackReady {
+            capabilityBanner(
+                icon: "arrow.down.circle",
+                text: L10n.t(.createImagePackHint, lang)
+            )
         }
         if !fm.isUsable {
             capabilityBanner(

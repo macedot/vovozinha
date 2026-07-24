@@ -8,9 +8,169 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertEqual(AppLanguage.resolve(preferenceRaw: "es-ES"), .spanishSpain)
     }
 
-    func testGraphicsFlagOffForTextPhase() {
-        XCTAssertFalse(FeatureFlags.graphicsEnabled)
+    func testGraphicsPipelineEnabledForSceneArt() {
+        XCTAssertTrue(FeatureFlags.graphicsEnabled)
         XCTAssertEqual(FeatureFlags.fixedPageCount, 10)
+    }
+
+    @MainActor
+    func testProceduralIllustratorProducesImage() async throws {
+        let character = CharacterProfile.fromManual(
+            name: "Luma",
+            description: "soft blue bear",
+            language: .englishUS
+        )
+        let page = StoryPlanPage(
+            index: 0,
+            text: "Luma walks in a green forest. Birds sing. Soft light shines.",
+            imagePrompt: "forest kids book",
+            narrationHint: "calm",
+            sceneTag: "explore"
+        )
+        let plan = StoryPlan(
+            title: "Forest night",
+            summary: "A walk",
+            character: character,
+            setting: "Enchanted forest",
+            lesson: "kindness",
+            ageBand: .threeToFive,
+            artStyle: .pastel,
+            pages: [page]
+        )
+        let brief = ScenePromptBuilder.brief(
+            pageText: page.text,
+            sceneTag: page.sceneTag,
+            character: character,
+            setting: plan.setting,
+            artStyle: .pastel,
+            language: .englishUS,
+            pageIndex: 0,
+            totalPages: 10
+        )
+        let request = IllustrationRequest(
+            page: page,
+            plan: plan,
+            referencePhoto: nil,
+            previousPageImage: nil,
+            heroReferenceImage: nil,
+            storySeed: 42,
+            pageSeed: 42,
+            continuityStrength: 0,
+            brief: brief
+        )
+        let image = try await ProceduralKidsIllustrator().illustrate(request)
+        XCTAssertGreaterThan(image.size.width, 0)
+        XCTAssertGreaterThan(image.size.height, 0)
+        XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("luma")
+            || brief.positivePrompt.localizedCaseInsensitiveContains("bear"))
+        // The actual page paragraph must appear in the image prompt.
+        XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("illustrate this story page exactly"))
+        XCTAssertTrue(
+            brief.sceneDescription.localizedCaseInsensitiveContains("forest")
+                || brief.sceneDescription.localizedCaseInsensitiveContains("walks")
+                || brief.sceneDescription.localizedCaseInsensitiveContains("bird")
+        )
+        XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("forest")
+            || brief.positivePrompt.localizedCaseInsensitiveContains("walks")
+            || brief.positivePrompt.localizedCaseInsensitiveContains("bird"))
+        XCTAssertFalse(brief.negativePrompt.isEmpty)
+    }
+
+    func testSceneBriefLocksHeroAcrossPages() {
+        let character = CharacterProfile.fromManual(
+            name: "Ted",
+            description: "blue teddy with red scarf",
+            language: .englishUS
+        )
+        var memory = StoryArtMemory.seed(
+            character: character,
+            setting: "forest",
+            artStyle: .watercolor
+        )
+        let e0 = ScenePromptBuilder.brief(
+            pageText: "Ted wakes up in a cozy den.",
+            sceneTag: "setup",
+            character: character,
+            setting: "forest",
+            artStyle: .watercolor,
+            language: .englishUS,
+            pageIndex: 0,
+            totalPages: 10,
+            memory: memory
+        )
+        memory = e0.memory
+        let establish = e0.brief
+
+        let e1 = ScenePromptBuilder.brief(
+            pageText: "Ted walks in the forest.",
+            sceneTag: "explore",
+            character: character,
+            setting: "forest",
+            artStyle: .watercolor,
+            language: .englishUS,
+            pageIndex: 1,
+            totalPages: 10,
+            memory: memory
+        )
+        memory = e1.memory
+        let a = e1.brief
+
+        let e2 = ScenePromptBuilder.brief(
+            pageText: "Ted helps a bird at night.",
+            sceneTag: "help",
+            character: character,
+            setting: "forest",
+            artStyle: .watercolor,
+            language: .englishUS,
+            pageIndex: 6,
+            totalPages: 10,
+            memory: memory
+        )
+        let b = e2.brief
+        memory = e2.memory
+
+        // Same actor visual every page.
+        XCTAssertEqual(establish.heroLock, a.heroLock)
+        XCTAssertEqual(a.heroLock, b.heroLock)
+        XCTAssertTrue(establish.isEstablishShot)
+        XCTAssertFalse(a.isEstablishShot)
+
+        // Custom section prompts differ by beat.
+        XCTAssertTrue(establish.sectionPrompt.localizedCaseInsensitiveContains("setup"))
+        XCTAssertTrue(a.sectionPrompt.localizedCaseInsensitiveContains("explore"))
+        XCTAssertTrue(b.sectionPrompt.localizedCaseInsensitiveContains("help"))
+        XCTAssertNotEqual(establish.sectionPrompt, a.sectionPrompt)
+        XCTAssertNotEqual(a.sectionPrompt, b.sectionPrompt)
+
+        // Page text still embedded.
+        XCTAssertTrue(a.positivePrompt.localizedCaseInsensitiveContains("illustrate this story page exactly"))
+        XCTAssertTrue(a.sceneDescription.localizedCaseInsensitiveContains("walks")
+            || a.sceneDescription.localizedCaseInsensitiveContains("forest"))
+        XCTAssertTrue(b.sceneDescription.localizedCaseInsensitiveContains("bird")
+            || b.sceneDescription.localizedCaseInsensitiveContains("helps"))
+        XCTAssertTrue(b.positivePrompt.localizedCaseInsensitiveContains("bird")
+            || b.positivePrompt.localizedCaseInsensitiveContains("helps"))
+
+        // Bird introduced on help page stays locked in memory afterward.
+        XCTAssertTrue(memory.lockedElements.contains(where: { $0.localizedCaseInsensitiveContains("bird") }))
+        XCTAssertTrue(b.continuityLock.localizedCaseInsensitiveContains("LOCKED CHARACTER")
+            || b.positivePrompt.localizedCaseInsensitiveContains("LOCKED CHARACTER"))
+        XCTAssertNotEqual(a.sceneDescription, b.sceneDescription)
+    }
+
+    func testSectionPromptsCoverAllStoryBeats() {
+        for tag in StorySceneTags.ordered {
+            let s = ScenePromptBuilder.sectionPrompt(beat: tag, pageIndex: 0, totalPages: 10)
+            XCTAssertFalse(s.isEmpty, "missing section prompt for \(tag)")
+            XCTAssertTrue(s.localizedCaseInsensitiveContains("SECTION")
+                || s.localizedCaseInsensitiveContains(tag))
+        }
+    }
+
+    func testAppearanceMapsToEnglishVisualTags() {
+        let pt = CharacterProfile.visualAppearanceEnglish("urso azul fofo com cachecol vermelho")
+        XCTAssertTrue(pt.localizedCaseInsensitiveContains("bear") || pt.localizedCaseInsensitiveContains("blue"))
+        XCTAssertTrue(pt.localizedCaseInsensitiveContains("scarf") || pt.localizedCaseInsensitiveContains("red"))
     }
 
     func testStoryGenerationRequiresLLMNotTemplates() {

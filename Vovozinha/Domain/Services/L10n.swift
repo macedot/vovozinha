@@ -19,7 +19,7 @@ enum L10n {
         case createPhotoOptional, createChangePhoto, createRemove, createOnDeviceOnly
         case createDescription, createDescriptionPlaceholder
         case createNeedActor, createGenerate, createCustomize
-        case createRandomHint
+        case createRandomHint, createImagePackHint
 
         // Custom create
         case customTitle, customHeader, customHeaderBody
@@ -33,11 +33,11 @@ enum L10n {
 
         // Generation
         case genCancel, genClose, genCreating, genReady, genFailed
-        case genStepCharacter, genStepStory, genStepSave
+        case genStepCharacter, genStepStory, genStepArt, genStepSave
         case genOpenBook, genBack, genRetry
 
         // Reader
-        case readerTextOnlyBanner, readerPageOf
+        case readerTextOnlyBanner, readerArtPending, readerPageOf
         case readerListenPage, readerAudiobook, readerParentRead, readerExportPDF, readerDelete
         case readerReadAloudTitle, readerMissing, readerClose, readerOps
         case readerEmptyPages, readerExportFailed, readerNothingToSpeak
@@ -46,6 +46,9 @@ enum L10n {
         case settingsTitle, settingsAbout, settingsApp, settingsVersion, settingsFocus, settingsDevices
         case settingsLanguage, settingsLanguageSystem, settingsLanguageHint
         case settingsOnDevice, settingsPackToggle, settingsPackHint
+        case settingsImagePack, settingsImagePackDownload, settingsImagePackCancel
+        case settingsImagePackDelete, settingsImagePackReady, settingsImagePackSizeHint
+        case settingsImagePackDownloading, settingsImagePackFailed
         case settingsVoice, settingsVoiceAuto, settingsVoiceHint, settingsVoicePremiumTip
         case settingsStorage, settingsStoriesSize, settingsRefreshSize
         case settingsPrivacy, settingsPrivacyBody
@@ -215,6 +218,11 @@ enum L10n {
             .englishUS: "World, lesson, age, and style are chosen for you. Use Customize to pick everything.",
             .spanishSpain: "Mundo, lección, edad y estilo se eligen solos. Usa Personalizar para elegir todo."
         ],
+        .createImagePackHint: [
+            .portugueseBrazil: "Estilo anime suave no pack Core ML (Ajustes, ~1,5 GB Wi‑Fi). Sem pack, a arte fica só procedural simples. Depois o pack roda offline.",
+            .englishUS: "Soft anime style needs the Core ML pack (Settings, ~1.5 GB Wi‑Fi). Without it, art stays simple procedural. Pack runs offline after download.",
+            .spanishSpain: "El estilo anime suave necesita el pack Core ML (Ajustes, ~1,5 GB Wi‑Fi). Sin pack, el arte queda procedural simple. Luego el pack corre offline."
+        ],
 
         .customTitle: [
             .portugueseBrazil: "Personalizar",
@@ -363,9 +371,14 @@ enum L10n {
             .spanishSpain: "Entender el personaje"
         ],
         .genStepStory: [
-            .portugueseBrazil: "Inventar o conto (10 páginas)",
-            .englishUS: "Invent the tale (10 pages)",
-            .spanishSpain: "Inventar el cuento (10 páginas)"
+            .portugueseBrazil: "Inventar o conto (texto)",
+            .englishUS: "Write the story (text)",
+            .spanishSpain: "Escribir el cuento (texto)"
+        ],
+        .genStepArt: [
+            .portugueseBrazil: "Desenhar as cenas",
+            .englishUS: "Draw the scenes",
+            .spanishSpain: "Dibujar las escenas"
         ],
         .genStepSave: [
             .portugueseBrazil: "Guardar na biblioteca",
@@ -389,9 +402,14 @@ enum L10n {
         ],
 
         .readerTextOnlyBanner: [
-            .portugueseBrazil: "Livro em texto · ilustrações em breve",
-            .englishUS: "Text book · illustrations coming soon",
-            .spanishSpain: "Libro en texto · ilustraciones pronto"
+            .portugueseBrazil: "Livro em texto · sem imagem nesta página",
+            .englishUS: "Text book · no image on this page",
+            .spanishSpain: "Libro en texto · sin imagen en esta página"
+        ],
+        .readerArtPending: [
+            .portugueseBrazil: "Cena ilustrada no aparelho (offline)",
+            .englishUS: "On-device scene art (offline)",
+            .spanishSpain: "Arte de escena en el dispositivo (offline)"
         ],
         .readerPageOf: [
             .portugueseBrazil: "Página %d de %d",
@@ -520,14 +538,54 @@ enum L10n {
             .spanishSpain: "Inteligencia en el dispositivo"
         ],
         .settingsPackToggle: [
-            .portugueseBrazil: "Pack de ilustração ML (em breve)",
-            .englishUS: "ML illustration pack (soon)",
-            .spanishSpain: "Pack de ilustración ML (pronto)"
+            .portugueseBrazil: "Pack neural de ilustração instalado",
+            .englishUS: "Neural illustration pack installed",
+            .spanishSpain: "Pack neural de ilustración instalado"
         ],
         .settingsPackHint: [
-            .portugueseBrazil: "Ilustrações locais virão num pack opcional no iPhone. Agora o app está em modo texto.",
-            .englishUS: "Local illustrations will ship as an optional on-device pack. The app is text-only for now.",
-            .spanishSpain: "Las ilustraciones locales llegarán como pack opcional en el iPhone. Ahora la app es solo texto."
+            .portugueseBrazil: "O app baixa o pack sozinho (rede só no download). Com o pack, as cenas usam um schema de anime japonês suave; sem pack fica procedural. Arte 100% offline depois.",
+            .englishUS: "The app downloads the pack itself (network only for download). With the pack, scenes use a soft Japanese anime schema; without it, art is procedural. Fully offline after that.",
+            .spanishSpain: "La app descarga el pack sola (red solo para la descarga). Con el pack, las escenas usan un schema de anime japonés suave; sin pack, arte procedural. 100% offline después."
+        ],
+        .settingsImagePack: [
+            .portugueseBrazil: "Pack anime (Core ML)",
+            .englishUS: "Anime image pack (Core ML)",
+            .spanishSpain: "Pack anime (Core ML)"
+        ],
+        .settingsImagePackDownload: [
+            .portugueseBrazil: "Baixar pack anime de cenas",
+            .englishUS: "Download anime scene pack",
+            .spanishSpain: "Descargar pack anime de escenas"
+        ],
+        .settingsImagePackCancel: [
+            .portugueseBrazil: "Cancelar download",
+            .englishUS: "Cancel download",
+            .spanishSpain: "Cancelar descarga"
+        ],
+        .settingsImagePackDelete: [
+            .portugueseBrazil: "Remover pack",
+            .englishUS: "Remove pack",
+            .spanishSpain: "Eliminar pack"
+        ],
+        .settingsImagePackReady: [
+            .portugueseBrazil: "Pack pronto · cenas anime no aparelho",
+            .englishUS: "Pack ready · on-device anime-style scenes",
+            .spanishSpain: "Pack listo · escenas estilo anime en el dispositivo"
+        ],
+        .settingsImagePackSizeHint: [
+            .portugueseBrazil: "Anything V5 Ink (anime), ~1,5 GB zip. Use Wi‑Fi. Rede só no download; cenas rodam offline no aparelho.",
+            .englishUS: "Anything V5 Ink (anime), ~1.5 GB zip. Use Wi‑Fi. Network only to download; scenes run offline on-device.",
+            .spanishSpain: "Anything V5 Ink (anime), ~1,5 GB zip. Usa Wi‑Fi. Red solo para descargar; escenas offline en el dispositivo."
+        ],
+        .settingsImagePackDownloading: [
+            .portugueseBrazil: "Baixando pack…",
+            .englishUS: "Downloading pack…",
+            .spanishSpain: "Descargando pack…"
+        ],
+        .settingsImagePackFailed: [
+            .portugueseBrazil: "Falha no download do pack",
+            .englishUS: "Pack download failed",
+            .spanishSpain: "Falló la descarga del pack"
         ],
         .settingsVoice: [
             .portugueseBrazil: "Voz da narração",
@@ -608,9 +666,9 @@ enum L10n {
         ],
 
         .featureBannerGraphicsOff: [
-            .portugueseBrazil: "Ilustrações não estão disponíveis nesta versão do app (modo texto). Um pack de imagem local poderá liberá-las depois.",
-            .englishUS: "Illustrations are not available in this app version (text-only). A local image pack may unlock them later.",
-            .spanishSpain: "Las ilustraciones no están disponibles en esta versión (solo texto). Un pack de imagen local podrá activarlas después."
+            .portugueseBrazil: "Pipeline de ilustração desligado neste build.",
+            .englishUS: "Illustration pipeline is disabled in this build.",
+            .spanishSpain: "El pipeline de ilustración está desactivado en este build."
         ],
         .featureBannerFoundationModelsOff: [
             .portugueseBrazil: "Foundation Models (IA da Apple) não está disponível neste iOS/hardware. As histórias só são geradas por LLM no aparelho (iOS 26+ com Apple Intelligence, ou pack local). Não usamos textos pré-prontos.",

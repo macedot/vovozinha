@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var storageLabel = "—"
     @State private var profile = DeviceProfile.current
     @State private var installedVoices: [VoiceCatalog.Entry] = []
+    @State private var imagePackDownloader = ImagePackDownloader()
 
     private var lang: AppLanguage { languageStore.language }
 
@@ -93,10 +94,15 @@ struct SettingsView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
-                        Toggle(L10n.t(.settingsPackToggle, lang), isOn: $packInstalled)
                         Text(L10n.t(.settingsPackHint, lang))
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        imagePackSection
+                    } header: {
+                        Text(L10n.t(.settingsImagePack, lang))
                     }
 
                     Section(L10n.t(.settingsStorage, lang)) {
@@ -126,6 +132,8 @@ struct SettingsView: View {
                 refreshStorage()
                 profile = .current
                 refreshVoices()
+                imagePackDownloader.refreshReadyState()
+                packInstalled = ImagePackStore.isNeuralPackReady
             }
             .onChange(of: packInstalled) { _, _ in
                 profile = .current
@@ -133,6 +141,77 @@ struct SettingsView: View {
             .onChange(of: languageStore.language) { _, _ in
                 refreshVoices()
             }
+            .onChange(of: imagePackDownloader.phase) { _, phase in
+                if phase == .ready {
+                    packInstalled = true
+                    profile = .current
+                    refreshStorage()
+                }
+                if phase == .idle {
+                    packInstalled = ImagePackStore.isNeuralPackReady
+                    profile = .current
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var imagePackSection: some View {
+        Text(ImagePackStore.statusSummary(lang: lang))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+        Text(L10n.t(.settingsImagePackSizeHint, lang))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+        switch imagePackDownloader.phase {
+        case .listing, .downloading, .extracting, .verifying:
+            ProgressView(value: max(imagePackDownloader.progress, 0.02)) {
+                Text(L10n.t(.settingsImagePackDownloading, lang))
+            } currentValueLabel: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(imagePackDownloader.progressPercent)% · \(imagePackDownloader.byteProgressLabel)")
+                        .font(.caption.monospacedDigit())
+                    if !imagePackDownloader.currentFileName.isEmpty {
+                        Text(imagePackDownloader.currentFileName)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            Button(L10n.t(.settingsImagePackCancel, lang), role: .cancel) {
+                imagePackDownloader.cancel()
+            }
+
+        case .ready:
+            Label(L10n.t(.settingsImagePackReady, lang), systemImage: "checkmark.seal.fill")
+                .foregroundStyle(VovoTheme.mint)
+            Button(L10n.t(.settingsImagePackDelete, lang), role: .destructive) {
+                try? imagePackDownloader.deleteInstalledPack()
+                packInstalled = false
+                profile = .current
+                refreshStorage()
+            }
+
+        case .failed(let message):
+            Text("\(L10n.t(.settingsImagePackFailed, lang)): \(message)")
+                .font(.caption)
+                .foregroundStyle(VovoTheme.softPink)
+            Button(L10n.t(.settingsImagePackDownload, lang)) {
+                imagePackDownloader.startDownload()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(VovoTheme.amber)
+
+        case .idle:
+            Button(L10n.t(.settingsImagePackDownload, lang)) {
+                imagePackDownloader.startDownload()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(VovoTheme.amber)
         }
     }
 
