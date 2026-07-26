@@ -17,6 +17,7 @@ See `docs/MODULES.md`.
 ## Current feature: Story Prompt
 - Seed text **10–20 words** → story draft (title, summary, 10 paragraphs).
 - Protocol `StoryFromPromptGenerating`; default offline generator for bootstrap.
+- **Languages:** pt-BR / en-US / es-ES via `VovoUI` (`LanguageStore`, `LanguageBar`, `VovoL10n`). UI + offline story body follow selection; language is stored on `StoryDraft.language`.
 
 ## Build
 ```bash

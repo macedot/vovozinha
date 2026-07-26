@@ -34,6 +34,7 @@ Legacy/
 - Input: free-form **story seed** (base of the story).
 - Constraint: **10–20 words** (inclusive).
 - Output: title, summary, **10 scene paragraphs** (offline generator for now; swap `StoryFromPromptGenerating` later for FM).
+- **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**. UI strings (`VovoL10n`) and offline story body both follow the selected language. Story language is stored on `StoryDraft`.
 
 ## Adding the next feature
 

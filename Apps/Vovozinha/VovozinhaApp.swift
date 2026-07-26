@@ -4,9 +4,12 @@ import VovoUI
 
 @main
 struct VovozinhaApp: App {
+    @State private var languageStore = LanguageStore()
+
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environment(languageStore)
                 .preferredColorScheme(.dark)
         }
     }
@@ -14,6 +17,8 @@ struct VovozinhaApp: App {
 
 /// Host app: composes feature libraries into the product experience.
 private struct RootView: View {
+    @Environment(LanguageStore.self) private var languageStore
+
     var body: some View {
         NavigationStack {
             StoryPromptFeatureView()

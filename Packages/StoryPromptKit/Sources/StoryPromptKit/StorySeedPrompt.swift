@@ -1,4 +1,5 @@
 import Foundation
+import VovoUI
 
 /// Base story idea typed by the parent. Length is measured in **words**.
 public struct StorySeedPrompt: Equatable, Sendable {
@@ -6,9 +7,12 @@ public struct StorySeedPrompt: Equatable, Sendable {
     public static let maxWords = 20
 
     public var text: String
+    /// Language for generation (UI language when the parent taps Create).
+    public var language: AppLanguage
 
-    public init(text: String = "") {
+    public init(text: String = "", language: AppLanguage = .englishUS) {
         self.text = text
+        self.language = language
     }
 
     public var trimmed: String {
@@ -45,6 +49,8 @@ public struct StoryDraft: Equatable, Sendable, Identifiable {
     public var summary: String
     public var seedPrompt: String
     public var paragraphs: [String]
+    /// Story body language (TTS / PDF / library later).
+    public var language: AppLanguage
     public var createdAt: Date
 
     public init(
@@ -53,6 +59,7 @@ public struct StoryDraft: Equatable, Sendable, Identifiable {
         summary: String,
         seedPrompt: String,
         paragraphs: [String],
+        language: AppLanguage = .englishUS,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -60,6 +67,7 @@ public struct StoryDraft: Equatable, Sendable, Identifiable {
         self.summary = summary
         self.seedPrompt = seedPrompt
         self.paragraphs = paragraphs
+        self.language = language
         self.createdAt = createdAt
     }
 
