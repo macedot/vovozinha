@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E0F1A2B3C4D5E6F708192A3B /* Prompts in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B40 /* Prompts */; };
+		C8D9E0F1A2B3C4D5E6F70819 /* PromptCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */; };
 		2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */; };
 		3A4B5C6D7E8F901A2B3C4D5E /* ImagePackDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */; };
 		18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */; };
@@ -60,6 +62,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		F1A2B3C4D5E6F708192A3B40 /* Prompts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Prompts; sourceTree = "<group>"; };
+		D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCatalog.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipExtractor.swift; sourceTree = "<group>"; };
 		293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePackDownloader.swift; sourceTree = "<group>"; };
 		0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLDiffusionIllustrator.swift; sourceTree = "<group>"; };
@@ -176,6 +180,7 @@
 				0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */,
 				E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */,
 				C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */,
+				D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */,
 				D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */,
 				B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */,
@@ -231,6 +236,7 @@
 				D4E7EE6D33904F6FBE7F71BD /* Domain */,
 				3DDADD4FD3D74DC5B0766A74 /* Features */,
 				E94FA3185A92447BAA75F805 /* Assets.xcassets */,
+				F1A2B3C4D5E6F708192A3B40 /* Prompts */,
 			);
 			path = Vovozinha;
 			sourceTree = "<group>";
@@ -391,6 +397,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE25D41C2A8342868E6F5D1A /* Assets.xcassets in Resources */,
+				E0F1A2B3C4D5E6F708192A3B /* Prompts in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -422,6 +429,7 @@
 				18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */,
 				F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */,
 				D4E5F60718293A4B5C6D7E8F /* ScenePromptBuilder.swift in Sources */,
+				C8D9E0F1A2B3C4D5E6F70819 /* PromptCatalog.swift in Sources */,
 				B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */,
 				E2F5A93B7C8D9E0123B4C5D6 /* VoiceCatalog.swift in Sources */,
 				C8F3B02D5E6F708192A3B4C5 /* StoryDraftRepair.swift in Sources */,

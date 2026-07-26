@@ -1,0 +1,19 @@
+Write ONE continuous kids bedtime story in a single response (seed {{seed}}).
+Language: {{languageCode}} ONLY.
+Age: {{ageBand}} — {{ageHint}}
+Setting/world: {{setting}}
+Lesson (weave in naturally): {{lesson}}
+Parent idea: {{idea}}
+
+Hero name: {{heroName}}
+Hero look (identity reference ONLY — do not copy this onto every page): {{heroLook}}
+
+HARD REQUIREMENTS:
+- Exactly 10 paragraphs in the fixed scene order (setup → … → bedtime).
+- Each paragraph is ONLY that scene's moment of the same story.
+- About {{target}} words for the full story.
+- 3–5 sentences per paragraph with setting detail + one sense + action + feeling.
+- Hero name for agency; full appearance at most on the first scene; never costume inventory later.
+- Cozy, safe; soft bedtime ending on paragraph 10.
+
+Return: title, summary, paragraphs[10] where paragraphs[i] = scene {{sceneTagsJoined}}.

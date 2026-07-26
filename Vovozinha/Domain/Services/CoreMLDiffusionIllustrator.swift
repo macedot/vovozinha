@@ -179,14 +179,17 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
             return draft
         }
 
-        let refineText = """
-        masterpiece, best quality, \(request.brief.sectionPrompt), \
-        \(request.brief.continuityLock), \
-        do not redesign locked character or elements, \
-        illustrate this story page exactly: \(request.brief.sceneDescription), \
-        the hero is \(request.brief.actionFocus), \(request.brief.lighting)
-        """
-        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        let refineText = PromptCatalog.text(
+            "art/refine.txt",
+            vars: [
+                "sectionPrompt": request.brief.sectionPrompt,
+                "continuityLock": request.brief.continuityLock,
+                "sceneDescription": request.brief.sceneDescription,
+                "actionFocus": request.brief.actionFocus,
+                "lighting": request.brief.lighting
+            ],
+            collapseWhitespace: true
+        )
 
         var refine = baseConfig(
             prompt: refineText,

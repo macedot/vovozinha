@@ -514,6 +514,77 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(words, 20)
     }
 
+    func testPromptCatalogLoadsStoryAndArtTemplates() {
+        let system = PromptCatalog.text("story/system_instructions.txt", vars: [
+            "langName": "English",
+            "sceneList": "1) setup",
+            "target": "280",
+            "minW": "150",
+            "maxW": "480"
+        ])
+        XCTAssertFalse(system.isEmpty)
+        XCTAssertTrue(system.localizedCaseInsensitiveContains("bedtime"))
+        let neg = PromptCatalog.text("art/negative.txt")
+        XCTAssertTrue(neg.localizedCaseInsensitiveContains("lowres"))
+        let section = PromptCatalog.text("art/section.setup.txt")
+        XCTAssertTrue(section.localizedCaseInsensitiveContains("setup"))
+    }
+
+    func testStoryPromptIsSingleShotSceneParagraphs() {
+        let character = CharacterProfile.fromManual(
+            name: "Alice",
+            description: "clever girl with a blue coat",
+            language: .englishUS
+        )
+        let input = StoryDraftInput.randomized(
+            actorDescription: "Alice clever girl",
+            photoData: nil,
+            language: .englishUS
+        )
+        let system = FoundationModelsStoryPlanner.systemInstructions(language: .englishUS)
+        let user = FoundationModelsStoryPlanner.userPrompt(input: input, character: character)
+
+        // Named scene order in the single prompt.
+        for tag in StorySceneTags.ordered {
+            XCTAssertTrue(
+                system.localizedCaseInsensitiveContains(tag) || user.localizedCaseInsensitiveContains(tag),
+                "Missing scene tag \(tag) in prompts"
+            )
+        }
+        XCTAssertTrue(system.localizedCaseInsensitiveContains("exactly 10"))
+        XCTAssertTrue(
+            system.localizedCaseInsensitiveContains("do not restate")
+                || user.localizedCaseInsensitiveContains("do not")
+                || user.localizedCaseInsensitiveContains("identity reference")
+        )
+        // Appearance is reference, not per-page costume inventory.
+        XCTAssertTrue(user.localizedCaseInsensitiveContains("identity"))
+    }
+
+    func testDevPlannerPagesMapToOrderedScenes() async throws {
+        let plan = try await SimulatorDevStoryPlanner().plan(
+            input: StoryDraftInput.randomized(
+                actorDescription: "Mira soft rabbit",
+                photoData: nil,
+                language: .englishUS
+            ),
+            character: CharacterProfile.fromManual(
+                name: "Mira",
+                description: "soft rabbit",
+                language: .englishUS
+            )
+        )
+        XCTAssertEqual(plan.pages.count, 10)
+        for (i, page) in plan.pages.enumerated() {
+            XCTAssertEqual(page.sceneTag, StorySceneTags.tag(at: i))
+            XCTAssertFalse(page.text.isEmpty)
+        }
+        // Scene-led: later pages should not all restate a long look string.
+        let lookHeavy = plan.pages.filter { $0.text.localizedCaseInsensitiveContains("soft rabbit") }.count
+        XCTAssertLessThanOrEqual(lookHeavy, 2)
+        XCTAssertNotEqual(plan.pages[1].text, plan.pages[9].text)
+    }
+
     func testKidsSafetyRejectsUnsafeAndEmpty() {
         let character = CharacterProfile.fromManual(name: "A", description: "a", language: .englishUS)
         let pages = (0..<10).map { i in

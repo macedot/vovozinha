@@ -1,0 +1,1 @@
+PAGE {{pageNumber}} NEW SCENE, different composition and action from other pages: {{pageScene}}. Hero action now: {{action}}. {{propsLine}} {{sameDesignLine}} {{section}}. {{lighting}}. {{worldHint}} {{continuity}}, do not redesign the hero face colors or outfit. masterpiece, best quality, {{styleBit}}, single clear kids storybook illustration

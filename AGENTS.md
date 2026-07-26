@@ -8,8 +8,10 @@
   - **Local LLM pack** for A16 / non-AI devices — **not shipped yet** (do not invent a template fallback).
 - **UI + stories:** pt-BR / en-US / es-ES (language bar; default system).
 - **Page art:** offline; **procedural** by default; **Core ML SD pack** when installed under `ImagePack/Resources`. Temporal chain: previous page → next (img2img / underlay). Fixed **10 pages**.
-- Method: whole continuous story → 10 descriptive paragraphs; ~280 words total (band 150–480); kids filter **retry until pass**.
-- Single actor (toy or kid): photo and/or description.
+- **Story text pipeline:** one LLM call → title + summary + **exactly 10 scene paragraphs** (`StorySceneTags`: setup…bedtime) → each paragraph = one page. Images follow **that page’s scene text** (+ short hero lock for art only). Do not restate full actor appearance on every paragraph.
+- **Prompt files:** edit static text under `Vovozinha/Resources/Prompts/` (loaded by `PromptCatalog`). Rebuild after edits.
+- ~280 words total (band 150–480); kids filter **retry until pass**.
+- Single actor (toy or kid): description (photo later).
 
 ## Build
 ```bash

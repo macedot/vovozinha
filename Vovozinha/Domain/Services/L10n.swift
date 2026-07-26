@@ -39,6 +39,7 @@ enum L10n {
         // Reader
         case readerTextOnlyBanner, readerArtPending, readerPageOf
         case readerListenPage, readerAudiobook, readerParentRead, readerExportPDF, readerDelete
+        case readerDeleteConfirmTitle, readerDeleteConfirmMessage, readerDeleteConfirmAction, readerCancel
         case readerReadAloudTitle, readerMissing, readerClose, readerOps
         case readerEmptyPages, readerExportFailed, readerNothingToSpeak
 
@@ -204,9 +205,9 @@ enum L10n {
             .spanishSpain: "Ej.: osito azul con pajarita · Nina de pelo rizado y pijama de estrellas"
         ],
         .createNeedActor: [
-            .portugueseBrazil: "Escreva quem é o personagem ou escolha uma foto.",
-            .englishUS: "Describe the character or choose a photo.",
-            .spanishSpain: "Describe el personaje o elige una foto."
+            .portugueseBrazil: "Escreva quem é o personagem.",
+            .englishUS: "Describe the character.",
+            .spanishSpain: "Describe el personaje."
         ],
         .createGenerate: [
             .portugueseBrazil: "Gerar história",
@@ -214,9 +215,9 @@ enum L10n {
             .spanishSpain: "Generar historia"
         ],
         .createCustomize: [
-            .portugueseBrazil: "Personalizar…",
-            .englishUS: "Customize…",
-            .spanishSpain: "Personalizar…"
+            .portugueseBrazil: "Personalizar",
+            .englishUS: "Customize",
+            .spanishSpain: "Personalizar"
         ],
         .createRandomHint: [
             .portugueseBrazil: "Mundo, lição, idade e estilo são escolhidos na hora. Use Personalizar se quiser escolher tudo.",
@@ -445,6 +446,26 @@ enum L10n {
             .portugueseBrazil: "Apagar história",
             .englishUS: "Delete story",
             .spanishSpain: "Borrar historia"
+        ],
+        .readerDeleteConfirmTitle: [
+            .portugueseBrazil: "Apagar esta história?",
+            .englishUS: "Delete this story?",
+            .spanishSpain: "¿Borrar esta historia?"
+        ],
+        .readerDeleteConfirmMessage: [
+            .portugueseBrazil: "Isso não pode ser desfeito. A história e as imagens serão removidas deste aparelho.",
+            .englishUS: "This cannot be undone. The story and its pictures will be removed from this device.",
+            .spanishSpain: "Esto no se puede deshacer. La historia y sus imágenes se eliminarán de este dispositivo."
+        ],
+        .readerDeleteConfirmAction: [
+            .portugueseBrazil: "Apagar",
+            .englishUS: "Delete",
+            .spanishSpain: "Borrar"
+        ],
+        .readerCancel: [
+            .portugueseBrazil: "Cancelar",
+            .englishUS: "Cancel",
+            .spanishSpain: "Cancelar"
         ],
         .readerReadAloudTitle: [
             .portugueseBrazil: "Ler em voz alta",

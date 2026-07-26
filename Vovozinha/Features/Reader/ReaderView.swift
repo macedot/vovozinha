@@ -16,6 +16,7 @@ struct ReaderView: View {
     @State private var pdfURL: URL?
     @State private var showShare = false
     @State private var errorMessage: String?
+    @State private var showDeleteConfirm = false
 
     private var pages: [StoryPage] { story.sortedPages }
     private var lang: AppLanguage { languageStore.language }
@@ -70,13 +71,25 @@ struct ReaderView: View {
                         exportPDF()
                     }
                     Button(L10n.t(.readerDelete, lang), systemImage: "trash", role: .destructive) {
-                        deleteStory()
+                        showDeleteConfirm = true
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(VovoTheme.cream)
                 }
             }
+        }
+        .confirmationDialog(
+            L10n.t(.readerDeleteConfirmTitle, lang),
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.t(.readerDeleteConfirmAction, lang), role: .destructive) {
+                deleteStory()
+            }
+            Button(L10n.t(.readerCancel, lang), role: .cancel) {}
+        } message: {
+            Text(L10n.t(.readerDeleteConfirmMessage, lang))
         }
         .sheet(isPresented: $showReadAloud) {
             NavigationStack {

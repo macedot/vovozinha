@@ -21,28 +21,16 @@ enum ArtStyle: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// English fragments only — image models are prompted in EN.
+    /// English fragments only — image models are prompted in EN (`Prompts/art/style.*.txt`).
     func promptFragment(_ lang: AppLanguage) -> String {
         _ = lang
         switch self {
         case .watercolor:
-            return """
-            soft hand-painted Japanese anime still, watercolor and gouache anime backgrounds, \
-            gentle brush texture, warm natural light, storybook anime composition
-            """
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            return PromptCatalog.text("art/style.watercolor.txt", collapseWhitespace: true)
         case .cartoon:
-            return """
-            bright Japanese kids anime, clean cel shading, crisp linework, \
-            cheerful anime character design, clear silhouettes, vibrant but soft colors
-            """
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            return PromptCatalog.text("art/style.cartoon.txt", collapseWhitespace: true)
         case .pastel:
-            return """
-            soft pastel Japanese anime, gentle bedtime anime mood, muted dreamy palette, \
-            soft cel shading, cozy night-story atmosphere
-            """
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            return PromptCatalog.text("art/style.pastel.txt", collapseWhitespace: true)
         }
     }
 }

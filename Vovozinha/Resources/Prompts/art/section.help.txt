@@ -1,0 +1,1 @@
+SECTION help: hero giving or receiving friendly help, second character or helper object if in the page text, warm interaction

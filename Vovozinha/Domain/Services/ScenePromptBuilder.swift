@@ -77,16 +77,9 @@ struct SceneArtBrief: Sendable, Equatable {
 // MARK: - Builder
 
 enum ScenePromptBuilder {
-    static let kidsNegativePrompt = """
-    lowres, worst quality, low quality, blurry, jpeg artifacts, bad anatomy, bad hands, \
-    extra limbs, deformed, ugly, text overlay, watermark, logo, signature, \
-    horror, scary, blood, gore, nsfw, weapons, \
-    photorealistic, photo, 3d render, western clipart, collage, crowd, \
-    different character, character redesign, new face, wrong colors, face morph, \
-    redesigned props, changed outfit, inconsistent design, random new character, \
-    unrelated scene, random background only
-    """
-    .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+    static var kidsNegativePrompt: String {
+        PromptCatalog.text("art/negative.txt", collapseWhitespace: true)
+    }
 
     /// Public wrappers so `StoryArtMemory.seed` can share helpers.
     static func shortStylePublic(_ style: ArtStyle) -> String { shortStyle(style) }
@@ -148,34 +141,26 @@ enum ScenePromptBuilder {
             : "same design as earlier pages for: \(knownOnPage.joined(separator: ", "))."
         let worldHint = mem.worldLock.isEmpty ? "" : "story world can include \(mem.worldLock)."
 
-        // CLIP weights early tokens most. Put the **unique page scene first**, then section
-        // direction, then a short actor lock. Do NOT dump the full lock list before the scene —
-        // that made every page look almost identical.
-        let positive: String
-        if isEstablish {
-            positive = """
-            PAGE 1 NEW SCENE, establish the hero clearly: \(pageScene). \
-            Hero action: \(action). \(propsLine) \
-            \(section). \(lighting). \(worldHint) \
-            \(continuity). \
-            masterpiece, best quality, \(mem.styleBit), single clear kids storybook illustration
-            """
-        } else {
-            positive = """
-            PAGE \(pageIndex + 1) NEW SCENE, different composition and action from other pages: \(pageScene). \
-            Hero action now: \(action). \(propsLine) \(sameDesignLine) \
-            \(section). \(lighting). \(worldHint) \
-            \(continuity), do not redesign the hero face colors or outfit. \
-            masterpiece, best quality, \(mem.styleBit), single clear kids storybook illustration
-            """
-        }
-
-        let compact = positive
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // CLIP: unique page scene first, then section, then short actor lock (templates on disk).
+        let positive = PromptCatalog.text(
+            isEstablish ? "art/page.establish.txt" : "art/page.continue.txt",
+            vars: [
+                "pageScene": pageScene,
+                "action": action,
+                "propsLine": propsLine,
+                "sameDesignLine": sameDesignLine,
+                "section": section,
+                "lighting": lighting,
+                "worldHint": worldHint,
+                "continuity": continuity,
+                "styleBit": mem.styleBit,
+                "pageNumber": "\(pageIndex + 1)"
+            ],
+            collapseWhitespace: true
+        )
 
         let brief = SceneArtBrief(
-            positivePrompt: compact,
+            positivePrompt: positive,
             negativePrompt: kidsNegativePrompt,
             heroLock: mem.heroLock,
             sceneDescription: pageScene,
@@ -239,36 +224,20 @@ enum ScenePromptBuilder {
 
     // MARK: - Section-specific schemas (one prompt style per story beat)
 
-    /// Custom image-direction string for each narrative section.
+    /// Custom image-direction string for each narrative section (`Prompts/art/section.*.txt`).
     static func sectionPrompt(beat: String, pageIndex: Int, totalPages: Int) -> String {
-        switch beat {
-        case "setup":
-            return "SECTION setup: character introduction establishing shot, hero readable and centered, gentle welcome to the world"
-        case "explore":
-            return "SECTION explore: wide enough to show place + hero, wonder and discovery, soft movement"
-        case "inciting":
-            return "SECTION inciting: hero notices a small gentle problem, curious focused expression, clear story object"
-        case "feel":
-            return "SECTION feel: emotional close-medium shot, soft feelings on the hero's face, calm colors"
-        case "plan":
-            return "SECTION plan: hero thinking of a kind idea, thoughtful pose, hopeful light"
-        case "try":
-            return "SECTION try: hero carefully trying a first attempt, active pose, clear action"
-        case "help":
-            return "SECTION help: hero giving or receiving friendly help, second character or helper object if in the page text, warm interaction"
-        case "turn":
-            return "SECTION turn: things getting better, brighter mood, relieved happy hero"
-        case "lesson":
-            return "SECTION lesson: kind lesson moment, warm heartfelt composition, soft glow"
-        case "bedtime":
-            return "SECTION bedtime: cozy good-night closing, calm sleepy mood, gentle night or soft evening light"
-        default:
-            let ratio = totalPages > 1 ? Double(pageIndex) / Double(totalPages - 1) : 0
-            if ratio > 0.85 {
-                return "SECTION closing: calm ending moment, soft light"
-            }
-            return "SECTION story beat: clear single scene focused on the hero and the page action"
+        let known = [
+            "setup", "explore", "inciting", "feel", "plan",
+            "try", "help", "turn", "lesson", "bedtime"
+        ]
+        if known.contains(beat) {
+            return PromptCatalog.text("art/section.\(beat).txt")
         }
+        let ratio = totalPages > 1 ? Double(pageIndex) / Double(totalPages - 1) : 0
+        if ratio > 0.85 {
+            return PromptCatalog.text("art/section.closing.txt")
+        }
+        return PromptCatalog.text("art/section.default.txt")
     }
 
     // MARK: - Visual helpers

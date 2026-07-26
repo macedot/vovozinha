@@ -137,13 +137,12 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
             title: title(name: name, world: world, language: language),
             summary: summary(name: name, world: world, lesson: lesson, language: language),
             bodies: bodies,
-            name: name,
-            look: look,
             world: world,
             character: character,
             ageBand: ageBand,
             artStyle: artStyle,
-            lesson: lesson
+            lesson: lesson,
+            language: language
         )
     }
 
@@ -158,32 +157,25 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
     ) -> StoryPlan {
         let n = name.isEmpty ? "Luma" : name
         let w = world.isEmpty ? "garden" : world
-        let bodies: [String]
-        switch language {
-        case .portugueseBrazil:
-            bodies = (0..<10).map { i in
-                "\(n) vive um momento calmo em \(w). O sol é suave e o ar é doce. \(n) sorri e aprende sobre \(lesson). Tudo é seguro e gentil. Página \(i + 1) do conto de ninar."
-            }
-        case .englishUS:
-            bodies = (0..<10).map { i in
-                "\(n) has a calm moment in \(w). The sun is soft and the air is sweet. \(n) smiles and learns about \(lesson). Everything is safe and kind. Bedtime page \(i + 1)."
-            }
-        case .spanishSpain:
-            bodies = (0..<10).map { i in
-                "\(n) vive un momento calmado en \(w). El sol es suave y el aire es dulce. \(n) sonríe y aprende sobre \(lesson). Todo es seguro y amable. Página \(i + 1) del cuento."
-            }
-        }
+        // Distinct scene beats even in ultra-safe mode (not the same sentence 10 times).
+        let bodies = pageTexts(
+            name: n,
+            look: "soft friendly character",
+            world: w,
+            lesson: lesson,
+            idea: "",
+            language: language
+        )
         return makePlan(
             title: title(name: n, world: w, language: language),
             summary: summary(name: n, world: w, lesson: lesson, language: language),
             bodies: bodies,
-            name: n,
-            look: "cute kids character",
             world: w,
             character: character,
             ageBand: ageBand,
             artStyle: artStyle,
-            lesson: lesson
+            lesson: lesson,
+            language: language
         )
     }
 
@@ -191,23 +183,31 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
         title: String,
         summary: String,
         bodies: [String],
-        name: String,
-        look: String,
         world: String,
         character: CharacterProfile,
         ageBand: AgeBand,
         artStyle: ArtStyle,
-        lesson: String
+        lesson: String,
+        language: AppLanguage
     ) -> StoryPlan {
-        let tags = StorySceneTags.ordered
         var pages: [StoryPlanPage] = []
         for (i, body) in bodies.enumerated() {
-            let tag = i < tags.count ? tags[i] : "story"
+            let tag = StorySceneTags.tag(at: i)
+            let imagePrompt = ScenePromptBuilder.prompt(
+                pageText: body,
+                sceneTag: tag,
+                character: character,
+                setting: world,
+                artStyle: artStyle,
+                language: language,
+                pageIndex: i,
+                totalPages: bodies.count
+            )
             pages.append(
                 StoryPlanPage(
                     index: i,
                     text: body,
-                    imagePrompt: "\(name), \(look), \(world), \(tag), kids bedtime illustration",
+                    imagePrompt: imagePrompt,
                     narrationHint: i >= 8 ? "soft slow" : "calm",
                     sceneTag: tag
                 )
@@ -258,6 +258,7 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
         }
     }
 
+    /// Ten scene paragraphs (setup…bedtime). Look only on setup; later pages are scene-led.
     private static func pageTexts(
         name: String,
         look: String,
@@ -266,54 +267,64 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
         idea: String,
         language: AppLanguage
     ) -> [String] {
-        let extra: String = {
+        let ideaBit: String = {
             guard !idea.isEmpty else { return "" }
             switch language {
-            case .portugueseBrazil: return " \(name) também pensa em \(idea)."
-            case .englishUS: return " \(name) also thinks about \(idea)."
-            case .spanishSpain: return " \(name) también piensa en \(idea)."
+            case .portugueseBrazil: return " Um pedacinho da ideia: \(idea)."
+            case .englishUS: return " A little of the idea: \(idea)."
+            case .spanishSpain: return " Un poquito de la idea: \(idea)."
             }
         }()
 
         switch language {
         case .portugueseBrazil:
             return [
-                "\(name) acorda com um sorriso. \(name) é \(look). O ar cheira a manhã em \(world). Um raio de sol quente toca o chão. Hoje parece um dia especial e calmo.",
-                "\(name) dá passos leves por \(world). Folhas suaves balançam. Um pássaro pequenino canta. As cores são claras e amigas. \(name) olha em volta com curiosidade boa.",
-                "De repente, \(name) vê um amiguinho um pouco triste. Algo pequeno caiu do ninho. \(name) sente um puxão gentil no peito. Posso ajudar, pensa \(name) com carinho.",
-                "\(name) respira fundo. O vento traz um perfume doce. \(name) sente um pouco de preocupação, mas também coragem mansa. As mãos de \(name) querem ser úteis.",
-                "Então \(name) tem uma ideia bondosa. Vamos tentar com calma e paciência. \(name) escolhe um caminho seguro entre as flores de \(world). A luz da tarde é dourada e macia.",
-                "\(name) tenta a primeira vez com muito cuidado. O amiguinho espera. \(name) fala baixinho palavras de ânimo. Nada precisa ser perfeito. Só precisa ser gentil.",
-                "Um vizinho amável chega para ajudar também. Juntos, \(name) e o amigo levantam o que caiu. \(world) parece mais brilhante. \(name) sente o peito quentinho de alegria.",
-                "Agora o pequenino sorri de novo. \(name) ri baixinho. As nuvens passam devagar. O sol pinta o céu de laranja suave. Tudo fica mais leve e feliz em \(world).",
-                "\(name) entende a lição de \(lesson). Ajudar com calma faz o dia crescer. \(name) guarda esse sentimento como um abraço.\(extra) O coração de \(name) fica sereno.",
-                "A noite chega mansa sobre \(world). \(name) boceja e se aconchega. Estrelas piscam como lâmpadas de ninar. Boa noite, sussurra \(name). É hora de sonhar com paz."
+                // setup — light first look once
+                "Em \(world), a manhã chega macia e dourada. \(name) aparece: \(look). O chão é quente de sol e o ar cheira a dia novo. \(name) sorri para o começo da aventura.",
+                // explore
+                "O caminho em \(world) mostra cores vivas e sombras suaves. Um barulhinho alegre vem de longe. \(name) anda devagar e descobre um canto cheio de detalhes bonitos.",
+                // inciting
+                "Num cantinho, algo pequenino parece fora do lugar. Uma folha caiu sobre um ninho baixo. \(name) para e entende que alguém precisa de ajuda mansa.",
+                // feel
+                "O peito de \(name) fica apertado e também corajoso. O vento traz um perfume doce. \(name) respira fundo e quer fazer o bem com calma.",
+                // plan
+                "Então nasce uma ideia gentil. \(name) imagina um jeito simples e seguro de ajudar. A luz da tarde pinta \(world) de ouro manso.",
+                // try
+                "Com muito cuidado, \(name) tenta a primeira vez. As mãos se movem devagar. Nada precisa ser perfeito; só precisa ser bondoso.",
+                // help
+                "Uma ajuda amiga chega perto. Juntos levantam o que caiu e ajeitam o cantinho. \(world) parece mais brilhante e leve.",
+                // turn
+                "O pequenino amigo fica aliviado. As nuvens passam lentas no céu. \(name) ri baixinho e a tristeza se desfaz no ar macio.",
+                // lesson
+                "A lição de \(lesson) brilha sem sermão. Ajudar com paciência aquece o coração.\(ideaBit) \(name) guarda esse sentimento como um abraço quieto.",
+                // bedtime
+                "A noite desce suave sobre \(world). Estrelas piscam como lâmpadas de ninar. \(name) boceja, se aconchega e sussurra boa noite. É hora de sonhar em paz."
             ]
         case .englishUS:
             return [
-                "\(name) wakes with a soft smile. \(name) is \(look). Morning air smells fresh in \(world). Warm sunlight touches the ground. Today feels special and calm.",
-                "\(name) takes gentle steps through \(world). Soft leaves sway. A tiny bird sings. The colors look friendly and bright. \(name) looks around with kind curiosity.",
-                "Suddenly \(name) notices a little friend who seems sad. Something small has fallen from a nest. \(name) feels a gentle tug in the heart. I can help, thinks \(name) kindly.",
-                "\(name) takes a deep breath. The breeze smells sweet. \(name) feels a little worry and also quiet courage. \(name) wants to be useful and careful.",
-                "Then \(name) has a kind idea. We will try with calm and patience. \(name) chooses a safe path among the flowers of \(world). Afternoon light is golden and soft.",
-                "\(name) tries the first careful attempt. The little friend waits. \(name) whispers brave, gentle words. Nothing needs to be perfect. It only needs to be kind.",
-                "A friendly neighbor comes to help too. Together, \(name) and the friend lift what fell. \(world) looks brighter. \(name) feels a warm, happy glow inside.",
-                "Now the little one smiles again. \(name) laughs softly. Clouds drift slowly. The sun paints the sky soft orange. Everything feels lighter and happier in \(world).",
-                "\(name) understands the lesson of \(lesson). Helping with calm makes the day grow. \(name) keeps that feeling like a hug.\(extra) \(name) feels peaceful.",
-                "Night settles gently over \(world). \(name) yawns and snuggles close. Stars twinkle like bedtime lamps. Good night, whispers \(name). It is time to dream of peace."
+                "In \(world), morning light is soft and golden. \(name) appears: \(look). Warm sun touches the ground and the air smells like a new day. \(name) smiles at the start of a gentle adventure.",
+                "The path through \(world) shows bright colors and soft shadows. A happy little sound comes from far away. \(name) walks slowly and finds a corner full of lovely details.",
+                "In a small nook, something tiny is out of place. A leaf has fallen on a low nest. \(name) stops and sees that someone needs soft help.",
+                "\(name) feels a tight chest and quiet courage. The breeze smells sweet. \(name) breathes deep and wants to help with calm care.",
+                "Then a kind idea grows. \(name) imagines a simple, safe way to help. Afternoon light paints \(world) in gentle gold.",
+                "With great care, \(name) tries for the first time. Hands move slowly. Nothing needs to be perfect; it only needs to be kind.",
+                "Friendly help comes near. Together they lift what fell and tidy the little place. \(world) looks brighter and lighter.",
+                "The little friend feels better. Clouds drift slowly across the sky. \(name) laughs softly and the sadness melts in the mild air.",
+                "The lesson of \(lesson) shines without a lecture. Helping with patience warms the heart.\(ideaBit) \(name) keeps that feeling like a quiet hug.",
+                "Night settles gently over \(world). Stars twinkle like bedtime lamps. \(name) yawns, snuggles close, and whispers good night. It is time to dream in peace."
             ]
         case .spanishSpain:
             return [
-                "\(name) despierta con una sonrisa suave. \(name) es \(look). El aire de la mañana huele fresco en \(world). Un rayo de sol cálido toca el suelo. Hoy parece un día especial y calmado.",
-                "\(name) da pasos suaves por \(world). Las hojas se mueven despacio. Un pajarito canta. Los colores son claros y amables. \(name) mira alrededor con buena curiosidad.",
-                "De pronto, \(name) ve a un amiguito un poco triste. Algo pequeño se cayó del nido. \(name) siente un tironcito tierno en el pecho. Puedo ayudar, piensa \(name) con cariño.",
-                "\(name) respira hondo. El viento trae un perfume dulce. \(name) siente un poco de preocupación y también valor manso. Las manos de \(name) quieren ser útiles.",
-                "Entonces \(name) tiene una idea bondadosa. Vamos a intentar con calma y paciencia. \(name) elige un camino seguro entre las flores de \(world). La luz de la tarde es dorada y suave.",
-                "\(name) prueba la primera vez con mucho cuidado. El amiguito espera. \(name) dice bajito palabras de ánimo. Nada tiene que ser perfecto. Solo tiene que ser amable.",
-                "Un vecino amable también llega a ayudar. Juntos, \(name) y el amigo levantan lo que cayó. \(world) parece más brillante. \(name) siente el pecho calentito de alegría.",
-                "Ahora el pequenín sonríe otra vez. \(name) ríe bajito. Las nubes pasan despacio. El sol pinta el cielo de naranja suave. Todo se siente más ligero y feliz en \(world).",
-                "\(name) entiende la lección de \(lesson). Ayudar con calma hace crecer el día. \(name) guarda ese sentimiento como un abrazo.\(extra) El corazón de \(name) queda sereno.",
-                "La noche llega mansa sobre \(world). \(name) bosteza y se acurruca. Las estrellas parpadean como lamparitas de dormir. Buenas noches, susurra \(name). Es hora de soñar en paz."
+                "En \(world), la mañana llega suave y dorada. Aparece \(name): \(look). El suelo está cálido de sol y el aire huele a día nuevo. \(name) sonríe al comienzo de la aventura.",
+                "El camino de \(world) muestra colores vivos y sombras suaves. Un ruidito alegre viene de lejos. \(name) camina despacio y descubre un rincón lleno de detalles bonitos.",
+                "En un rinconcito, algo pequeño está fuera de lugar. Una hoja cayó sobre un nido bajo. \(name) se detiene y ve que alguien necesita ayuda mansa.",
+                "El pecho de \(name) se aprieta y también se llena de valor. El viento trae un perfume dulce. \(name) respira hondo y quiere ayudar con calma.",
+                "Entonces nace una idea bondadosa. \(name) imagina una forma simple y segura de ayudar. La luz de la tarde pinta \(world) de oro suave.",
+                "Con mucho cuidado, \(name) lo intenta la primera vez. Las manos se mueven despacio. Nada tiene que ser perfecto; solo tiene que ser amable.",
+                "Llega una ayuda amiga. Juntos levantan lo caído y arreglan el rinconcito. \(world) parece más brillante y ligero.",
+                "El amiguito se siente aliviado. Las nubes pasan lentas por el cielo. \(name) ríe bajito y la tristeza se deshace en el aire manso.",
+                "La lección de \(lesson) brilla sin sermón. Ayudar con paciencia calienta el corazón.\(ideaBit) \(name) guarda ese sentimiento como un abrazo quieto.",
+                "La noche baja suave sobre \(world). Las estrellas parpadean como lamparitas. \(name) bosteza, se acurruca y susurra buenas noches. Es hora de soñar en paz."
             ]
         }
     }
