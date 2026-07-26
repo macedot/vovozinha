@@ -11,7 +11,9 @@ public struct StoryPromptFeatureView: View {
     @State private var generator: any StoryFromPromptGenerating
 
     public init(generator: (any StoryFromPromptGenerating)? = nil) {
-        _generator = State(initialValue: generator ?? OfflineStoryFromPromptGenerator())
+        // Default: on-device LiteRT-LM when its model is present, else offline fallback.
+        // Both apps inherit this; `StoryPromptDebug` injects an explicit generator + download UI.
+        _generator = State(initialValue: generator ?? OfflineFirstStoryGenerator())
     }
 
     private var lang: AppLanguage { languageStore.language }
@@ -28,71 +30,82 @@ public struct StoryPromptFeatureView: View {
         VStack(spacing: 0) {
             LanguageBar()
 
-            VovoScreen(
-                title: VovoL10n.t(.storySeedTitle, lang),
-                subtitle: VovoL10n.seedSubtitle(
-                    min: StorySeedPrompt.minWords,
-                    max: StorySeedPrompt.maxWords,
-                    lang: lang
-                )
-            ) {
-                VStack(alignment: .leading, spacing: 16) {
-                    TextField(
-                        VovoL10n.t(.storySeedPlaceholder, lang),
-                        text: $promptText,
-                        axis: .vertical
-                    )
-                    .lineLimit(4...8)
-                    .frame(minHeight: 120, alignment: .topLeading)
-                    .vovoCardField()
-                    .accessibilityIdentifier("storySeedField")
+            ScrollViewReader { proxy in
+                VovoScreen(
+                    title: VovoL10n.t(.storySeedTitle, lang),
+                    subtitle: VovoL10n.seedSubtitle(
+                        min: StorySeedPrompt.minWords,
+                        max: StorySeedPrompt.maxWords,
+                        lang: lang
+                    ),
+                    scrolls: true
+                ) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        TextField(
+                            VovoL10n.t(.storySeedPlaceholder, lang),
+                            text: $promptText,
+                            axis: .vertical
+                        )
+                        .lineLimit(4...8)
+                        .frame(minHeight: 120, alignment: .topLeading)
+                        .vovoCardField()
+                        .accessibilityIdentifier("storySeedField")
 
-                    HStack {
-                        Text(VovoL10n.wordCount(
-                            current: wordCount,
-                            max: StorySeedPrompt.maxWords,
-                            lang: lang
-                        ))
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(wordCountLabelColor)
-                        .accessibilityIdentifier("wordCountLabel")
-                        Spacer()
-                        if wordCount > 0, wordCount < StorySeedPrompt.minWords {
-                            Text(VovoL10n.needMinWords(StorySeedPrompt.minWords, lang: lang))
-                                .font(.caption)
-                                .foregroundStyle(VovoTheme.softPink)
-                        } else if wordCount > StorySeedPrompt.maxWords {
-                            Text(VovoL10n.tooLong(max: StorySeedPrompt.maxWords, lang: lang))
+                        HStack {
+                            Text(VovoL10n.wordCount(
+                                current: wordCount,
+                                max: StorySeedPrompt.maxWords,
+                                lang: lang
+                            ))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(wordCountLabelColor)
+                            .accessibilityIdentifier("wordCountLabel")
+                            Spacer()
+                            if wordCount > 0, wordCount < StorySeedPrompt.minWords {
+                                Text(VovoL10n.needMinWords(StorySeedPrompt.minWords, lang: lang))
+                                    .font(.caption)
+                                    .foregroundStyle(VovoTheme.softPink)
+                            } else if wordCount > StorySeedPrompt.maxWords {
+                                Text(VovoL10n.tooLong(max: StorySeedPrompt.maxWords, lang: lang))
+                                    .font(.caption)
+                                    .foregroundStyle(VovoTheme.softPink)
+                            }
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
                                 .font(.caption)
                                 .foregroundStyle(VovoTheme.softPink)
                         }
-                    }
 
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(VovoTheme.softPink)
-                    }
+                        Button {
+                            Task { await generate() }
+                        } label: {
+                            if isGenerating {
+                                ProgressView()
+                                    .tint(VovoTheme.deepNight)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
+                            } else {
+                                Text(VovoL10n.t(.storyCreate, lang))
+                            }
+                        }
+                        .buttonStyle(VovoPrimaryButtonStyle(enabled: canGenerate))
+                        .disabled(!canGenerate)
+                        .accessibilityIdentifier("createStoryButton")
 
-                    Button {
-                        Task { await generate() }
-                    } label: {
-                        if isGenerating {
-                            ProgressView()
-                                .tint(VovoTheme.deepNight)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                        } else {
-                            Text(VovoL10n.t(.storyCreate, lang))
+                        if let draft {
+                            storyResult(draft)
+                                .id("storyResult")
+                                .accessibilityIdentifier("storyResult")
                         }
                     }
-                    .buttonStyle(VovoPrimaryButtonStyle(enabled: canGenerate))
-                    .disabled(!canGenerate)
-                    .accessibilityIdentifier("createStoryButton")
-
-                    if let draft {
-                        storyResult(draft)
-                            .accessibilityIdentifier("storyResult")
+                }
+                .onChange(of: draft?.id) { _, newID in
+                    guard newID != nil else { return }
+                    // Bring the story into view after generation (form stays above).
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        proxy.scrollTo("storyResult", anchor: .top)
                     }
                 }
             }
@@ -110,38 +123,40 @@ public struct StoryPromptFeatureView: View {
         return VovoTheme.amber
     }
 
+    /// Full story body as a simple stack — parent `VovoScreen` ScrollView owns scrolling.
     @ViewBuilder
     private func storyResult(_ draft: StoryDraft) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(draft.title)
                 .font(.title3.bold())
                 .foregroundStyle(VovoTheme.amber)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text(draft.summary)
                 .font(.subheadline)
                 .foregroundStyle(VovoTheme.cream.opacity(0.8))
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(draft.paragraphs.enumerated()), id: \.offset) { index, paragraph in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(VovoL10n.scene(index + 1, lang: draft.language))
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(VovoTheme.mint.opacity(0.9))
-                            Text(paragraph)
-                                .font(.body)
-                                .foregroundStyle(VovoTheme.cream)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(VovoTheme.cardFill)
-                        )
-                    }
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(Array(draft.paragraphs.enumerated()), id: \.offset) { index, paragraph in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(VovoL10n.scene(index + 1, lang: draft.language))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(VovoTheme.mint.opacity(0.9))
+                    Text(paragraph)
+                        .font(.body)
+                        .foregroundStyle(VovoTheme.cream)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(VovoTheme.cardFill)
+                )
             }
-            .frame(maxHeight: 320)
         }
         .padding(.top, 8)
+        .padding(.bottom, 24)
     }
 
     @MainActor

@@ -8,6 +8,12 @@ let package = Package(
         .library(name: "VovoUI", targets: ["VovoUI"])
     ],
     targets: [
-        .target(name: "VovoUI", path: "Sources/VovoUI")
+        .target(
+            name: "VovoUI",
+            path: "Sources/VovoUI",
+            resources: [
+                .process("Resources")
+            ]
+        )
     ]
 )

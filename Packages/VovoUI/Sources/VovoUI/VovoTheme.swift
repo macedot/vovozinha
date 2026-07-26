@@ -58,38 +58,64 @@ public struct VovoSecondaryButtonStyle: ButtonStyle {
 }
 
 /// Shared screen chrome: night gradient + cream content + optional title.
+///
+/// When `scrolls` is true (default), the title and content live in a single
+/// `ScrollView` so long results (e.g. a 10-scene story) scroll naturally.
 public struct VovoScreen<Content: View>: View {
     public let title: String
     public let subtitle: String?
+    /// Use a single outer scroll for the whole screen body.
+    public var scrolls: Bool
     @ViewBuilder public var content: () -> Content
 
-    public init(title: String, subtitle: String? = nil, @ViewBuilder content: @escaping () -> Content) {
+    public init(
+        title: String,
+        subtitle: String? = nil,
+        scrolls: Bool = true,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
         self.title = title
         self.subtitle = subtitle
+        self.scrolls = scrolls
         self.content = content
     }
 
     public var body: some View {
         ZStack {
             VovoTheme.backgroundGradient.ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(title)
-                        .font(.title2.bold())
-                        .foregroundStyle(VovoTheme.cream)
-                    if let subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(VovoTheme.cream.opacity(0.72))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            if scrolls {
+                ScrollView {
+                    mainColumn
+                        .padding(24)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                content()
-                Spacer(minLength: 0)
+                .scrollDismissesKeyboard(.interactively)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    mainColumn
+                        .padding(24)
+                    Spacer(minLength: 0)
+                }
             }
-            .padding(24)
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var mainColumn: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.title2.bold())
+                    .foregroundStyle(VovoTheme.cream)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(VovoTheme.cream.opacity(0.72))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            content()
+        }
     }
 }
 

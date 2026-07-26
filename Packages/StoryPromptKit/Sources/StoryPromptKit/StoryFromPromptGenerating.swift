@@ -12,8 +12,22 @@ public enum StoryPromptError: Error, Equatable, Sendable {
 }
 
 /// Offline deterministic generator for the multi-module bootstrap.
-/// Later: swap for Foundation Models while keeping this protocol.
+///
+/// Generation **instructions** live in `Resources/Prompts/offline.<lang>.md` and must
+/// receive the parent’s story description via placeholders (never leave them raw).
+/// Until Foundation Models is wired, the story body is a lightweight offline draft
+/// that still embeds that description.
 public struct OfflineStoryFromPromptGenerator: StoryFromPromptGenerating {
+    /// Known “insert description here” tokens across the three prompt files.
+    public static let descriptionPlaceholders: [String] = [
+        "[INSERT STORY DESCRIPTION HERE]",
+        "[INSERIR A DESCRIÇÃO DA HISTÓRIA AQUI]",
+        "[INSERTAR LA DESCRIPCIÓN DE LA HISTORIA AQUÍ]",
+        "{{seed}}",
+        "{{idea}}",
+        "{{description}}"
+    ]
+
     public init() {}
 
     public func generate(from prompt: StorySeedPrompt) async throws -> StoryDraft {
@@ -22,6 +36,16 @@ public struct OfflineStoryFromPromptGenerator: StoryFromPromptGenerating {
 
         let seed = prompt.trimmed
         let lang = prompt.language
+
+        // Always fill the generation prompt so no INSERT token leaks to callers / logs / future FM.
+        let filledPrompt = Self.filledGenerationPrompt(description: seed, language: lang)
+        guard !filledPrompt.isEmpty,
+              !Self.containsUnresolvedDescriptionPlaceholder(filledPrompt) else {
+            throw StoryPromptError.generationFailed
+        }
+        // Keep filled prompt live for debugging / future FM path (side-effect free otherwise).
+        _ = filledPrompt
+
         let title = Self.makeTitle(from: seed, language: lang)
         let summary = Self.makeSummary(seed: seed, language: lang)
         let paragraphs = Self.makeParagraphs(seed: seed, language: lang)
@@ -34,6 +58,56 @@ public struct OfflineStoryFromPromptGenerator: StoryFromPromptGenerating {
             language: lang
         )
     }
+
+    // MARK: - Prompt template (user-edited MD — do not rewrite file content here)
+
+    /// Loads `offline.<lang>.md` and substitutes the parent’s short story description.
+    public static func filledGenerationPrompt(
+        description: String,
+        language: AppLanguage
+    ) -> String {
+        let path = "Prompts/offline.\(language.rawValue).md"
+        let fallback = "Prompts/offline.\(AppLanguage.englishUS.rawValue).md"
+        var raw = MarkdownTextCatalog.loadFile(
+            path,
+            bundle: .module,
+            sourceFallbackRoot: sourcePromptsRoot
+        )
+        if raw.isEmpty {
+            raw = MarkdownTextCatalog.loadFile(
+                fallback,
+                bundle: .module,
+                sourceFallbackRoot: sourcePromptsRoot
+            )
+        }
+        return replaceDescriptionPlaceholders(in: raw, with: description)
+    }
+
+    public static func replaceDescriptionPlaceholders(in template: String, with description: String) -> String {
+        var out = template
+        for token in descriptionPlaceholders {
+            out = out.replacingOccurrences(of: token, with: description)
+        }
+        // Any remaining `[INSERT …]` / `[INSERIR …]` / `[INSERTAR …]` style tokens.
+        if let regex = try? NSRegularExpression(
+            pattern: #"\[(?:INSERT|INSERIR|INSERTAR)[^\]]*\]"#,
+            options: [.caseInsensitive]
+        ) {
+            let range = NSRange(out.startIndex..<out.endIndex, in: out)
+            let safe = NSRegularExpression.escapedTemplate(for: description)
+            out = regex.stringByReplacingMatches(in: out, options: [], range: range, withTemplate: safe)
+        }
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    public static func containsUnresolvedDescriptionPlaceholder(_ text: String) -> Bool {
+        for token in descriptionPlaceholders where text.contains(token) {
+            return true
+        }
+        return text.range(of: #"\[(?:INSERT|INSERIR|INSERTAR)[^\]]*\]"#, options: .regularExpression) != nil
+    }
+
+    // MARK: - Offline story body (not the generation prompt file)
 
     private static func makeTitle(from seed: String, language: AppLanguage) -> String {
         let parts = seed.split(whereSeparator: \.isWhitespace).prefix(4).map(String.init)
@@ -60,7 +134,6 @@ public struct OfflineStoryFromPromptGenerator: StoryFromPromptGenerating {
         }
     }
 
-    /// Ten short scene-shaped paragraphs; content follows the seed idea.
     private static func makeParagraphs(seed: String, language: AppLanguage) -> [String] {
         let idea = seed
         switch language {
@@ -104,5 +177,12 @@ public struct OfflineStoryFromPromptGenerator: StoryFromPromptGenerating {
                 "La noche llega suave. Las estrellas guiñan como lamparitas. Es hora de dormir, soñar y estar en paz."
             ]
         }
+    }
+
+    /// Filesystem root of `Resources/` (used to load prompts from disk in tests / DEBUG).
+    public static var sourcePromptsRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Resources")
     }
 }

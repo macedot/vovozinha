@@ -54,7 +54,7 @@ final class StoryCreationUITests: XCTestCase {
         XCTAssertTrue(pt.waitForExistence(timeout: 5), "PT language control should exist")
         pt.tap()
         XCTAssertTrue(
-            app.staticTexts["Semente da história"].waitForExistence(timeout: 4)
+            app.staticTexts["Descrição da história"].waitForExistence(timeout: 4)
                 || app.buttons["Criar história"].waitForExistence(timeout: 2),
             "PT UI strings should appear"
         )
@@ -63,7 +63,7 @@ final class StoryCreationUITests: XCTestCase {
         XCTAssertTrue(es.waitForExistence(timeout: 3))
         es.tap()
         XCTAssertTrue(
-            app.staticTexts["Semilla del cuento"].waitForExistence(timeout: 4)
+            app.staticTexts["Descripción del cuento"].waitForExistence(timeout: 4)
                 || app.buttons["Crear cuento"].waitForExistence(timeout: 2),
             "ES UI strings should appear"
         )
@@ -71,7 +71,7 @@ final class StoryCreationUITests: XCTestCase {
         let en = app.buttons["language.en"]
         en.tap()
         XCTAssertTrue(
-            app.staticTexts["Story seed"].waitForExistence(timeout: 4)
+            app.staticTexts["Story description"].waitForExistence(timeout: 4)
                 || app.buttons["Create story"].waitForExistence(timeout: 2),
             "EN UI strings should appear"
         )

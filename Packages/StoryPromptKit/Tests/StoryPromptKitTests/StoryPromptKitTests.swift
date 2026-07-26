@@ -121,4 +121,61 @@ final class StoryPromptKitTests: XCTestCase {
         XCTAssertEqual(AppLanguage.resolve(preferenceRaw: "es-ES"), .spanishSpain)
         XCTAssertEqual(AppLanguage.allCases.count, 3)
     }
+
+    func testMarkdownCatalogParsesSectionsAndPlaceholders() {
+        let md = """
+        # Title
+
+        ## greeting
+        Hello {{name}}!
+
+        ## scene1
+        First paragraph.
+        """
+        let sections = MarkdownTextCatalog.parseSections(md)
+        XCTAssertEqual(sections["greeting"], "Hello {{name}}!")
+        XCTAssertEqual(sections["scene1"], "First paragraph.")
+        XCTAssertEqual(
+            MarkdownTextCatalog.render(sections["greeting"]!, vars: ["name": "Ada"]),
+            "Hello Ada!"
+        )
+    }
+
+    func testMarkdownResourcesLoadFromDisk() {
+        XCTAssertEqual(VovoL10n.t(.storyCreate, .englishUS), "Create story")
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/StoryPromptKit/Resources")
+        let raw = MarkdownTextCatalog.loadFile(
+            "Prompts/offline.en-US.md",
+            bundle: .module,
+            sourceFallbackRoot: root
+        )
+        XCTAssertFalse(raw.isEmpty, "offline generation prompt should load")
+        XCTAssertTrue(raw.contains("[INSERT STORY DESCRIPTION HERE]"))
+    }
+
+    func testGenerationPromptReplacesDescriptionPlaceholdersInAllLanguages() {
+        let cases: [(AppLanguage, String)] = [
+            (.englishUS, "a little rabbit finds a glowing pebble under the soft moon"),
+            (.portugueseBrazil, "um coelhinho acha um seixo brilhante sob a lua macia"),
+            (.spanishSpain, "un conejito halla un guijarro brillante bajo la luna suave")
+        ]
+        for (lang, description) in cases {
+            let filled = OfflineStoryFromPromptGenerator.filledGenerationPrompt(
+                description: description,
+                language: lang
+            )
+            XCTAssertFalse(filled.isEmpty, lang.rawValue)
+            XCTAssertFalse(
+                OfflineStoryFromPromptGenerator.containsUnresolvedDescriptionPlaceholder(filled),
+                "unresolved placeholder in \(lang.rawValue): \(filled.prefix(200))"
+            )
+            XCTAssertTrue(
+                filled.contains(description),
+                "filled prompt should include the story description for \(lang.rawValue)"
+            )
+        }
+    }
 }

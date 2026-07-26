@@ -33,8 +33,24 @@ Legacy/
 
 - Input: free-form **story seed** (base of the story).
 - Constraint: **10–20 words** (inclusive).
-- Output: title, summary, **10 scene paragraphs** (offline generator for now; swap `StoryFromPromptGenerating` later for FM).
-- **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**. UI strings (`VovoL10n`) and offline story body both follow the selected language. Story language is stored on `StoryDraft`.
+- Output: title, summary, **10 scene paragraphs**; story language stored on `StoryDraft`.
+- **Generator backends** (protocol `StoryFromPromptGenerating`):
+  - `OfflineFirstStoryGenerator` — **default for both apps**. On-device LiteRT-LM when the model is present; deterministic offline fallback in the simulator, before the model download, or on any inference error (never breaks the offline guarantee).
+  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4). Model downloaded once by `LiteRTLMModelStore` to `Documents/Vovozinha/Models/`. Always uses the `.gpu`/Metal backend. ⚠️ **Does NOT work in the iOS Simulator** — LiteRT-LM generation is device-only; `OfflineFirstStoryGenerator` routes to the offline generator in the simulator.
+  - `OfflineStoryFromPromptGenerator` — deterministic fallback, always available.
+- **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**. UI strings (`VovoL10n`) and both story bodies follow the selected language.
+
+## Static text (Markdown on disk)
+
+All user-facing / generator copy lives in **Markdown** (`## key` sections, `{{placeholders}}`), loaded by `MarkdownTextCatalog`:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| **VovoUI** | `Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md` | UI strings |
+| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/offline.<lang>.md` | Offline story templates (fallback generator) |
+| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/litert.<lang>.md` | LiteRT-LM prompt templates (instruct `TITLE:`/`SUMMARY:` + 10 paragraphs) |
+
+Edit the `.md` files and rebuild. See each folder’s `README.md`.
 
 ## Adding the next feature
 

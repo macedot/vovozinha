@@ -1,6 +1,8 @@
 # Xcode
 DerivedData/
 build/
+*.ipa
+*.xcarchive
 *.xcuserstate
 xcuserdata/
 *.moved-aside
@@ -31,3 +33,6 @@ xcuserdata/
 # SwiftPM local builds
 **/.build/
 **/Packages/*/.build/
+
+# Local agent / IDE scratch
+.zcode/
