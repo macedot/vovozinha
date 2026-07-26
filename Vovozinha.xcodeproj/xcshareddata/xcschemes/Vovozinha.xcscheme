@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1600"
-   version = "1.7">
+   version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
@@ -14,23 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DC4CA369A4514D278F03F085"
+               BlueprintIdentifier = "83A4B0CA54FED6CB455D2738"
                BuildableName = "Vovozinha.app"
                BlueprintName = "Vovozinha"
-               ReferencedContainer = "container:Vovozinha.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "NO"
-            buildForProfiling = "NO"
-            buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F9F259236675465EBDDE98FC"
-               BuildableName = "VovozinhaTests.xctest"
-               BlueprintName = "VovozinhaTests"
                ReferencedContainer = "container:Vovozinha.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -40,17 +26,15 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
+      shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
          <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
+            skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F9F259236675465EBDDE98FC"
-               BuildableName = "VovozinhaTests.xctest"
-               BlueprintName = "VovozinhaTests"
+               BlueprintIdentifier = "7D91D0E5649D11D1FA073301"
+               BuildableName = "VovozinhaUITests.xctest"
+               BlueprintName = "VovozinhaUITests"
                ReferencedContainer = "container:Vovozinha.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -70,7 +54,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DC4CA369A4514D278F03F085"
+            BlueprintIdentifier = "83A4B0CA54FED6CB455D2738"
             BuildableName = "Vovozinha.app"
             BlueprintName = "Vovozinha"
             ReferencedContainer = "container:Vovozinha.xcodeproj">
@@ -87,7 +71,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DC4CA369A4514D278F03F085"
+            BlueprintIdentifier = "83A4B0CA54FED6CB455D2738"
             BuildableName = "Vovozinha.app"
             BlueprintName = "Vovozinha"
             ReferencedContainer = "container:Vovozinha.xcodeproj">

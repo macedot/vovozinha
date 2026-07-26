@@ -26,3 +26,8 @@ xcuserdata/
 
 # Local caches / model downloads
 .cache/
+**/tmpshots/
+
+# SwiftPM local builds
+**/.build/
+**/Packages/*/.build/

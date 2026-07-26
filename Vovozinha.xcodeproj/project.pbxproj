@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AACD97F5768C8CF1DE8A8DA9 /* StoryCreationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */; };
+
+		769F382C501487D5A4E1C7A4 /* VovozinhaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */; };
+		A2C7C1D2F8603F6E3F3F0DF1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C43888ABA14734283D029121 /* Assets.xcassets */; };
+		C65C3B35C018CF99B3107CF5 /* StoryPromptDebugApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */; };
+		95B4BEC2D7C527C2DBBAD495 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A660C7ECB00D4B777FDF9314 /* Assets.xcassets */; };
+		BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = FDAB148DEF7F7A680C1CFBAE /* VovoUI */; };
+		6369BAC3FAFE01852840E6BB /* StoryPromptKit in Frameworks */ = {isa = PBXBuildFile; productRef = EEF2639B58A015CAB8F318EA /* StoryPromptKit */; };
+		2AFEE8E0D66DCE8D985CA3A3 /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = 303C87C3C1A9EC708F67FBF9 /* VovoUI */; };
+		9051061B197D17100CBECB94 /* StoryPromptKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7E93EB8C65D822994793933E /* StoryPromptKit */; };
 		E0F1A2B3C4D5E6F708192A3B /* Prompts in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B40 /* Prompts */; };
 		C8D9E0F1A2B3C4D5E6F70819 /* PromptCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */; };
 		2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */; };
@@ -62,6 +72,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VovozinhaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryCreationUITests.swift; sourceTree = "<group>"; };
+
+		84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vovozinha.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StoryPromptDebug.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaApp.swift; sourceTree = "<group>"; };
+		C43888ABA14734283D029121 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPromptDebugApp.swift; sourceTree = "<group>"; };
+		A660C7ECB00D4B777FDF9314 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1A2B3C4D5E6F708192A3B40 /* Prompts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Prompts; sourceTree = "<group>"; };
 		D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCatalog.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipExtractor.swift; sourceTree = "<group>"; };
@@ -90,7 +109,7 @@
 		04136E595C9D423A9ECA263E /* CharacterProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterProfile.swift; sourceTree = "<group>"; };
 		09D8A7E17C7048C98C60DBAC /* CreateStoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateStoryView.swift; sourceTree = "<group>"; };
 		175E6B72894E406CB1525D48 /* GenerationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationView.swift; sourceTree = "<group>"; };
-		19424526AEE446CF853F9CD1 /* Vovozinha.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vovozinha.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VovozinhaLegacy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B441C41341F44F58AF72584 /* StoryPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPlan.swift; sourceTree = "<group>"; };
 		24DA98D9E6E747DEAF1ECDCE /* StoryPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPlanner.swift; sourceTree = "<group>"; };
 		28DD12703BF84565AD317311 /* StoryGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryGenerationService.swift; sourceTree = "<group>"; };
@@ -119,6 +138,25 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+
+		EFA4819A3AD9EA72747E9A20 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */,
+				6369BAC3FAFE01852840E6BB /* StoryPromptKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB8FE134F2D21AB6F45E508B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AFEE8E0D66DCE8D985CA3A3 /* VovoUI in Frameworks */,
+				9051061B197D17100CBECB94 /* StoryPromptKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A0D77672A86145FBAC9353C0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -129,6 +167,43 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FDEBFC7735A8F38DF94F9762 /* VovozinhaUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */,
+			);
+			path = VovozinhaUITests;
+			sourceTree = "<group>";
+		};
+
+		2BEA07FD7BC7BBE6EE625993 /* Apps */ = {
+			isa = PBXGroup;
+			children = (
+				FDEBFC7735A8F38DF94F9762 /* VovozinhaUITests */,
+				F93B217AE8ACA72BAAD43E71 /* Vovozinha */,
+				10B1C7F09004BC216396ECD7 /* StoryPromptDebug */,
+			);
+			path = Apps;
+			sourceTree = "<group>";
+		};
+		F93B217AE8ACA72BAAD43E71 /* Vovozinha */ = {
+			isa = PBXGroup;
+			children = (
+				DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */,
+				C43888ABA14734283D029121 /* Assets.xcassets */,
+			);
+			path = Vovozinha;
+			sourceTree = "<group>";
+		};
+		10B1C7F09004BC216396ECD7 /* StoryPromptDebug */ = {
+			isa = PBXGroup;
+			children = (
+				5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */,
+				A660C7ECB00D4B777FDF9314 /* Assets.xcassets */,
+			);
+			path = StoryPromptDebug;
+			sourceTree = "<group>";
+		};
 		05D105B37E30414492828719 /* CreateStory */ = {
 			isa = PBXGroup;
 			children = (
@@ -223,6 +298,7 @@
 			children = (
 				9123C8C2BF524259B53A7BCE /* Vovozinha */,
 				0AD937D28E4042B9BB297D97 /* VovozinhaTests */,
+				2BEA07FD7BC7BBE6EE625993 /* Apps */,
 				BD4806846B73472E943EEFB7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -238,13 +314,16 @@
 				E94FA3185A92447BAA75F805 /* Assets.xcassets */,
 				F1A2B3C4D5E6F708192A3B40 /* Prompts */,
 			);
-			path = Vovozinha;
+			path = Legacy/VovozinhaLegacy;
 			sourceTree = "<group>";
 		};
 		BD4806846B73472E943EEFB7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				19424526AEE446CF853F9CD1 /* Vovozinha.app */,
+				84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */,
+				39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */,
+				E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */,
+				19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */,
 				D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */,
 			);
 			name = Products;
@@ -304,9 +383,69 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		DC4CA369A4514D278F03F085 /* Vovozinha */ = {
+
+		7D91D0E5649D11D1FA073301 /* VovozinhaUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "Vovozinha" */;
+			buildConfigurationList = D43C2370C4F0823F4FE4FC36 /* Build configuration list for PBXNativeTarget "VovozinhaUITests" */;
+			buildPhases = (
+				01E39D300EA2845F769B030E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0EF0A11AAB7ACDF689950562 /* PBXTargetDependency */,
+			);
+			name = VovozinhaUITests;
+			productName = VovozinhaUITests;
+			productReference = 39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+
+		83A4B0CA54FED6CB455D2738 /* Vovozinha */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5D0C59A307F94BE156766BE /* Build configuration list for PBXNativeTarget "Vovozinha" */;
+			buildPhases = (
+				84284362CFC0237CF340BEDA /* Sources */,
+				EFA4819A3AD9EA72747E9A20 /* Frameworks */,
+				52231C83BF9D5099A3A2C25F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Vovozinha;
+			packageProductDependencies = (
+				FDAB148DEF7F7A680C1CFBAE /* VovoUI */,
+				EEF2639B58A015CAB8F318EA /* StoryPromptKit */,
+			);
+			productName = Vovozinha;
+			productReference = 84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1B75E236CBD62681D68323FC /* StoryPromptDebug */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53F2A8D7E041FE2465B3EFF2 /* Build configuration list for PBXNativeTarget "StoryPromptDebug" */;
+			buildPhases = (
+				63DFDCBEC60C164A0D24B7D6 /* Sources */,
+				BB8FE134F2D21AB6F45E508B /* Frameworks */,
+				839CDD972BFA6748065AC286 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StoryPromptDebug;
+			packageProductDependencies = (
+				303C87C3C1A9EC708F67FBF9 /* VovoUI */,
+				7E93EB8C65D822994793933E /* StoryPromptKit */,
+			);
+			productName = StoryPromptDebug;
+			productReference = E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DC4CA369A4514D278F03F085 /* VovozinhaLegacy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "VovozinhaLegacy" */;
 			buildPhases = (
 				D4D2D2A8C40C42D2AF548BA0 /* Sources */,
 				A0D77672A86145FBAC9353C0 /* Frameworks */,
@@ -316,12 +455,12 @@
 			);
 			dependencies = (
 			);
-			name = Vovozinha;
+			name = VovozinhaLegacy;
 			packageProductDependencies = (
 				B8C7D6E5F4030201AABBCCDD /* StableDiffusion */,
 			);
-			productName = Vovozinha;
-			productReference = 19424526AEE446CF853F9CD1 /* Vovozinha.app */;
+			productName = VovozinhaLegacy;
+			productReference = 19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */;
 			productType = "com.apple.product-type.application";
 		};
 		F9F259236675465EBDDE98FC /* VovozinhaTests */ = {
@@ -343,16 +482,30 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXContainerItemProxy section */
+
+		14C7616AF67538386EAFB6D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EC5CFBC4C6E74023A9AF28D6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 83A4B0CA54FED6CB455D2738;
+			remoteInfo = Vovozinha;
+		};
 		DD22EE33BBCCDDEE11223344 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EC5CFBC4C6E74023A9AF28D6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = DC4CA369A4514D278F03F085;
-			remoteInfo = Vovozinha;
+			remoteInfo = VovozinhaLegacy;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
+
+		0EF0A11AAB7ACDF689950562 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 83A4B0CA54FED6CB455D2738 /* Vovozinha */;
+			targetProxy = 14C7616AF67538386EAFB6D3 /* PBXContainerItemProxy */;
+		};
 		EE11FF22AABBCCDD00112233 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DC4CA369A4514D278F03F085 /* Vovozinha */;
@@ -383,15 +536,37 @@
 			projectRoot = "";
 			packageReferences = (
 				A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
+				6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
+				482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
 			);
 			targets = (
-				DC4CA369A4514D278F03F085 /* Vovozinha */,
+				83A4B0CA54FED6CB455D2738 /* Vovozinha */,
+				7D91D0E5649D11D1FA073301 /* VovozinhaUITests */,
+				1B75E236CBD62681D68323FC /* StoryPromptDebug */,
+				DC4CA369A4514D278F03F085 /* VovozinhaLegacy */,
 				F9F259236675465EBDDE98FC /* VovozinhaTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+
+		52231C83BF9D5099A3A2C25F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2C7C1D2F8603F6E3F3F0DF1 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		839CDD972BFA6748065AC286 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				95B4BEC2D7C527C2DBBAD495 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A83A299E44684BEE93CE93AF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -404,6 +579,32 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+
+		01E39D300EA2845F769B030E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AACD97F5768C8CF1DE8A8DA9 /* StoryCreationUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		84284362CFC0237CF340BEDA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				769F382C501487D5A4E1C7A4 /* VovozinhaApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		63DFDCBEC60C164A0D24B7D6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C65C3B35C018CF99B3107CF5 /* StoryPromptDebugApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9B4B28A8B65A41D7A6BBFC75 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -471,6 +672,167 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+
+		E0F19C17CA14EBB9385D780A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Vovozinha;
+			};
+			name = Debug;
+		};
+		8874F62C79CF620C33A42DBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Vovozinha;
+			};
+			name = Release;
+		};
+
+		7BE33C2AE95BF936DBB6E3D8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+
+		442A7BE31735A7423BA250A8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+
+		D15BC8CE39D24A363A24DAD3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StoryPrompt;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+
+		2A7DE9E1339A9323561D7972 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StoryPrompt;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		1BE120C1E1D3405A8F18E1AA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -565,7 +927,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -616,7 +978,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -675,6 +1037,17 @@
 /* End XCBuildConfiguration section */
 
 
+/* Begin XCLocalSwiftPackageReference section */
+		6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/VovoUI;
+		};
+		482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/StoryPromptKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -687,6 +1060,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		FDAB148DEF7F7A680C1CFBAE /* VovoUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
+			productName = VovoUI;
+		};
+		EEF2639B58A015CAB8F318EA /* StoryPromptKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */;
+			productName = StoryPromptKit;
+		};
+		303C87C3C1A9EC708F67FBF9 /* VovoUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
+			productName = VovoUI;
+		};
+		7E93EB8C65D822994793933E /* StoryPromptKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */;
+			productName = StoryPromptKit;
+		};
 		B8C7D6E5F4030201AABBCCDD /* StableDiffusion */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
@@ -695,6 +1088,35 @@
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
+
+		D43C2370C4F0823F4FE4FC36 /* Build configuration list for PBXNativeTarget "VovozinhaUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E0F19C17CA14EBB9385D780A /* Debug */,
+				8874F62C79CF620C33A42DBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+
+		F5D0C59A307F94BE156766BE /* Build configuration list for PBXNativeTarget "Vovozinha" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7BE33C2AE95BF936DBB6E3D8 /* Debug */,
+				442A7BE31735A7423BA250A8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53F2A8D7E041FE2465B3EFF2 /* Build configuration list for PBXNativeTarget "StoryPromptDebug" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D15BC8CE39D24A363A24DAD3 /* Debug */,
+				2A7DE9E1339A9323561D7972 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "Vovozinha" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

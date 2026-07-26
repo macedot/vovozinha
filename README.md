@@ -1,6 +1,11 @@
 # Vovozinha
 
-Offline-first **children’s bedtime stories** for iOS (StoryKit-inspired): describe a character (optional photo) → on-device LLM story → text book with TTS and PDF.
+Offline-first **children’s bedtime stories** for iOS.
+
+**Branch `multi`:** modular architecture — feature kits + DEBUG harness apps + thin host.  
+See [`docs/MODULES.md`](docs/MODULES.md).
+
+Legacy monolithic app: scheme **VovozinhaLegacy**.
 
 | | |
 |--|--|
