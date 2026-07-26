@@ -85,17 +85,21 @@ enum ImagePackStore {
         let vaeDec = url.appendingPathComponent("VAEDecoder.mlmodelc").path
         let vocab = url.appendingPathComponent("vocab.json").path
         let merges = url.appendingPathComponent("merges.txt").path
-        let unet = url.appendingPathComponent("Unet.mlmodelc").path
-        let chunk1 = url.appendingPathComponent("UnetChunk1.mlmodelc").path
-        let chunk2 = url.appendingPathComponent("UnetChunk2.mlmodelc").path
 
-        let hasUnet = fm.fileExists(atPath: unet)
-            || (fm.fileExists(atPath: chunk1) && fm.fileExists(atPath: chunk2))
+        let hasUnet = hasChunkedUnet(at: url) || fm.fileExists(atPath: url.appendingPathComponent("Unet.mlmodelc").path)
         return hasUnet
             && fm.fileExists(atPath: textEncoder)
             && fm.fileExists(atPath: vaeDec)
             && fm.fileExists(atPath: vocab)
             && fm.fileExists(atPath: merges)
+    }
+
+    /// Chunked Unet peaks lower RAM than a single `Unet.mlmodelc` (preferred on iPhone).
+    static func hasChunkedUnet(at url: URL = resourcesURL) -> Bool {
+        let fm = FileManager.default
+        let chunk1 = url.appendingPathComponent("UnetChunk1.mlmodelc").path
+        let chunk2 = url.appendingPathComponent("UnetChunk2.mlmodelc").path
+        return fm.fileExists(atPath: chunk1) && fm.fileExists(atPath: chunk2)
     }
 
     /// Whether img2img temporal chain is available (VAEEncoder present).
@@ -122,45 +126,26 @@ enum ImagePackStore {
 
     static func statusSummary(lang: AppLanguage) -> String {
         if isNeuralPackReady {
-            let img2 = supportsImageToImage
-            let anime = isAnimePack
-            switch lang {
-            case .portugueseBrazil:
-                if anime {
-                    return img2
-                        ? "Pack anime (Anything V5 Ink) · img2img entre páginas."
-                        : "Pack anime instalado · sem VAEEncoder (só text2img)."
+            if isAnimePack {
+                switch lang {
+                case .portugueseBrazil:
+                    return "Pacote de imagens instalado · cenas mais ricas no aparelho."
+                case .englishUS:
+                    return "Picture pack installed · richer scenes on this device."
+                case .spanishSpain:
+                    return "Paquete de imágenes instalado · escenas más ricas en el dispositivo."
                 }
-                return img2
-                    ? "Pack Core ML (legado) · re-baixe para o pack anime."
-                    : "Pack Core ML (legado, sem img2img) · re-baixe o pack anime em Ajustes."
-            case .englishUS:
-                if anime {
-                    return img2
-                        ? "Anime pack (Anything V5 Ink) · page-to-page img2img."
-                        : "Anime pack installed · no VAEEncoder (text2img only)."
-                }
-                return img2
-                    ? "Legacy Core ML pack · re-download for the anime pack."
-                    : "Legacy Core ML pack (no img2img) · re-download the anime pack in Settings."
-            case .spanishSpain:
-                if anime {
-                    return img2
-                        ? "Pack anime (Anything V5 Ink) · img2img entre páginas."
-                        : "Pack anime instalado · sin VAEEncoder (solo text2img)."
-                }
-                return img2
-                    ? "Pack Core ML (legado) · vuelve a descargar el pack anime."
-                    : "Pack Core ML (legado, sin img2img) · descarga el pack anime en Ajustes."
             }
+            // Older / unknown pack — parent-friendly upgrade nudge.
+            return L10n.t(.settingsImagePackLegacyHint, lang)
         }
         switch lang {
         case .portugueseBrazil:
-            return "Sem pack: arte procedural. Baixe o pack anime em Ajustes (~1,5 GB). Depois fica offline."
+            return "Sem pacote de imagens · histórias usam desenhos simples. Baixe em Ajustes (~1,5 GB, Wi‑Fi)."
         case .englishUS:
-            return "No pack: procedural art. Download the anime pack in Settings (~1.5 GB). Then it stays offline."
+            return "No picture pack · stories use simple drawings. Download in Settings (~1.5 GB, Wi‑Fi)."
         case .spanishSpain:
-            return "Sin pack: arte procedural. Descarga el pack anime en Ajustes (~1,5 GB). Luego queda offline."
+            return "Sin paquete de imágenes · las historias usan dibujos simples. Descarga en Ajustes (~1,5 GB, Wi‑Fi)."
         }
     }
 }

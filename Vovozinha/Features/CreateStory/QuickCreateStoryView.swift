@@ -12,10 +12,11 @@ struct QuickCreateStoryView: View {
     @State private var photoData: Data?
     @State private var photoImage: UIImage?
     @State private var presentedDraft: StoryDraftPresentation?
+    @State private var deviceProfile = DeviceProfile.current
 
     private var lang: AppLanguage { languageStore.language }
 
-    /// Leave generate/reader covers and show the main library tab.
+    /// Leave generate/reader covers and show the library (story was just created).
     private func exitGenerationFlowToMain() {
         presentedDraft = nil
         selectedTab = .library
@@ -25,9 +26,9 @@ struct QuickCreateStoryView: View {
         !actorDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || photoData != nil
     }
 
-    private var llmReady: Bool { DeviceProfile.current.canGenerateStories }
-
-    private var canGenerate: Bool { hasActor && llmReady }
+    /// Generate is enabled whenever the actor is set. LLM availability is enforced
+    /// inside generation (not by greying out the form).
+    private var canGenerate: Bool { hasActor }
 
     var body: some View {
         NavigationStack {
@@ -43,10 +44,6 @@ struct QuickCreateStoryView: View {
 
                         if !hasActor {
                             Text(L10n.t(.createNeedActor, lang))
-                                .font(.subheadline)
-                                .foregroundStyle(VovoTheme.softPink)
-                        } else if !llmReady {
-                            Text(StoryPlanningError.llmUnavailable.localizedDescription(for: lang))
                                 .font(.subheadline)
                                 .foregroundStyle(VovoTheme.softPink)
                         }
@@ -82,6 +79,9 @@ struct QuickCreateStoryView: View {
             }
             .navigationTitle(L10n.t(.createTitle, lang))
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .onAppear {
+                deviceProfile = .current
+            }
             .onChange(of: photoItem) { _, newItem in
                 Task { await loadPhoto(newItem) }
             }
@@ -109,28 +109,16 @@ struct QuickCreateStoryView: View {
 
     @ViewBuilder
     private var capabilityBanners: some View {
-        let profile = DeviceProfile.current
-        let graphics = profile.availability(for: .graphicsPipeline, lang: lang)
-        let fm = profile.availability(for: .foundationModelsStory, lang: lang)
-
-        if !graphics.isUsable {
-            capabilityBanner(
-                icon: "paintbrush.pointed",
-                text: graphics.userMessage(lang)
-            )
-        } else if !ImagePackStore.isNeuralPackReady {
+        // Informational only: missing pack → still generate with simple drawings.
+        if deviceProfile.canRunGraphics, !ImagePackStore.isNeuralPackReady {
             capabilityBanner(
                 icon: "arrow.down.circle",
                 text: L10n.t(.createImagePackHint, lang)
             )
         }
-        if !fm.isUsable {
-            capabilityBanner(
-                icon: "apple.logo",
-                text: L10n.t(.featureBannerFoundationModelsOff, lang)
-            )
-        }
-        if !profile.canGenerateStories {
+        // Soft notice on real device when FM/pack are missing — button still works if actor is set;
+        // generation will surface a clear error if the LLM is truly unavailable.
+        if !DeviceProfile.allowsDevStoryFallback, !deviceProfile.canGenerateStories {
             capabilityBanner(
                 icon: "exclamationmark.triangle.fill",
                 text: StoryPlanningError.llmUnavailable.localizedDescription(for: lang)

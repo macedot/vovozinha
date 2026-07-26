@@ -344,11 +344,14 @@ struct GenerationView: View {
     private func run() async {
         errorMessage = nil
         finishedStory = nil
+        // Fresh profile/planner each run (dev fallback on sim / Mac / DEBUG).
+        service = StoryGenerationService.makeDefault(profile: .current)
         service.reset()
-        generationLog.info("Generation started for actor=\(self.draft.resolvedActorName(), privacy: .public)")
+        generationLog.info(
+            "Generation started actor=\(self.draft.resolvedActorName(), privacy: .public) planner=\(StoryGenerationService.plannerKind(for: .current).rawValue, privacy: .public) devFallback=\(DeviceProfile.allowsDevStoryFallback) onMac=\(DeviceProfile.isIOSAppOnMac)"
+        )
 
         do {
-            // Prefer UI language for generation too, so story language matches the bar.
             var input = draft
             input.language = lang
             let story = try await service.generate(input: input, modelContext: modelContext)
@@ -359,11 +362,39 @@ struct GenerationView: View {
             generationLog.error("Generation failed: \(msg, privacy: .public)")
             errorMessage = msg
             service.stage = .failed(msg)
+        } catch is CancellationError {
+            generationLog.notice("Generation cancelled")
         } catch {
-            // Never show raw system/English FM strings (e.g. context/transcript exceeded).
-            let planning = StoryPlanningError.from(systemError: error)
-            let msg = planning.localizedDescription(for: lang)
-            generationLog.error("Generation failed: \(msg, privacy: .public) raw=\(String(describing: error), privacy: .public)")
+            let msg = StoryPlanningError.displayMessage(
+                for: error,
+                language: lang,
+                allowsDevFallback: DeviceProfile.allowsDevStoryFallback
+            )
+            generationLog.error(
+                "Generation failed: \(msg, privacy: .public) raw=\(String(describing: error), privacy: .public)"
+            )
+            // Last resort on any dev environment: force offline story planner once.
+            if DeviceProfile.allowsDevStoryFallback {
+                generationLog.notice("Dev fallback: retrying with explicit SimulatorDevStoryPlanner")
+                do {
+                    var input = draft
+                    input.language = lang
+                    service = StoryGenerationService(
+                        analyzer: MockCharacterAnalyzer(),
+                        planner: SimulatorDevStoryPlanner(),
+                        illustrator: ProceduralKidsIllustrator()
+                    )
+                    let story = try await service.generate(input: input, modelContext: modelContext)
+                    finishedStory = story
+                    errorMessage = nil
+                    return
+                } catch {
+                    let retryMsg = StoryPlanningError.failed.localizedDescription(for: lang)
+                    errorMessage = retryMsg
+                    service.stage = .failed(retryMsg)
+                    return
+                }
+            }
             errorMessage = msg
             service.stage = .failed(msg)
         }

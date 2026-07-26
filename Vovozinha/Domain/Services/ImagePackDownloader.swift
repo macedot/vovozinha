@@ -57,11 +57,16 @@ final class ImagePackDownloader {
         if ImagePackStore.isNeuralPackReady {
             phase = .ready
             progress = 1
+            // Keep UserDefaults in sync with files (CLI install / sim Application Support).
+            AppSettings.illustrationPackInstalled = true
         } else if case .failed = phase {
             // keep failure message until user retries
         } else if !isBusy {
             phase = .idle
             progress = 0
+            if AppSettings.illustrationPackInstalled {
+                AppSettings.illustrationPackInstalled = false
+            }
         }
     }
 
@@ -91,6 +96,7 @@ final class ImagePackDownloader {
         }
         AppSettings.illustrationPackInstalled = false
         CoreMLDiffusionIllustrator.unloadPipeline()
+        CoreMLDiffusionIllustrator.resetLoadFailure()
         phase = .idle
         progress = 0
         filesDone = 0
@@ -218,6 +224,7 @@ final class ImagePackDownloader {
             try? FileManager.default.removeItem(at: zipURL)
 
             CoreMLDiffusionIllustrator.unloadPipeline()
+            CoreMLDiffusionIllustrator.resetLoadFailure()
             phase = .ready
             progress = 1
             packLog.info("Anime image pack ready at \(destRoot.path, privacy: .public)")

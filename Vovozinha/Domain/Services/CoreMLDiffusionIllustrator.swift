@@ -14,22 +14,35 @@ private let diffusionLog = Logger(subsystem: "app.vovozinha", category: "Diffusi
 /// - **Section-custom prompts** (from `SceneArtBrief.sectionPrompt`)
 /// - **Page story text** drives the new action/setting
 /// - **Locked cast** (hero + recurring elements) via prompt + img2img chain + hero re-inject
+///
+/// Memory strategy (iPhone-critical):
+/// - Always `reduceMemory: true` (models load one-at-a-time during generate)
+/// - **No eager prewarm** — `loadResources()`/`prewarmResources()` loads the full Unet once and
+///   often trips `mach_vm_allocate` right after Foundation Models story text
+/// - Skip neural when free process memory is critically low
+/// - On load/generate OOM: mark failed once and let `CompositeIllustrator` use procedural
 final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
     private static let lock = NSLock()
     private static var sharedPipeline: Any?
     private static var pipelineLoadFailed = false
 
-    var stepCount: Int = 24
-    var refineStepCount: Int = 12
+    /// Conservative defaults — quality still good with DPM-Solver; lower peaks vs 24+12.
+    var stepCount: Int = 20
+    var refineStepCount: Int = 8
     var guidanceScale: Float = 8.5
-    var refineStrength: Float = 0.24
-    var enableRefinePass: Bool = true
-    /// Base img2img strength for chain pages (higher = more change toward new page text).
-    /// Paired with continuityStrength from the request for identity vs scene balance.
-    var chainStrength: Float = 0.58
-    /// Re-inject page-0 hero every N pages (0 = off).
-    var heroReinjectionInterval: Int = 2
-    var heroBlendAlpha: CGFloat = 0.30
+    var refineStrength: Float = 0.22
+    /// Refine is a second full denoise pass; off by default to cut peak RAM ~2× on A16/A17.
+    var enableRefinePass: Bool = false
+    /// Img2img denoise for chain pages. Higher → **new scene** follows page text;
+    /// lower freezes the previous frame (looks like “same image every page”).
+    /// Identity of the actor is carried by the **prompt lock**, not by a sticky img2img.
+    var chainStrength: Float = 0.78
+    /// Re-inject page-0 hero occasionally (soft identity). Keep rare/low so scenes still change.
+    var heroReinjectionInterval: Int = 4
+    var heroBlendAlpha: CGFloat = 0.14
+
+    /// Rough floor before attempting to load SD weights (bytes). Unet alone often needs ~1–2 GB.
+    private static let minimumFreeBytesForNeural: UInt64 = 900 * 1024 * 1024
 
     func illustrate(_ request: IllustrationRequest) async throws -> UIImage {
         #if canImport(StableDiffusion)
@@ -43,17 +56,19 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
             let reinjectEvery = self.heroReinjectionInterval
             let heroAlpha = self.heroBlendAlpha
             return try await Task.detached(priority: .userInitiated) {
-                try Self.generateWithStableDiffusion(
-                    request,
-                    stepCount: steps,
-                    refineStepCount: refineSteps,
-                    guidanceScale: guidance,
-                    refineStrength: refineStrength,
-                    enableRefinePass: doRefine,
-                    chainStrength: chainStrength,
-                    heroReinjectionInterval: reinjectEvery,
-                    heroBlendAlpha: heroAlpha
-                )
+                try autoreleasepool {
+                    try Self.generateWithStableDiffusion(
+                        request,
+                        stepCount: steps,
+                        refineStepCount: refineSteps,
+                        guidanceScale: guidance,
+                        refineStrength: refineStrength,
+                        enableRefinePass: doRefine,
+                        chainStrength: chainStrength,
+                        heroReinjectionInterval: reinjectEvery,
+                        heroBlendAlpha: heroAlpha
+                    )
+                }
             }.value
         }
         #endif
@@ -79,8 +94,10 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
         }
 
         let pipeline = try loadPipeline()
-        // Shared story seed; small page offset for pose variation.
-        let seed = UInt32(truncatingIfNeeded: request.storySeed &+ UInt64(request.page.index) &* 31)
+        // Strong per-page seed so noise layout differs even when prompts share a hero lock.
+        let seed = UInt32(truncatingIfNeeded: request.pageSeed != 0
+            ? request.pageSeed
+            : request.storySeed &+ UInt64(request.page.index) &* 1_000_003)
 
         diffusionLog.info(
             "page=\(request.page.index) section=\(request.brief.sectionTag, privacy: .public)"
@@ -108,13 +125,17 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
                let ui = UIImage(data: photoData),
                let cg = cgImage(from: ui) {
                 config.startingImage = cg
-                config.strength = 0.68
+                // High strength so photo only hints identity; scene still from page text.
+                config.strength = 0.78
                 diffusionLog.info("page=0 photo establish strength=\(config.strength)")
             } else {
                 diffusionLog.info("page=0 text2img establish section=\(request.brief.sectionTag, privacy: .public)")
             }
         } else if let prev = request.previousPageImage,
-                  request.continuityStrength > 0.02 {
+                  request.continuityStrength > 0.02,
+                  ImagePackStore.supportsImageToImage {
+            // Soft chain: previous page only for light identity/style bleed.
+            // High denoise so each page’s *story text* drives a new composition.
             let startUI: UIImage
             let reinject = heroReinjectionInterval > 0
                 && request.page.index % heroReinjectionInterval == 0
@@ -127,28 +148,37 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
             }
             if let cg = cgImage(from: startUI) {
                 config.startingImage = cg
-                // Continuity high → keep more identity from previous; still room for page text.
-                // strength ≈ 0.48…0.65 depending on continuity.
-                let c = min(max(request.continuityStrength, 0.25), 0.75)
-                let strength = min(0.68, max(0.48, chainStrength + (0.55 - c) * 0.25))
+                // continuityStrength 0…1 = how sticky identity is; maps to denoise inverted.
+                // Target strength ~0.70…0.88 so scenes change clearly page-to-page.
+                let identity = min(max(request.continuityStrength, 0.15), 0.55)
+                let strength = min(0.88, max(0.70, chainStrength - identity * 0.18))
                 config.strength = strength
                 diffusionLog.info(
-                    "page=\(request.page.index) img2img strength=\(strength) continuity=\(c) section=\(request.brief.sectionTag, privacy: .public)"
+                    "page=\(request.page.index) img2img strength=\(strength) identity=\(identity) section=\(request.brief.sectionTag, privacy: .public)"
                 )
             }
         } else {
-            diffusionLog.info("page=\(request.page.index) text2img")
+            // No VAEEncoder / no previous: pure text2img; hero lock in prompt keeps the actor.
+            diffusionLog.info("page=\(request.page.index) text2img (no chain)")
         }
 
-        let draft = try runGenerate(pipeline: pipeline, config: config, label: "draft")
+        let draft: UIImage
+        do {
+            draft = try runGenerate(pipeline: pipeline, config: config, label: "draft")
+        } catch {
+            // Generation OOM → drop pipeline so later pages don't thrash.
+            markFailedAndUnload(reason: "draft generate: \(error)")
+            throw IllustrationError.failed
+        }
 
         guard enableRefinePass,
               ImagePackStore.supportsImageToImage,
               let draftCG = cgImage(from: draft) else {
+            // Free Unet/encoder weights between pages when reduceMemory is on.
+            pipeline.unloadResources()
             return draft
         }
 
-        // Refine: section + locked cast + page text (no redesign).
         let refineText = """
         masterpiece, best quality, \(request.brief.sectionPrompt), \
         \(request.brief.continuityLock), \
@@ -170,9 +200,12 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
         diffusionLog.info("page=\(request.page.index) refine strength=\(refine.strength)")
 
         do {
-            return try runGenerate(pipeline: pipeline, config: refine, label: "refine")
+            let refined = try runGenerate(pipeline: pipeline, config: refine, label: "refine")
+            pipeline.unloadResources()
+            return refined
         } catch {
             diffusionLog.error("refine failed, keeping draft: \(String(describing: error), privacy: .public)")
+            pipeline.unloadResources()
             return draft
         }
     }
@@ -217,9 +250,11 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
     ) throws -> UIImage {
         let images: [CGImage?]
         do {
-            images = try pipeline.generateImages(configuration: config) { progress in
-                diffusionLog.debug("\(label) step \(progress.step)/\(progress.stepCount)")
-                return true
+            images = try autoreleasepool {
+                try pipeline.generateImages(configuration: config) { progress in
+                    diffusionLog.debug("\(label) step \(progress.step)/\(progress.stepCount)")
+                    return true
+                }
             }
         } catch {
             diffusionLog.error("generateImages(\(label)) failed: \(String(describing: error), privacy: .public)")
@@ -246,12 +281,31 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
         guard let url = ImagePackStore.activeResourcesURL else {
             throw IllustrationError.packUnavailable
         }
-        diffusionLog.info("Loading Core ML SD pipeline from \(url.path, privacy: .public)")
 
+        let free = availableProcessMemoryBytes()
+        diffusionLog.info(
+            "Loading Core ML SD pipeline from \(url.path, privacy: .public) free≈\(free / (1024 * 1024))MB chunkedUnet=\(ImagePackStore.hasChunkedUnet(at: url))"
+        )
+
+        if free > 0, free < minimumFreeBytesForNeural {
+            pipelineLoadFailed = true
+            diffusionLog.error(
+                "skip neural: only \(free / (1024 * 1024))MB free (need ≥\(minimumFreeBytesForNeural / (1024 * 1024))MB)"
+            )
+            throw IllustrationError.packUnavailable
+        }
+
+        // Prefer ANE; never force GPU (higher peak). allowLowPrecision helps footprint.
         let mlConfig = MLModelConfiguration()
         mlConfig.computeUnits = .cpuAndNeuralEngine
+        if #available(iOS 17.0, *) {
+            mlConfig.allowLowPrecisionAccumulationOnGPU = true
+        }
 
         do {
+            // reduceMemory: true → generateImages loads/unloads TextEncoder → Unet → VAE one at a time.
+            // Do NOT call loadResources()/prewarmResources() here: prewarm still materializes the full
+            // Unet once and is a common source of mach_vm_allocate failures after LLM story gen.
             let pipeline = try StableDiffusionPipeline(
                 resourcesAt: url,
                 controlNet: [],
@@ -259,14 +313,32 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
                 disableSafety: true,
                 reduceMemory: true
             )
-            try pipeline.loadResources()
             sharedPipeline = pipeline
+            diffusionLog.info("pipeline constructed (lazy weights; first page loads models on demand)")
             return pipeline
         } catch {
             pipelineLoadFailed = true
+            sharedPipeline = nil
             diffusionLog.error("pipeline load failed: \(String(describing: error), privacy: .public)")
             throw IllustrationError.packUnavailable
         }
+    }
+
+    @available(iOS 16.2, *)
+    private static func markFailedAndUnload(reason: String) {
+        lock.lock()
+        if let p = sharedPipeline as? StableDiffusionPipeline {
+            p.unloadResources()
+        }
+        sharedPipeline = nil
+        pipelineLoadFailed = true
+        lock.unlock()
+        diffusionLog.error("neural disabled for rest of process: \(reason, privacy: .public)")
+    }
+
+    /// Bytes this process can still allocate (0 if unknown).
+    private static func availableProcessMemoryBytes() -> UInt64 {
+        UInt64(max(0, os_proc_available_memory()))
     }
     #endif
 
@@ -277,14 +349,21 @@ final class CoreMLDiffusionIllustrator: Illustrating, @unchecked Sendable {
             p.unloadResources()
         }
         sharedPipeline = nil
-        pipelineLoadFailed = false
+        // Keep pipelineLoadFailed so we don't thrash after OOM mid-story.
+        // Caller can reset via resetLoadFailure() after user frees memory / restarts.
         lock.unlock()
         #else
         lock.lock()
         sharedPipeline = nil
-        pipelineLoadFailed = false
         lock.unlock()
         #endif
+    }
+
+    /// Allow a later retry (e.g. Settings re-download, app relaunch path).
+    static func resetLoadFailure() {
+        lock.lock()
+        pipelineLoadFailed = false
+        lock.unlock()
     }
 
     private static func cgImage(from image: UIImage) -> CGImage? {

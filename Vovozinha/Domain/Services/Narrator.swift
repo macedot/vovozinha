@@ -34,9 +34,9 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     var speechLanguage: String = AppLanguage.fromSystem().speechLanguage
     var preferredVoiceIdentifier: String? = AppSettings.preferredVoiceIdentifier
     /// Pause between sentences within a page.
-    var sentencePause: TimeInterval = 0.18
+    var sentencePause: TimeInterval = 0.20
     /// Pause after a page finishes before advancing to the next (audiobook).
-    var pageGap: TimeInterval = 0.9
+    var pageGap: TimeInterval = 1.0
 
     override init() {
         super.init()

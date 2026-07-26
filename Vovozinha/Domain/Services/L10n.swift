@@ -49,6 +49,11 @@ enum L10n {
         case settingsImagePack, settingsImagePackDownload, settingsImagePackCancel
         case settingsImagePackDelete, settingsImagePackReady, settingsImagePackSizeHint
         case settingsImagePackDownloading, settingsImagePackFailed
+        case settingsImagePackIntro
+        case settingsImagePackBulletWifi, settingsImagePackBulletOffline, settingsImagePackBulletFallback
+        case settingsImagePackPhaseListing, settingsImagePackPhaseDownloading
+        case settingsImagePackPhaseExtracting, settingsImagePackPhaseVerifying
+        case settingsImagePackLegacyHint
         case settingsVoice, settingsVoiceAuto, settingsVoiceHint, settingsVoicePremiumTip
         case settingsStorage, settingsStoriesSize, settingsRefreshSize
         case settingsPrivacy, settingsPrivacyBody
@@ -219,9 +224,9 @@ enum L10n {
             .spanishSpain: "Mundo, lección, edad y estilo se eligen solos. Usa Personalizar para elegir todo."
         ],
         .createImagePackHint: [
-            .portugueseBrazil: "Estilo anime suave no pack Core ML (Ajustes, ~1,5 GB Wi‑Fi). Sem pack, a arte fica só procedural simples. Depois o pack roda offline.",
-            .englishUS: "Soft anime style needs the Core ML pack (Settings, ~1.5 GB Wi‑Fi). Without it, art stays simple procedural. Pack runs offline after download.",
-            .spanishSpain: "El estilo anime suave necesita el pack Core ML (Ajustes, ~1,5 GB Wi‑Fi). Sin pack, el arte queda procedural simple. Luego el pack corre offline."
+            .portugueseBrazil: "Quer desenhos mais ricos nas páginas? Baixe o pacote de imagens em Ajustes (~1,5 GB, Wi‑Fi). Sem o pacote, as histórias usam desenhos simples. Depois do download, tudo fica no aparelho e offline.",
+            .englishUS: "Want richer pictures on each page? Download the picture pack in Settings (~1.5 GB, Wi‑Fi). Without it, stories use simple drawings. After download, everything stays on this device and offline.",
+            .spanishSpain: "¿Quieres dibujos más ricos en cada página? Descarga el paquete de imágenes en Ajustes (~1,5 GB, Wi‑Fi). Sin el paquete, las historias usan dibujos simples. Tras la descarga, todo queda en el dispositivo y offline."
         ],
 
         .customTitle: [
@@ -543,19 +548,39 @@ enum L10n {
             .spanishSpain: "Pack neural de ilustración instalado"
         ],
         .settingsPackHint: [
-            .portugueseBrazil: "O app baixa o pack sozinho (rede só no download). Com o pack, as cenas usam um schema de anime japonês suave; sem pack fica procedural. Arte 100% offline depois.",
-            .englishUS: "The app downloads the pack itself (network only for download). With the pack, scenes use a soft Japanese anime schema; without it, art is procedural. Fully offline after that.",
-            .spanishSpain: "La app descarga el pack sola (red solo para la descarga). Con el pack, las escenas usan un schema de anime japonés suave; sin pack, arte procedural. 100% offline después."
+            .portugueseBrazil: "Opcional: um pacote de imagens deixa as páginas com cenas mais ricas. A internet só é usada no download; depois a arte roda no aparelho, offline.",
+            .englishUS: "Optional: a picture pack makes story pages look richer. The internet is only used for the download; afterward, art runs on this device, offline.",
+            .spanishSpain: "Opcional: un paquete de imágenes hace las páginas más ricas. Internet solo se usa al descargar; luego el arte corre en el dispositivo, offline."
         ],
         .settingsImagePack: [
-            .portugueseBrazil: "Pack anime (Core ML)",
-            .englishUS: "Anime image pack (Core ML)",
-            .spanishSpain: "Pack anime (Core ML)"
+            .portugueseBrazil: "Imagens da história (opcional)",
+            .englishUS: "Story pictures (optional download)",
+            .spanishSpain: "Imágenes de la historia (opcional)"
+        ],
+        .settingsImagePackIntro: [
+            .portugueseBrazil: "Pacote de ilustrações no aparelho para cenas suaves em cada página do conto.",
+            .englishUS: "On-device illustration pack for soft scenes on every story page.",
+            .spanishSpain: "Paquete de ilustraciones en el dispositivo para escenas suaves en cada página."
+        ],
+        .settingsImagePackBulletWifi: [
+            .portugueseBrazil: "Cerca de 1,5 GB · use Wi‑Fi (rede só nesta etapa).",
+            .englishUS: "About 1.5 GB · use Wi‑Fi (network only for this step).",
+            .spanishSpain: "Unos 1,5 GB · usa Wi‑Fi (red solo en este paso)."
+        ],
+        .settingsImagePackBulletOffline: [
+            .portugueseBrazil: "Depois do download, as cenas ficam no telefone e funcionam offline.",
+            .englishUS: "After download, scenes stay on this phone and work offline.",
+            .spanishSpain: "Tras la descarga, las escenas se quedan en el teléfono y funcionan offline."
+        ],
+        .settingsImagePackBulletFallback: [
+            .portugueseBrazil: "Sem o pacote, as histórias ainda funcionam com desenhos simples.",
+            .englishUS: "Without the pack, stories still work with simple drawings.",
+            .spanishSpain: "Sin el paquete, las historias siguen funcionando con dibujos simples."
         ],
         .settingsImagePackDownload: [
-            .portugueseBrazil: "Baixar pack anime de cenas",
-            .englishUS: "Download anime scene pack",
-            .spanishSpain: "Descargar pack anime de escenas"
+            .portugueseBrazil: "Baixar pacote de imagens",
+            .englishUS: "Download picture pack",
+            .spanishSpain: "Descargar paquete de imágenes"
         ],
         .settingsImagePackCancel: [
             .portugueseBrazil: "Cancelar download",
@@ -563,29 +588,54 @@ enum L10n {
             .spanishSpain: "Cancelar descarga"
         ],
         .settingsImagePackDelete: [
-            .portugueseBrazil: "Remover pack",
-            .englishUS: "Remove pack",
-            .spanishSpain: "Eliminar pack"
+            .portugueseBrazil: "Remover pacote de imagens",
+            .englishUS: "Remove picture pack",
+            .spanishSpain: "Eliminar paquete de imágenes"
         ],
         .settingsImagePackReady: [
-            .portugueseBrazil: "Pack pronto · cenas anime no aparelho",
-            .englishUS: "Pack ready · on-device anime-style scenes",
-            .spanishSpain: "Pack listo · escenas estilo anime en el dispositivo"
+            .portugueseBrazil: "Pacote pronto · cenas no aparelho",
+            .englishUS: "Picture pack ready · scenes on this device",
+            .spanishSpain: "Paquete listo · escenas en el dispositivo"
         ],
         .settingsImagePackSizeHint: [
-            .portugueseBrazil: "Anything V5 Ink (anime), ~1,5 GB zip. Use Wi‑Fi. Rede só no download; cenas rodam offline no aparelho.",
-            .englishUS: "Anything V5 Ink (anime), ~1.5 GB zip. Use Wi‑Fi. Network only to download; scenes run offline on-device.",
-            .spanishSpain: "Anything V5 Ink (anime), ~1,5 GB zip. Usa Wi‑Fi. Red solo para descargar; escenas offline en el dispositivo."
+            .portugueseBrazil: "Download único recomendado. Use Wi‑Fi; cerca de 1,5 GB. Depois fica tudo no aparelho.",
+            .englishUS: "One recommended download. Use Wi‑Fi; about 1.5 GB. Then everything stays on this device.",
+            .spanishSpain: "Una descarga recomendada. Usa Wi‑Fi; unos 1,5 GB. Luego todo queda en el dispositivo."
         ],
         .settingsImagePackDownloading: [
-            .portugueseBrazil: "Baixando pack…",
+            .portugueseBrazil: "Baixando pacote…",
             .englishUS: "Downloading pack…",
-            .spanishSpain: "Descargando pack…"
+            .spanishSpain: "Descargando paquete…"
+        ],
+        .settingsImagePackPhaseListing: [
+            .portugueseBrazil: "Preparando download…",
+            .englishUS: "Preparing download…",
+            .spanishSpain: "Preparando la descarga…"
+        ],
+        .settingsImagePackPhaseDownloading: [
+            .portugueseBrazil: "Baixando…",
+            .englishUS: "Downloading…",
+            .spanishSpain: "Descargando…"
+        ],
+        .settingsImagePackPhaseExtracting: [
+            .portugueseBrazil: "Descompactando no aparelho…",
+            .englishUS: "Unpacking on this device…",
+            .spanishSpain: "Descomprimiendo en el dispositivo…"
+        ],
+        .settingsImagePackPhaseVerifying: [
+            .portugueseBrazil: "Verificando arquivos…",
+            .englishUS: "Checking files…",
+            .spanishSpain: "Comprobando archivos…"
+        ],
+        .settingsImagePackLegacyHint: [
+            .portugueseBrazil: "Há um pacote antigo instalado. Remova e baixe de novo para as melhores imagens.",
+            .englishUS: "An older picture pack is installed. Remove it and download again for the best story pictures.",
+            .spanishSpain: "Hay un paquete antiguo instalado. Elimínalo y vuelve a descargar para las mejores imágenes."
         ],
         .settingsImagePackFailed: [
-            .portugueseBrazil: "Falha no download do pack",
-            .englishUS: "Pack download failed",
-            .spanishSpain: "Falló la descarga del pack"
+            .portugueseBrazil: "Não foi possível baixar",
+            .englishUS: "Couldn’t download",
+            .spanishSpain: "No se pudo descargar"
         ],
         .settingsVoice: [
             .portugueseBrazil: "Voz da narração",

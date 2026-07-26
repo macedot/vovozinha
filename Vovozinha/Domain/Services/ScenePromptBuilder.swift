@@ -40,20 +40,17 @@ struct StoryArtMemory: Sendable, Equatable {
         }
     }
 
-    /// Line repeated every page so the model never redesigns known subjects.
+    /// Short identity line — kept **after** the page scene in the prompt so CLIP
+    /// prioritizes *what happens on this page*, while still locking the actor.
     var continuityClause: String {
-        var parts: [String] = [
-            "LOCKED CHARACTER (identical every page): \(heroLock)"
-        ]
-        if !worldLock.isEmpty {
-            parts.append("LOCKED WORLD: \(worldLock)")
+        "LOCKED CHARACTER (identical every page, same face colors outfit): \(heroLock)"
+    }
+
+    /// Elements already introduced that also appear on the **current** page only.
+    func knownElements(appearingIn pageProps: [String]) -> [String] {
+        pageProps.filter { prop in
+            lockedElements.contains { $0.lowercased() == prop.lowercased() }
         }
-        if !lockedElements.isEmpty {
-            parts.append(
-                "LOCKED STORY ELEMENTS (same design whenever they appear): \(lockedElements.joined(separator: ", "))"
-            )
-        }
-        return parts.joined(separator: ". ")
     }
 }
 
@@ -129,40 +126,47 @@ enum ScenePromptBuilder {
             .replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
 
-        let pageScene = excerpt(cleaned, max: 170)
+        // Prefer full page paragraph — CLIP early tokens must carry THIS page’s story.
+        let pageScene = excerpt(cleaned, max: 280)
         let action = actionFocus(from: cleaned, beat: beat)
         let lighting = lightingCue(beat: beat, pageIndex: pageIndex, totalPages: totalPages, text: cleaned)
         let pageProps = propHints(from: cleaned + " " + setting)
         let isEstablish = pageIndex == 0
         let section = sectionPrompt(beat: beat, pageIndex: pageIndex, totalPages: totalPages)
 
-        // Absorb this page’s entities so they stay locked on later pages.
+        // Props already seen in the book that also appear on this page → same design.
+        let knownOnPage = mem.knownElements(appearingIn: pageProps)
+        // Absorb after matching so first appearance is not treated as “already locked”.
         mem.absorb(props: pageProps)
 
         let continuity = mem.continuityClause
-        let recurring = mem.lockedElements.isEmpty
+        let propsLine = pageProps.isEmpty
             ? ""
-            : "show recurring elements with the same design when relevant: \(mem.lockedElements.joined(separator: ", "))."
+            : "this page must show: \(pageProps.joined(separator: ", "))."
+        let sameDesignLine = knownOnPage.isEmpty
+            ? ""
+            : "same design as earlier pages for: \(knownOnPage.joined(separator: ", "))."
+        let worldHint = mem.worldLock.isEmpty ? "" : "story world can include \(mem.worldLock)."
 
-        // Custom per-section positive prompt.
-        // Order: quality + section → LOCKED cast/world/elements → this page’s story text → action.
+        // CLIP weights early tokens most. Put the **unique page scene first**, then section
+        // direction, then a short actor lock. Do NOT dump the full lock list before the scene —
+        // that made every page look almost identical.
         let positive: String
         if isEstablish {
             positive = """
-            masterpiece, best quality, \(mem.styleBit), \(section), \
-            \(continuity), \
-            establish this character clearly in the first frame, \
-            illustrate this story page exactly: \(pageScene), \
-            the hero is \(action), \(lighting)
+            PAGE 1 NEW SCENE, establish the hero clearly: \(pageScene). \
+            Hero action: \(action). \(propsLine) \
+            \(section). \(lighting). \(worldHint) \
+            \(continuity). \
+            masterpiece, best quality, \(mem.styleBit), single clear kids storybook illustration
             """
         } else {
             positive = """
-            masterpiece, best quality, \(mem.styleBit), \(section), \
-            \(continuity), \
-            do not redesign the hero or any locked story element, \
-            \(recurring) \
-            illustrate this story page exactly: \(pageScene), \
-            the hero is \(action), \(lighting)
+            PAGE \(pageIndex + 1) NEW SCENE, different composition and action from other pages: \(pageScene). \
+            Hero action now: \(action). \(propsLine) \(sameDesignLine) \
+            \(section). \(lighting). \(worldHint) \
+            \(continuity), do not redesign the hero face colors or outfit. \
+            masterpiece, best quality, \(mem.styleBit), single clear kids storybook illustration
             """
         }
 

@@ -45,11 +45,10 @@ struct ProceduralKidsIllustrator: Illustrating {
         return renderer.image { ctx in
             let cg = ctx.cgContext
 
-            // Temporal coherence: lightly composite previous page under new scene.
+            // Very light previous-frame wash only — strong underlay made every page look the same.
             if let prev = request.previousPageImage, continuity > 0.05 {
-                prev.draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: continuity * 0.55)
-                // Soft wash so new palette still reads.
-                palette.top.withAlphaComponent(0.35).setFill()
+                prev.draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: min(continuity * 0.18, 0.12))
+                palette.top.withAlphaComponent(0.55).setFill()
                 UIRectFill(CGRect(origin: .zero, size: size))
             }
 
@@ -471,9 +470,11 @@ struct ProceduralKidsIllustrator: Illustrating {
         style: ArtStyle
     ) {
         // Soft anime-ish silhouette (fallback only — true anime needs the neural pack).
-        let bob = CGFloat(pageIndex % 3) * 10 - 10
+        // Distinct pose offset per page so pages don't look stamped.
+        let bob = CGFloat((pageIndex * 17) % 5) * 18 - 36
+        let side = CGFloat((pageIndex % 4) - 1) * 28
         let drift = (unit(seed, 7) - 0.5) * 40
-        let c = CGPoint(x: size.width * 0.38 + drift, y: size.height * 0.56 + bob)
+        let c = CGPoint(x: size.width * 0.38 + drift + side, y: size.height * 0.56 + bob)
         let bodyScale: CGFloat = style == .cartoon ? 1.08 : 1.02
 
         // Cel-like body block

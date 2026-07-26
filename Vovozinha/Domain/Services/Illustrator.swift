@@ -75,6 +75,7 @@ struct CompositeIllustrator: Illustrating {
         do {
             return try await primary.illustrate(request)
         } catch {
+            // Expected when pack OOM (`mach_vm_allocate`) or load fails — keep story going.
             return try await fallback.illustrate(request)
         }
     }

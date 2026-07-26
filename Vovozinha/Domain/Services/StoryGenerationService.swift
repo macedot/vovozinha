@@ -2,6 +2,16 @@ import Foundation
 import SwiftData
 import UIKit
 import Observation
+import os
+
+private let storyGenLog = Logger(subsystem: "app.vovozinha", category: "StoryGeneration")
+
+/// Which planner `makeDefault` / `plannerKind(for:)` selects (testable without FM assets).
+enum StoryPlannerSelection: String, Equatable, Sendable {
+    case simulatorDev
+    case foundationModels
+    case unavailable
+}
 
 enum GenerationStage: Equatable, Sendable {
     case idle
@@ -60,41 +70,55 @@ final class StoryGenerationService {
 
     init(
         analyzer: any CharacterAnalyzing = MockCharacterAnalyzer(),
-        planner: any StoryPlanning = FoundationModelsStoryPlanner(),
+        planner: (any StoryPlanning)? = nil,
         illustrator: any Illustrating = ProceduralKidsIllustrator(),
         storage: FileStorage = .shared
     ) {
         self.analyzer = analyzer
-        self.planner = planner
+        self.planner = planner ?? Self.makePlanner(for: .current)
         self.illustrator = illustrator
         self.storage = storage
     }
 
-    static func makeDefault(profile: DeviceProfile = .current) -> StoryGenerationService {
-        // LLM only — never use pre-computed / template stories.
-        let planner: any StoryPlanning = {
-            switch profile.preferredStoryPlannerKind {
-            case .foundationModels:
-                return FoundationModelsStoryPlanner()
-            case .localLLMPack:
-                // Pack runtime not shipped yet; surface unavailability clearly.
-                return UnavailableLLMStoryPlanner(reason: .llmUnavailable)
-            case .none:
-                return UnavailableLLMStoryPlanner(reason: .llmUnavailable)
-            }
-        }()
+    /// Testable planner selection (mirrors `makeDefault` rules).
+    /// Dev fallback (Simulator, iOS-on-Mac, DEBUG) → offline `SimulatorDevStoryPlanner`.
+    nonisolated static func plannerKind(for profile: DeviceProfile) -> StoryPlannerSelection {
+        if DeviceProfile.allowsDevStoryFallback {
+            return .simulatorDev
+        }
+        switch profile.preferredStoryPlannerKind {
+        case .foundationModels: return .foundationModels
+        case .localLLMPack, .none: return .unavailable
+        }
+    }
 
+    nonisolated private static func makePlanner(for profile: DeviceProfile) -> any StoryPlanning {
+        switch plannerKind(for: profile) {
+        case .simulatorDev:
+            return SimulatorDevStoryPlanner()
+        case .foundationModels:
+            return FoundationModelsStoryPlanner()
+        case .unavailable:
+            return UnavailableLLMStoryPlanner(reason: .llmUnavailable)
+        }
+    }
+
+    static func makeDefault(profile: DeviceProfile = .current) -> StoryGenerationService {
+        let selection = plannerKind(for: profile)
+        storyGenLog.info("makeDefault planner=\(selection.rawValue, privacy: .public)")
         return StoryGenerationService(
             analyzer: MockCharacterAnalyzer(),
-            planner: planner,
+            planner: makePlanner(for: profile),
             illustrator: IllustratorFactory.make(profile: profile)
         )
     }
 
     func generate(input: StoryDraftInput, modelContext: ModelContext) async throws -> Story {
         deviceProfile = .current
+        let devFallback = DeviceProfile.allowsDevStoryFallback
 
-        guard deviceProfile.canGenerateStories else {
+        // Release real iPhone only: need FM/pack. Dev (sim / Mac / DEBUG) never blocked here.
+        if !devFallback, !deviceProfile.canGenerateStories {
             let err = StoryPlanningError.llmUnavailable
             stage = .failed(err.localizedDescription(for: input.language))
             throw err
@@ -121,14 +145,25 @@ final class StoryGenerationService {
 
         stage = .planningStory
         await Task.yield()
+        storyGenLog.info(
+            "planning devFallback=\(devFallback) isiOSAppOnMac=\(DeviceProfile.isIOSAppOnMac) sim=\(DeviceProfile.isRunningInSimulator)"
+        )
+
         let plan: StoryPlan
-        do {
-            plan = try await planner.plan(input: draft, character: character)
-        } catch {
-            // Map FM/context errors before they leak English into the UI.
-            let err = StoryPlanningError.from(systemError: error)
-            stage = .failed(err.localizedDescription(for: draft.language))
-            throw err
+        if devFallback {
+            // Offline draft-parameterized story — never call FM on Mac/sim/DEBUG without assets.
+            // Never throws llmUnavailable.
+            plan = try await SimulatorDevStoryPlanner().plan(input: draft, character: character)
+        } else {
+            do {
+                plan = try await planner.plan(input: draft, character: character)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                let err = StoryPlanningError.from(systemError: error)
+                stage = .failed(err.localizedDescription(for: draft.language))
+                throw err
+            }
         }
 
         let storyID = UUID()
@@ -153,6 +188,10 @@ final class StoryGenerationService {
                 setting: plan.setting,
                 artStyle: plan.artStyle
             )
+            // Story LLM can leave a large heap; give the OS a beat before Core ML SD load
+            // (avoids mach_vm_allocate right after Foundation Models).
+            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(150))
             for page in plan.pages {
                 stage = .illustrating(page: page.index + 1, total: total)
                 await Task.yield()
@@ -170,8 +209,9 @@ final class StoryGenerationService {
                 )
                 let brief = built.brief
                 artMemory = built.memory
-                // Page 0: establish. Later: enough img2img to keep designs, enough change for page text.
-                let continuity: Float = page.index == 0 ? 0.0 : 0.50
+                // Page 0: establish. Later: light identity only — high denoise so each page’s text wins.
+                // (High continuity made every page look like a slight variant of page 0.)
+                let continuity: Float = page.index == 0 ? 0.0 : 0.28
                 let request = IllustrationRequest(
                     page: page,
                     plan: plan,

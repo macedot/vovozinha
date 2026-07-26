@@ -8,6 +8,11 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertEqual(AppLanguage.resolve(preferenceRaw: "es-ES"), .spanishSpain)
     }
 
+    func testLaunchTabPrefersCreateWhenEmpty() {
+        XCTAssertEqual(AppTab.launchTab(hasStories: false), .create)
+        XCTAssertEqual(AppTab.launchTab(hasStories: true), .library)
+    }
+
     func testGraphicsPipelineEnabledForSceneArt() {
         XCTAssertTrue(FeatureFlags.graphicsEnabled)
         XCTAssertEqual(FeatureFlags.fixedPageCount, 10)
@@ -63,8 +68,9 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertGreaterThan(image.size.height, 0)
         XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("luma")
             || brief.positivePrompt.localizedCaseInsensitiveContains("bear"))
-        // The actual page paragraph must appear in the image prompt.
-        XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("illustrate this story page exactly"))
+        // Page paragraph drives the prompt (front-loaded for CLIP).
+        XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("NEW SCENE")
+            || brief.positivePrompt.localizedCaseInsensitiveContains("PAGE"))
         XCTAssertTrue(
             brief.sceneDescription.localizedCaseInsensitiveContains("forest")
                 || brief.sceneDescription.localizedCaseInsensitiveContains("walks")
@@ -73,6 +79,12 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertTrue(brief.positivePrompt.localizedCaseInsensitiveContains("forest")
             || brief.positivePrompt.localizedCaseInsensitiveContains("walks")
             || brief.positivePrompt.localizedCaseInsensitiveContains("bird"))
+        // Scene text must appear before the long character lock (otherwise pages clone).
+        if let sceneRange = brief.positivePrompt.range(of: "walks", options: .caseInsensitive)
+            ?? brief.positivePrompt.range(of: "forest", options: .caseInsensitive),
+           let lockRange = brief.positivePrompt.range(of: "LOCKED CHARACTER", options: .caseInsensitive) {
+            XCTAssertLessThan(sceneRange.lowerBound, lockRange.lowerBound)
+        }
         XCTAssertFalse(brief.negativePrompt.isEmpty)
     }
 
@@ -142,20 +154,24 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertNotEqual(establish.sectionPrompt, a.sectionPrompt)
         XCTAssertNotEqual(a.sectionPrompt, b.sectionPrompt)
 
-        // Page text still embedded.
-        XCTAssertTrue(a.positivePrompt.localizedCaseInsensitiveContains("illustrate this story page exactly"))
+        // Page text still embedded and distinct per page.
+        XCTAssertTrue(a.positivePrompt.localizedCaseInsensitiveContains("NEW SCENE")
+            || a.positivePrompt.localizedCaseInsensitiveContains("PAGE"))
         XCTAssertTrue(a.sceneDescription.localizedCaseInsensitiveContains("walks")
             || a.sceneDescription.localizedCaseInsensitiveContains("forest"))
         XCTAssertTrue(b.sceneDescription.localizedCaseInsensitiveContains("bird")
             || b.sceneDescription.localizedCaseInsensitiveContains("helps"))
         XCTAssertTrue(b.positivePrompt.localizedCaseInsensitiveContains("bird")
             || b.positivePrompt.localizedCaseInsensitiveContains("helps"))
+        XCTAssertNotEqual(a.positivePrompt, b.positivePrompt)
+        XCTAssertNotEqual(a.sceneDescription, b.sceneDescription)
 
         // Bird introduced on help page stays locked in memory afterward.
         XCTAssertTrue(memory.lockedElements.contains(where: { $0.localizedCaseInsensitiveContains("bird") }))
         XCTAssertTrue(b.continuityLock.localizedCaseInsensitiveContains("LOCKED CHARACTER")
             || b.positivePrompt.localizedCaseInsensitiveContains("LOCKED CHARACTER"))
-        XCTAssertNotEqual(a.sceneDescription, b.sceneDescription)
+        // Explore page should not force "show every locked prop" — only scene-relevant props.
+        XCTAssertFalse(a.positivePrompt.localizedCaseInsensitiveContains("LOCKED STORY ELEMENTS"))
     }
 
     func testSectionPromptsCoverAllStoryBeats() {
@@ -171,6 +187,26 @@ final class VovozinhaTests: XCTestCase {
         let pt = CharacterProfile.visualAppearanceEnglish("urso azul fofo com cachecol vermelho")
         XCTAssertTrue(pt.localizedCaseInsensitiveContains("bear") || pt.localizedCaseInsensitiveContains("blue"))
         XCTAssertTrue(pt.localizedCaseInsensitiveContains("scarf") || pt.localizedCaseInsensitiveContains("red"))
+    }
+
+    func testImagePackCopyIsParentFriendly() {
+        for lang in AppLanguage.allCases {
+            let missing = ImagePackStore.statusSummary(lang: lang)
+            XCTAssertFalse(missing.localizedCaseInsensitiveContains("VAEEncoder"))
+            XCTAssertFalse(missing.localizedCaseInsensitiveContains("img2img"))
+            XCTAssertFalse(missing.localizedCaseInsensitiveContains("Anything V5"))
+            XCTAssertFalse(missing.localizedCaseInsensitiveContains("Core ML"))
+
+            let title = L10n.t(.settingsImagePack, lang)
+            let cta = L10n.t(.settingsImagePackDownload, lang)
+            let intro = L10n.t(.settingsImagePackIntro, lang)
+            XCTAssertFalse(title.isEmpty)
+            XCTAssertFalse(cta.isEmpty)
+            XCTAssertFalse(intro.isEmpty)
+            XCTAssertFalse(title.localizedCaseInsensitiveContains("Core ML"))
+            XCTAssertFalse(cta.localizedCaseInsensitiveContains("Core ML"))
+            XCTAssertFalse(L10n.t(.settingsImagePackPhaseExtracting, lang).isEmpty)
+        }
     }
 
     func testStoryGenerationRequiresLLMNotTemplates() {
@@ -198,6 +234,210 @@ final class VovozinhaTests: XCTestCase {
             isSimulator: false
         )
         XCTAssertFalse(ios26A16.isEnabled(.foundationModelsStory))
+    }
+
+    func testSimulatorUnlocksAllResources() {
+        // Even a weak OS + A16-class sim identity still unlocks every resource for development.
+        let sim = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
+            chipClass: .a16,
+            isSimulator: true,
+            localLLMPackInstalled: false,
+            localImagePackInstalled: false
+        )
+        XCTAssertTrue(sim.isSimulator)
+        XCTAssertTrue(sim.appleIntelligenceLikely)
+        XCTAssertTrue(sim.localLLMPackInstalled)
+        XCTAssertTrue(sim.localImagePackInstalled)
+        XCTAssertTrue(sim.canGenerateStories)
+        XCTAssertEqual(sim.preferredStoryPlannerKind, .foundationModels)
+        for feature in AppFeature.userVisible {
+            XCTAssertTrue(
+                sim.isEnabled(feature),
+                "Simulator should enable \(feature.rawValue)"
+            )
+        }
+    }
+
+    func testSimulatorCanGenerateStoriesEvenWithoutPackFlags() {
+        let sim = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
+            chipClass: .unknown,
+            isSimulator: true
+        )
+        XCTAssertTrue(sim.canGenerateStories)
+        XCTAssertEqual(sim.preferredStoryPlannerKind, .foundationModels)
+    }
+
+    func testSimulatorDevPlannerBuildsShipableStory() async throws {
+        let input = StoryDraftInput.randomized(
+            actorDescription: "Alice is a very smart little girl",
+            photoData: nil,
+            language: .englishUS
+        )
+        let character = CharacterProfile.fromManual(
+            name: "Alice",
+            description: "a very smart little girl",
+            language: .englishUS
+        )
+        let plan = try await SimulatorDevStoryPlanner().plan(input: input, character: character)
+        XCTAssertEqual(plan.pages.count, 10)
+        XCTAssertTrue(plan.pages[0].text.localizedCaseInsensitiveContains("Alice"))
+        XCTAssertTrue(KidsSafetyFilter.safetyIssues(plan: plan).isEmpty)
+        // Pages must differ (not a single repeated blob).
+        XCTAssertNotEqual(plan.pages[0].text, plan.pages[5].text)
+    }
+
+    func testSimulatorAwareNeverSurfacesLLMUnavailable() async throws {
+        // Always succeeds on sim path (FM optional; dev builder is guaranteed).
+        let input = StoryDraftInput.randomized(
+            actorDescription: "Ted the blue teddy",
+            photoData: nil,
+            language: .englishUS
+        )
+        let character = CharacterProfile.fromManual(
+            name: "Ted",
+            description: "blue teddy with red scarf",
+            language: .englishUS
+        )
+        do {
+            let plan = try await SimulatorAwareStoryPlanner().plan(input: input, character: character)
+            XCTAssertEqual(plan.pages.count, 10)
+            XCTAssertFalse(plan.pages[0].text.isEmpty)
+        } catch let err as StoryPlanningError {
+            XCTAssertNotEqual(err, .llmUnavailable, "Simulator must never surface llmUnavailable")
+            XCTFail("Unexpected planning error on simulator path: \(err)")
+        }
+    }
+
+    func testPlannerKindOnSimulatorIsDev() {
+        let sim = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
+            chipClass: .a16,
+            isSimulator: true
+        )
+        // When tests run in the Simulator test host, compile-time gate forces .simulatorDev.
+        // When they run on device host (rare), profile.isSimulator still maps to .simulatorDev
+        // via runtime branch on device builds — either way must not be .unavailable.
+        let kind = StoryGenerationService.plannerKind(for: sim)
+        XCTAssertNotEqual(kind, .unavailable)
+        #if targetEnvironment(simulator)
+        XCTAssertEqual(kind, .simulatorDev)
+        #endif
+    }
+
+    func testUserFacingErrorHidesLLMUnavailableWhenDevFallback() {
+        let ptLLM = StoryPlanningError.llmUnavailable.localizedDescription(for: .portugueseBrazil)
+        XCTAssertTrue(ptLLM.localizedCaseInsensitiveContains("LLM"))
+
+        let hidden = StoryPlanningError.displayMessage(
+            for: StoryPlanningError.llmUnavailable,
+            language: .portugueseBrazil,
+            allowsDevFallback: true
+        )
+        XCTAssertFalse(
+            hidden.localizedCaseInsensitiveContains("LLM no aparelho indisponível"),
+            "Dev fallback UI must not show the product LLM-unavailable string"
+        )
+        XCTAssertEqual(
+            hidden,
+            StoryPlanningError.failed.localizedDescription(for: .portugueseBrazil)
+        )
+
+        let deviceMsg = StoryPlanningError.displayMessage(
+            for: StoryPlanningError.llmUnavailable,
+            language: .portugueseBrazil,
+            allowsDevFallback: false
+        )
+        XCTAssertTrue(deviceMsg.localizedCaseInsensitiveContains("LLM"))
+    }
+
+    func testPlannerKindIsDevWhenAllowsDevFallback() {
+        // In DEBUG / Simulator / Mac test hosts, allowsDevStoryFallback is true.
+        XCTAssertTrue(
+            DeviceProfile.allowsDevStoryFallback,
+            "Test host should allow offline dev stories"
+        )
+        let deviceShaped = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
+            chipClass: .a16,
+            isSimulator: false
+        )
+        XCTAssertEqual(StoryGenerationService.plannerKind(for: deviceShaped), .simulatorDev)
+    }
+
+    func testAllowsDevStoryFallbackCoversMacAndDebug() {
+        // Runtime flag must be true on this test host (sim or DEBUG).
+        XCTAssertTrue(DeviceProfile.allowsDevStoryFallback)
+        XCTAssertTrue(DeviceProfile.current.canGenerateStories)
+    }
+
+    func testSimulatorDevPlannerNotFixedLibrary() async throws {
+        let alice = try await SimulatorDevStoryPlanner().plan(
+            input: StoryDraftInput.randomized(
+                actorDescription: "Alice is a clever girl",
+                photoData: nil,
+                language: .englishUS
+            ),
+            character: CharacterProfile.fromManual(
+                name: "Alice",
+                description: "clever girl",
+                language: .englishUS
+            )
+        )
+        let ted = try await SimulatorDevStoryPlanner().plan(
+            input: StoryDraftInput.randomized(
+                actorDescription: "Ted is a blue teddy",
+                photoData: nil,
+                language: .englishUS
+            ),
+            character: CharacterProfile.fromManual(
+                name: "Ted",
+                description: "blue teddy",
+                language: .englishUS
+            )
+        )
+        XCTAssertTrue(alice.title.localizedCaseInsensitiveContains("Alice"))
+        XCTAssertTrue(ted.title.localizedCaseInsensitiveContains("Ted"))
+        XCTAssertNotEqual(alice.pages[0].text, ted.pages[0].text)
+    }
+
+    @MainActor
+    func testSimMakeDefaultPlanningNeverThrowsLLMUnavailable() async throws {
+        let profile = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
+            chipClass: .a16,
+            isSimulator: true
+        )
+        XCTAssertNotEqual(StoryGenerationService.plannerKind(for: profile), .unavailable)
+
+        let input = StoryDraftInput.randomized(
+            actorDescription: "Luma soft bear",
+            photoData: nil,
+            language: .englishUS
+        )
+        let character = CharacterProfile.fromManual(
+            name: "Luma",
+            description: "soft bear",
+            language: .englishUS
+        )
+        // Same planner makeDefault wires on sim builds.
+        let plan = try await SimulatorDevStoryPlanner().plan(input: input, character: character)
+        XCTAssertEqual(plan.pages.count, 10)
+    }
+
+    func testPhysicalA16StillBlockedForFoundationModelsHardware() {
+        let device = DeviceProfile.make(
+            os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0),
+            chipClass: .a16,
+            isSimulator: false
+        )
+        XCTAssertFalse(device.appleIntelligenceLikely)
+        if case .unavailableHardware = device.availability(for: .foundationModelsStory, lang: .englishUS) {
+            // expected
+        } else {
+            XCTFail("Physical A16 should still be hardware-gated for FM")
+        }
     }
 
     func testUnavailablePlannerThrowsLLMError() async {

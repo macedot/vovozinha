@@ -2,6 +2,8 @@
 
 Vovozinha stays **offline for inference**. Parents download model files once; then all page art runs on-device.
 
+**In-app UI** (Settings) uses parent-friendly labels only — “picture pack”, size, Wi‑Fi, offline after download. Model codenames (e.g. Anything V5 Ink, VAEEncoder) belong in this doc and developer tooling, not primary UI.
+
 ## Default pack (anime-tuned)
 
 | | |
@@ -61,6 +63,8 @@ pack.json   # marks pack as anime-anything-v5-ink
 
 - **iPhone 15 Pro / A17+**: best experience (Neural Engine).
 - **iPhone 15 / A16**: expect longer per-page time; `reduceMemory` stays on.
+- **Memory:** pipeline uses lazy weight load (no prewarm). Right after Foundation Models story text, free RAM can be tight — if `mach_vm_allocate` fails, art **falls back to procedural** for that run instead of crashing.
+- Prefer packs with **UnetChunk1 + UnetChunk2** (lower peak RAM than a single Unet).
 - First page after install may compile models (slow once).
 - Anime models can be more “adult-looking” than kids clipart — the app keeps strong kids **negative** prompts and only illustrates soft bedtime scenes.
 

@@ -21,6 +21,7 @@ struct CustomCreateStoryView: View {
     @State private var photoImage: UIImage?
     @State private var presentedDraft: StoryDraftPresentation?
     @State private var didSeedSuggestions = false
+    @State private var deviceProfile = DeviceProfile.current
 
     private var lang: AppLanguage { languageStore.language }
 
@@ -52,9 +53,8 @@ struct CustomCreateStoryView: View {
         customLesson.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? lesson : customLesson
     }
 
-    private var llmReady: Bool { DeviceProfile.current.canGenerateStories }
-
-    private var canGenerate: Bool { liveDraft.isValid && llmReady }
+    /// Custom form needs a valid draft; LLM is checked at generation time.
+    private var canGenerate: Bool { liveDraft.isValid }
 
     var body: some View {
         ZStack {
@@ -131,16 +131,12 @@ struct CustomCreateStoryView: View {
                             .foregroundStyle(VovoTheme.cream.opacity(0.55))
                     }
 
-                    if liveDraft.isValid && llmReady {
+                    if liveDraft.isValid {
                         Text("\(L10n.t(.customActorReady, lang)): \(liveDraft.resolvedActorName())")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(VovoTheme.mint)
-                    } else if !liveDraft.isValid {
+                    } else {
                         Text(L10n.t(.customNeedActor, lang))
-                            .font(.subheadline)
-                            .foregroundStyle(VovoTheme.softPink)
-                    } else if !llmReady {
-                        Text(StoryPlanningError.llmUnavailable.localizedDescription(for: lang))
                             .font(.subheadline)
                             .foregroundStyle(VovoTheme.softPink)
                     }
@@ -159,7 +155,10 @@ struct CustomCreateStoryView: View {
         .navigationTitle(L10n.t(.customTitle, lang))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .onAppear { seedSuggestionsIfNeeded() }
+        .onAppear {
+            deviceProfile = .current
+            seedSuggestionsIfNeeded()
+        }
         .onChange(of: languageStore.language) { _, _ in
             // Reset chips when language changes so labels match.
             setting = StoryDraftInput.settingSuggestions(for: lang).first ?? ""
@@ -200,20 +199,13 @@ struct CustomCreateStoryView: View {
 
     @ViewBuilder
     private var capabilityBanners: some View {
-        let profile = DeviceProfile.current
-        let graphics = profile.availability(for: .graphicsPipeline, lang: lang)
-        let fm = profile.availability(for: .foundationModelsStory, lang: lang)
-
-        if !graphics.isUsable {
-            capabilityBanner(icon: "paintbrush.pointed", text: graphics.userMessage(lang))
-        }
-        if !fm.isUsable {
+        if deviceProfile.canRunGraphics, !ImagePackStore.isNeuralPackReady {
             capabilityBanner(
-                icon: "apple.logo",
-                text: L10n.t(.featureBannerFoundationModelsOff, lang)
+                icon: "arrow.down.circle",
+                text: L10n.t(.createImagePackHint, lang)
             )
         }
-        if !profile.canGenerateStories {
+        if !DeviceProfile.allowsDevStoryFallback, !deviceProfile.canGenerateStories {
             capabilityBanner(
                 icon: "exclamationmark.triangle.fill",
                 text: StoryPlanningError.llmUnavailable.localizedDescription(for: lang)

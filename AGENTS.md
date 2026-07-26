@@ -17,6 +17,15 @@ export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 ```
 Xcode 27 beta; deploy iOS 18+; sim iOS 27 for UI.
 
+**Dev story invariant:** Create/Generate must **never** fail solely with “LLM unavailable” when
+`DeviceProfile.allowsDevStoryFallback` is true:
+- iOS Simulator
+- **My Mac (Designed for iPad)** (`ProcessInfo.isiOSAppOnMac`) — *not* the same as Simulator
+- Any **DEBUG** build
+Uses `SimulatorDevStoryPlanner` (draft-parameterized offline story). **Release** on a real iPhone still requires FM/pack.
+
+**Tabs:** Create (left) → Library → Settings. Launch: **Create** if no stories; **Library** if any exist.
+
 ## Code norms
 - Prefer small, focused diffs.
 - Product path: `FoundationModelsStoryPlanner` / `UnavailableLLMStoryPlanner` only — **never** reintroduce template/pre-written story planners into `makeDefault`.

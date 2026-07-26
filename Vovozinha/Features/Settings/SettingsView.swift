@@ -158,28 +158,43 @@ struct SettingsView: View {
     @ViewBuilder
     private var imagePackSection: some View {
         Text(ImagePackStore.statusSummary(lang: lang))
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(VovoTheme.cream.opacity(0.9))
+            .fixedSize(horizontal: false, vertical: true)
+
+        Text(L10n.t(.settingsImagePackIntro, lang))
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
+        VStack(alignment: .leading, spacing: 4) {
+            Label(L10n.t(.settingsImagePackBulletWifi, lang), systemImage: "wifi")
+            Label(L10n.t(.settingsImagePackBulletOffline, lang), systemImage: "iphone")
+            Label(L10n.t(.settingsImagePackBulletFallback, lang), systemImage: "paintbrush.pointed")
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .labelStyle(.titleAndIcon)
+
         Text(L10n.t(.settingsImagePackSizeHint, lang))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+
+        if ImagePackStore.isNeuralPackReady, !ImagePackStore.isAnimePack {
+            Text(L10n.t(.settingsImagePackLegacyHint, lang))
+                .font(.caption)
+                .foregroundStyle(VovoTheme.amber.opacity(0.95))
+                .fixedSize(horizontal: false, vertical: true)
+        }
 
         switch imagePackDownloader.phase {
         case .listing, .downloading, .extracting, .verifying:
             ProgressView(value: max(imagePackDownloader.progress, 0.02)) {
-                Text(L10n.t(.settingsImagePackDownloading, lang))
+                Text(imagePackPhaseLabel(imagePackDownloader.phase))
             } currentValueLabel: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(imagePackDownloader.progressPercent)% · \(imagePackDownloader.byteProgressLabel)")
                         .font(.caption.monospacedDigit())
-                    if !imagePackDownloader.currentFileName.isEmpty {
-                        Text(imagePackDownloader.currentFileName)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
                 }
             }
             Button(L10n.t(.settingsImagePackCancel, lang), role: .cancel) {
@@ -200,6 +215,7 @@ struct SettingsView: View {
             Text("\(L10n.t(.settingsImagePackFailed, lang)): \(message)")
                 .font(.caption)
                 .foregroundStyle(VovoTheme.softPink)
+                .fixedSize(horizontal: false, vertical: true)
             Button(L10n.t(.settingsImagePackDownload, lang)) {
                 imagePackDownloader.startDownload()
             }
@@ -212,6 +228,21 @@ struct SettingsView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(VovoTheme.amber)
+        }
+    }
+
+    private func imagePackPhaseLabel(_ phase: ImagePackDownloader.Phase) -> String {
+        switch phase {
+        case .listing:
+            return L10n.t(.settingsImagePackPhaseListing, lang)
+        case .downloading:
+            return L10n.t(.settingsImagePackPhaseDownloading, lang)
+        case .extracting:
+            return L10n.t(.settingsImagePackPhaseExtracting, lang)
+        case .verifying:
+            return L10n.t(.settingsImagePackPhaseVerifying, lang)
+        default:
+            return L10n.t(.settingsImagePackDownloading, lang)
         }
     }
 

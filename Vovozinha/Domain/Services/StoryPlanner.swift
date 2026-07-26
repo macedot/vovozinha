@@ -56,6 +56,26 @@ enum StoryPlanningError: LocalizedError, Equatable {
         }
     }
 
+    /// UI-facing copy. When dev offline stories are allowed (sim / Mac / DEBUG),
+    /// never show the raw “LLM unavailable” product string.
+    static func displayMessage(
+        for error: Error,
+        language: AppLanguage,
+        allowsDevFallback: Bool = DeviceProfile.allowsDevStoryFallback
+    ) -> String {
+        let mapped = StoryPlanningError.from(systemError: error)
+        if allowsDevFallback, case .llmUnavailable = mapped {
+            return StoryPlanningError.failed.localizedDescription(for: language)
+        }
+        return mapped.localizedDescription(for: language)
+    }
+
+    /// True when the localized string is the product “LLM unavailable” copy (for tests).
+    var isLLMUnavailableMessage: Bool {
+        if case .llmUnavailable = self { return true }
+        return false
+    }
+
     /// Maps system / Foundation Models errors to localized app errors.
     /// Never pass raw English system strings into the UI.
     static func from(systemError error: Error) -> StoryPlanningError {
