@@ -9,30 +9,42 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../VovoUI"),
-        // On-device LLM runtime (100% local inference). Swift API is "Early Preview".
+        // On-device LLM: Prism MLX (1-bit kernels) + mlx-swift-lm.
         //
-        // WORKAROUND: consumed as a LOCAL path dependency. SPM/Xcode otherwise fail on this
-        // package — see https://github.com/google-ai-edge/LiteRT-LM/issues/2407 — because
-        // (a) v0.14.0+ pins checksums that don't match its release binaries, and
-        // (b) SPM clones to a bare mirror and runs `git lfs pull` against that mirror, which
-        //     lacks the `prebuilt/*` LFS objects (only the GitHub remote has them).
-        // To set up the local checkout (from repo root):
-        //   git clone -b v0.13.1 https://github.com/google-ai-edge/LiteRT-LM.git ../LiteRT-LM
-        //   ./scripts/setup_litert_xcframeworks.sh
-        // Package uses local .xcframeworks/CLiteRTLM*.xcframework (not remote SPM artifacts).
-        .package(path: "../../../LiteRT-LM")
+        // WORKAROUND: both packages are LOCAL path dependencies so we can point mlx-swift-lm
+        // at the Prism 1-bit mlx-swift fork (remote SPM would pin ml-explore/mlx-swift and
+        // collide on package identity).
+        //
+        // One-time setup from the vovozinha repo root:
+        //   ./scripts/setup_bonsai_mlx.sh
+        // This clones:
+        //   ../../mlx-swift      (PrismML-Eng/mlx-swift @ prism)
+        //   ../../mlx-swift-lm  (ml-explore/mlx-swift-lm, patched to use path mlx-swift)
+        .package(path: "../../../mlx-swift"),
+        .package(path: "../../../mlx-swift-lm"),
+        .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
+        .package(url: "https://github.com/huggingface/swift-huggingface", from: "0.9.0"),
     ],
     targets: [
         .target(
             name: "StoryPromptKit",
             dependencies: [
                 "VovoUI",
-                // LiteRT-LM is for physical iOS devices only (linked on the iOS platform).
-                .product(name: "LiteRTLM", package: "LiteRT-LM", condition: .when(platforms: [.iOS]))
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXLLM", package: "mlx-swift-lm"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+                .product(name: "MLXVLM", package: "mlx-swift-lm"),
+                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
+                .product(name: "Tokenizers", package: "swift-transformers"),
+                .product(name: "HuggingFace", package: "swift-huggingface"),
             ],
             path: "Sources/StoryPromptKit",
             resources: [
                 .process("Resources")
+            ],
+            linkerSettings: [
+                .linkedLibrary("z")
             ]
         ),
         .testTarget(

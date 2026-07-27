@@ -7,7 +7,7 @@ import VovoUI
 @main
 struct StoryPromptDebugApp: App {
     @State private var languageStore = LanguageStore()
-    @State private var modelStore = LiteRTLMModelStore()
+    @State private var modelStore = BonsaiModelStore()
 
     var body: some Scene {
         WindowGroup {

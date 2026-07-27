@@ -18,12 +18,12 @@ Legacy monolithic app: scheme **VovozinhaLegacy** (reference only).
 | **Devices** | **iPhone 15+** (physical device) |
 | **AI** | **Strictly on-device** (no cloud generation) |
 | **Languages** | **pt-BR / en-US / es-ES** (language bar; default = system) |
-| **This phase** | Story description → **on-device LiteRT-LM only** (10 scenes) |
+| **This phase** | Story description → **on-device Bonsai MLX only** (10 scenes) |
 
 ## Story generation (this phase)
 
 - Short **story description** (about **10–20 words**).
-- **On-device LiteRT-LM only** (Gemma model must be installed on the device).
+- **On-device Bonsai-27B-mlx-1bit only** (MLX pack must be installed on the device).
 - **No static / template story generation.** If the model is missing or inference fails, creation **fails** with an error.
 - Output: title, summary, **exactly 10 scene paragraphs**.
 - Languages: **pt-BR / en-US / es-ES**.
@@ -33,7 +33,7 @@ Legacy monolithic app: scheme **VovozinhaLegacy** (reference only).
 
 | Device | Stories |
 |--------|---------|
-| **Physical iPhone 15+** with LiteRT-LM model downloaded | **Yes** — on-device LLM |
+| **Physical iPhone 15+** (Pro-class recommended) with Bonsai pack downloaded | **Yes** — on-device LLM |
 | Model not installed / inference fails | **No** — error (no fake story) |
 | **iOS Simulator** | **Not supported** |
 
@@ -69,14 +69,14 @@ cd Packages/StoryPromptKit && swift test
 
 1. Language bar (system / PT / EN / ES)  
 2. Enter a short **story description** (10–20 words)  
-3. **Create story** — requires on-device LiteRT-LM model  
+3. **Create story** — requires on-device Bonsai MLX model pack  
 4. Scroll to read title, summary, and 10 scenes  
 
 ## Architecture (summary)
 
 - Host: `Apps/Vovozinha` + kits `Packages/StoryPromptKit`, `Packages/VovoUI`  
 - Protocol: `StoryFromPromptGenerating`  
-- Default: `DeviceStoryGenerator` → **LiteRT-LM only** (no static body)  
+- Default: `DeviceStoryGenerator` → **Bonsai MLX only** (no static body)  
 - UI strings + LLM prompt files: Markdown under package `Resources/`  
 
 See `docs/MODULES.md` and `AGENTS.md`.
@@ -159,9 +159,10 @@ Caveats:
 1. Pick language (**PT / EN / ES**) on the language bar.  
 2. Type a short **story description** (about **10–20 words**).  
 3. **Model install (first time):**  
-   - Tap **Download model** — automatic fetch from [files.kraftek.dev](https://files.kraftek.dev/gemma4/gemma-4-E4B-it.litertlm) (**Wi‑Fi**, ~3.5 GB).  
-   - If that fails: **Open backup download page** (Hugging Face) → save to **Downloads** → **Import from Files**.  
+   - Tap **Download model** — automatic fetch of [Bonsai-27B-mlx-1bit.zip](https://files.kraftek.dev/bonsai/Bonsai-27B-mlx-1bit.zip) (**Wi‑Fi**, ~5 GB).  
+   - If that fails: **Open backup download page** ([Hugging Face](https://huggingface.co/prism-ml/Bonsai-27B-mlx-1bit)) → save zip/folder to **Downloads** → **Import from Files**.  
    - Declining leaves story creation unavailable until the model is installed.  
+   - **One-time dev setup:** `./scripts/setup_bonsai_mlx.sh` (Prism mlx-swift + mlx-swift-lm).  
 4. After the model is ready, enter a description and tap **Create story**.  
 5. Scroll to read title, summary, and **10 scenes** (model output only).
 

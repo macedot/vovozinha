@@ -40,7 +40,7 @@ On-device story model is not installed. Download it in the app before creating a
 Story model required
 
 ## storyModelGateBody
-Stories need an on-device model (~3.5 GB). Download it once over Wi‑Fi. If automatic download fails, open the backup page, save the file to Downloads, then Import.
+Stories need an on-device model (~5 GB). Download it once over Wi‑Fi. If automatic download fails, open the backup page, save the zip or folder to Downloads, then Import.
 
 ## storyModelGateDownload
 Download model
@@ -73,7 +73,7 @@ Without the on-device model, stories cannot be created. Download it, or import t
 Checking for story model…
 
 ## storyModelGateFilenameHint
-File name: gemma-4-E4B-it.litertlm. Prefer Wi‑Fi.
+Pack: Bonsai-27B-mlx-1bit (zip or folder). Prefer Wi‑Fi.
 
 ## storyValidationTooShort
 Too short

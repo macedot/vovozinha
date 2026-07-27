@@ -5,7 +5,7 @@ import VovoUI
 
 // MARK: - Test helpers
 
-final class MockLiteRTLMEngineSession: LiteRTLMEngineSessioning, @unchecked Sendable {
+final class MockMLXBonsaiEngineSession: MLXBonsaiEngineSessioning, @unchecked Sendable {
     let reply: String
     let error: (any Error)?
     private let lastPrompt = OSAllocatedUnfairLock<String?>(initialState: nil)
@@ -31,9 +31,9 @@ private func validSeed(
     StorySeedPrompt(text: text, language: language)
 }
 
-// MARK: - LiteRTLMStoryGenerator
+// MARK: - MLXBonsaiStoryGenerator
 
-final class LiteRTLMStoryGeneratorTests: XCTestCase {
+final class MLXBonsaiStoryGeneratorTests: XCTestCase {
     private static let wellFormedReply = """
     TITLE: The Glowing Pebble
     SUMMARY: A gentle bedtime tale about a curious rabbit.
@@ -60,25 +60,63 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
     """
 
     func testParsesWellFormedReplyIntoTenParagraphs() async throws {
-        let session = MockLiteRTLMEngineSession(reply: Self.wellFormedReply)
-        let gen = try LiteRTLMStoryGenerator(modelPath: "/ignored", cacheDir: "/tmp", session: session)
+        let session = MockMLXBonsaiEngineSession(reply: Self.wellFormedReply)
+        let gen = try MLXBonsaiStoryGenerator(
+            modelDirectory: URL(fileURLWithPath: "/ignored"),
+            session: session
+        )
         let draft = try await gen.generate(from: validSeed())
         XCTAssertEqual(draft.paragraphs.count, 10)
         XCTAssertEqual(draft.title, "The Glowing Pebble")
     }
 
     func testPromptIncludesSeedDescription() async throws {
-        let session = MockLiteRTLMEngineSession(reply: Self.wellFormedReply)
-        let gen = try LiteRTLMStoryGenerator(modelPath: "/ignored", cacheDir: "/tmp", session: session)
+        let session = MockMLXBonsaiEngineSession(reply: Self.wellFormedReply)
+        let gen = try MLXBonsaiStoryGenerator(
+            modelDirectory: URL(fileURLWithPath: "/ignored"),
+            session: session
+        )
         let seedText = "a brave little boat sails across a calm silver lake"
         _ = try await gen.generate(from: validSeed(seedText))
         XCTAssertTrue(try XCTUnwrap(session.capturedPrompt).contains(seedText))
     }
 
     func testNormalizeThrowsWhenTooFew() throws {
-        XCTAssertThrowsError(try LiteRTLMStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
+        XCTAssertThrowsError(try MLXBonsaiStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
             XCTAssertEqual($0 as? StoryPromptError, .generationFailed)
         }
+    }
+
+    func testStripThinkingBlocks() {
+        let raw = """
+        <think>internal notes</think>
+        TITLE: Soft Moon
+        SUMMARY: Quiet.
+
+        Para one.
+
+        Para two.
+
+        Para three.
+
+        Para four.
+
+        Para five.
+
+        Para six.
+
+        Para seven.
+
+        Para eight.
+
+        Para nine.
+
+        Para ten.
+        """
+        let cleaned = MLXBonsaiStoryGenerator.stripThinkingBlocks(raw)
+        XCTAssertFalse(cleaned.contains("<think>"))
+        let parsed = try? MLXBonsaiStoryGenerator.parse(cleaned)
+        XCTAssertEqual(parsed?.paragraphs.count, 10)
     }
 }
 
@@ -91,7 +129,7 @@ final class DeviceStoryGeneratorTests: XCTestCase {
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }
 
-        let store = LiteRTLMModelStore(documentsURL: tmp)
+        let store = BonsaiModelStore(documentsURL: tmp)
         let generator = DeviceStoryGenerator(modelStore: store)
         do {
             _ = try await generator.generate(from: validSeed())
@@ -104,28 +142,30 @@ final class DeviceStoryGeneratorTests: XCTestCase {
     }
 }
 
-// MARK: - LiteRTLMModelStore
+// MARK: - BonsaiModelStore
 
-final class LiteRTLMModelStoreTests: XCTestCase {
-    func testImportModelFromTempFileMakesModelPresent() async throws {
+final class BonsaiModelStoreTests: XCTestCase {
+    func testImportModelFromFolderMakesModelPresent() async throws {
         let docs = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: docs) }
 
-        let source = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).litertlm")
-        try Data([0x01, 0x02, 0x03, 0x04]).write(to: source)
-        defer { try? FileManager.default.removeItem(at: source) }
+        let pack = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        try Data([0x01, 0x02, 0x03, 0x04]).write(to: pack.appendingPathComponent("model.safetensors"))
+        defer { try? FileManager.default.removeItem(at: pack) }
 
-        let store = LiteRTLMModelStore(documentsURL: docs)
+        let store = BonsaiModelStore(documentsURL: docs)
         let before = await store.isModelPresent()
         XCTAssertFalse(before)
-        try await store.importModel(from: source)
+        try await store.importModel(from: pack)
         let after = await store.isModelPresent()
         XCTAssertTrue(after)
-        let dest = await store.modelFileURL()
-        XCTAssertEqual(dest.lastPathComponent, LiteRTLMModelStore.defaultModelFilename)
+        let dest = await store.modelDirectory()
+        XCTAssertEqual(dest.lastPathComponent, BonsaiModelStore.defaultModelDirectoryName)
     }
 
     func testImportEmptyFileThrows() async throws {
@@ -135,28 +175,42 @@ final class LiteRTLMModelStoreTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: docs) }
 
         let source = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).litertlm")
+            .appendingPathComponent("\(UUID().uuidString).zip")
         try Data().write(to: source)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let store = LiteRTLMModelStore(documentsURL: docs)
+        let store = BonsaiModelStore(documentsURL: docs)
         do {
             try await store.importModel(from: source)
             XCTFail("expected emptyFile")
-        } catch let e as LiteRTLMModelStore.ImportError {
+        } catch let e as BonsaiModelStore.ImportError {
             XCTAssertEqual(e, .emptyFile)
         } catch {
             XCTFail("wrong error \(error)")
         }
     }
 
-    func testHostDownloadURLIsKraftekFile() {
-        let url = LiteRTLMModelStore.defaultHostDownloadURL.absoluteString
+    func testHostDownloadURLIsKraftekZip() {
+        let url = BonsaiModelStore.defaultHostDownloadURL.absoluteString
         XCTAssertTrue(url.contains("files.kraftek.dev"))
-        XCTAssertTrue(url.contains("gemma-4-E4B-it.litertlm"))
-        XCTAssertEqual(LiteRTLMModelStore.defaultModelFilename, "gemma-4-E4B-it.litertlm")
+        XCTAssertTrue(url.contains("Bonsai-27B-mlx-1bit.zip"))
+        XCTAssertEqual(BonsaiModelStore.defaultModelDirectoryName, "Bonsai-27B-mlx-1bit")
         XCTAssertTrue(
-            LiteRTLMModelStore.defaultHostFallbackPageURL.absoluteString.contains("huggingface.co")
+            BonsaiModelStore.defaultHostFallbackPageURL.absoluteString
+                .contains("prism-ml/Bonsai-27B-mlx-1bit")
         )
+    }
+
+    func testDirectoryLooksLikeMLXPack() throws {
+        let pack = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: pack) }
+
+        XCTAssertFalse(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        XCTAssertFalse(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
+        try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
+        XCTAssertTrue(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
     }
 }

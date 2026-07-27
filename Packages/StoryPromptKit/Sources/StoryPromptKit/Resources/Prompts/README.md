@@ -1,6 +1,6 @@
 # Story generation prompts (Markdown)
 
-User-edited **LLM instructions** for LiteRT-LM. These are **not** static story bodies.
+User-edited **LLM instructions** for the on-device **Bonsai MLX** path. These are **not** static story bodies.
 
 ## Files
 
@@ -9,6 +9,8 @@ User-edited **LLM instructions** for LiteRT-LM. These are **not** static story b
 | `litert.en-US.md` | English (US) |
 | `litert.pt-BR.md` | Português (Brasil) |
 | `litert.es-ES.md` | Español (España) |
+
+(Filenames keep the historical `litert.*` prefix; content is engine-agnostic story instructions.)
 
 ## Placeholders
 
@@ -22,7 +24,7 @@ Parent story description replaces:
 
 Also: `{{seed}}`, `{{idea}}`, `{{description}}`.
 
-`StoryPromptTemplate` / `LiteRTLMStoryGenerator` perform substitution. **Never leave INSERT tokens unreplaced.**
+`StoryPromptTemplate` / `MLXBonsaiStoryGenerator` perform substitution. **Never leave INSERT tokens unreplaced.**
 
 ## Product rule
 

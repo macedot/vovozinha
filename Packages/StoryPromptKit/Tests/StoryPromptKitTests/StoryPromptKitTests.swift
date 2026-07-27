@@ -84,7 +84,7 @@ final class StoryPromptKitTests: XCTestCase {
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }
 
-        let store = LiteRTLMModelStore(documentsURL: tmp)
+        let store = BonsaiModelStore(documentsURL: tmp)
         let generator = DeviceStoryGenerator(modelStore: store)
         let seed = StorySeedPrompt(
             text: "a little rabbit finds a glowing pebble under the soft moon light",

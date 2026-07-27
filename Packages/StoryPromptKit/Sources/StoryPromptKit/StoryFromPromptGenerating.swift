@@ -9,6 +9,6 @@ public enum StoryPromptError: Error, Equatable, Sendable {
     case invalidPrompt(StorySeedPrompt.ValidationError)
     /// Model missing, inference failed, or unusable model output.
     case generationFailed
-    /// LiteRT-LM model file is not installed yet.
+    /// Bonsai MLX model pack is not installed yet.
     case modelNotInstalled
 }

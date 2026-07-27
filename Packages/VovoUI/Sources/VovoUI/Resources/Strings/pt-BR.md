@@ -40,7 +40,7 @@ O modelo de história no aparelho não está instalado. Baixe-o no app antes de 
 Modelo de história necessário
 
 ## storyModelGateBody
-As histórias precisam de um modelo no aparelho (~3,5 GB). Baixe uma vez no Wi‑Fi. Se a descarga automática falhar, abra a página alternativa, salve em Downloads e Importe.
+As histórias precisam de um modelo no aparelho (~5 GB). Baixe uma vez no Wi‑Fi. Se a descarga automática falhar, abra a página alternativa, salve o zip ou pasta em Downloads e Importe.
 
 ## storyModelGateDownload
 Baixar modelo
@@ -73,7 +73,7 @@ Sem o modelo no aparelho, não é possível criar histórias. Baixe ou importe o
 Verificando o modelo de história…
 
 ## storyModelGateFilenameHint
-Arquivo: gemma-4-E4B-it.litertlm. Prefira Wi‑Fi.
+Pacote: Bonsai-27B-mlx-1bit (zip ou pasta). Prefira Wi‑Fi.
 
 ## storyValidationTooShort
 Muito curto

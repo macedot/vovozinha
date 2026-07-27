@@ -16,7 +16,7 @@ final class StoryCreationUITests: XCTestCase {
             en.tap()
         }
 
-        // Model gate: create form only appears when LiteRT-LM is installed.
+        // Model gate: create form only appears when Bonsai MLX pack is installed.
         try waitForCreateFormOrSkipIfModelMissing(in: app)
 
         let field = app.descendants(matching: .any)["storySeedField"]
@@ -92,7 +92,7 @@ final class StoryCreationUITests: XCTestCase {
         while Date() < deadline {
             if field.exists { return }
             if download.exists {
-                throw XCTSkip("LiteRT-LM model not installed; use Download model on device (Wi‑Fi)")
+                throw XCTSkip("Bonsai MLX model not installed; use Download model on device (Wi‑Fi)")
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }

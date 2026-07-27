@@ -1,29 +1,27 @@
 import Foundation
 import VovoUI
 
-/// On-device LLM story generator backed by LiteRT-LM (Gemma 4 E4B `.litertlm` weights).
+/// On-device LLM story generator backed by **Bonsai-27B-mlx-1bit** (MLX).
 ///
-/// Inference is **100% local**. The model file is obtained out-of-band by `LiteRTLMModelStore`.
-/// There is **no** static story fallback: failures throw.
+/// Inference is **100% local**. The model directory is obtained out-of-band by
+/// `BonsaiModelStore`. There is **no** static story fallback: failures throw.
 ///
 /// Output: `StoryDraft` with title, summary, and **exactly 10 paragraphs**.
-public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
-    private let session: any LiteRTLMEngineSessioning
+public struct MLXBonsaiStoryGenerator: StoryFromPromptGenerating {
+    private let session: any MLXBonsaiEngineSessioning
 
     /// - Parameters:
-    ///   - modelPath: Filesystem path to the downloaded `.litertlm` model.
-    ///   - cacheDir: Writable dir for the compiled-model cache.
-    ///   - session: Inject a conformer for tests; defaults to the real LiteRT-LM engine.
+    ///   - modelDirectory: Filesystem URL of the unpacked MLX model pack.
+    ///   - session: Inject a conformer for tests; defaults to the real MLX engine when linked.
     public init(
-        modelPath: String,
-        cacheDir: String,
-        session: (any LiteRTLMEngineSessioning)? = nil
+        modelDirectory: URL,
+        session: (any MLXBonsaiEngineSessioning)? = nil
     ) throws {
         if let session {
             self.session = session
         } else {
-            #if canImport(LiteRTLM)
-            self.session = try LiteRTLMEngineSession(modelPath: modelPath, cacheDir: cacheDir)
+            #if canImport(MLXLLM) && canImport(MLXLMCommon)
+            self.session = MLXBonsaiEngineSession(modelDirectory: modelDirectory)
             #else
             throw StoryPromptError.generationFailed
             #endif
@@ -43,7 +41,8 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
         }
 
         let raw = try await session.send(userPrompt)
-        let parsed = try Self.parse(raw, language: lang)
+        let cleaned = Self.stripThinkingBlocks(raw)
+        let parsed = try Self.parse(cleaned, language: lang)
 
         return StoryDraft(
             title: parsed.title,
@@ -58,6 +57,20 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
 
     static func buildPrompt(seed: String, language: AppLanguage) -> String {
         StoryPromptTemplate.filledLiteRTPrompt(description: seed, language: language)
+    }
+
+    /// Drop optional Qwen-style thinking wrappers if the model emits them despite instructions.
+    static func stripThinkingBlocks(_ raw: String) -> String {
+        var text = raw
+        // <think>...</think>
+        if let regex = try? NSRegularExpression(
+            pattern: #"(?is)<think>.*?</think>"#,
+            options: []
+        ) {
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: - Response parsing
