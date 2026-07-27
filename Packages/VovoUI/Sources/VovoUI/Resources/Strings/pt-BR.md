@@ -33,6 +33,9 @@ Ideia inválida.
 ## storyGenerateFailed
 Não foi possível criar a história. Tente de novo.
 
+## storyModelNotInstalled
+O modelo de história no aparelho não está instalado. Baixe-o no app antes de criar uma história.
+
 ## storyValidationTooShort
 Muito curto
 

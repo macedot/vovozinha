@@ -35,20 +35,18 @@ Legacy/
 - Constraint: **10–20 words** (inclusive).
 - Output: title, summary, **10 scene paragraphs**; story language stored on `StoryDraft`.
 - **Generator backends** (protocol `StoryFromPromptGenerating`):
-  - `OfflineFirstStoryGenerator` — **default for both apps**. On a **physical device**: LiteRT-LM when the model is present; offline draft before the model download or on any inference error (never breaks the offline guarantee).
-  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4). Model downloaded once by `LiteRTLMModelStore` to `Documents/Vovozinha/Models/`. Metal `.gpu` backend. Samples with temperature 0.9 / topK 40 / topP 0.95 and a **random seed per generation**. A reply with fewer than 10 paragraphs fails parsing so the composite falls back (never renders empty scenes). **Physical iPhone only.**
-  - `OfflineStoryFromPromptGenerator` — template-based fallback, always available. **Analyzes the seed** (per-language stopword/common-verb filtering → up to 3 key elements) and **randomly picks one of 3 copy variants per narrative beat** (10 beats × en/pt/es), weaving the elements through the story — same seed yields a fresh story each time; the full seed text appears verbatim once (spark paragraph). Variant selection is injectable (`init(pickVariant:)`) so tests stay deterministic.
-- **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**. UI strings (`VovoL10n`) and both story bodies follow the selected language.
+  - `DeviceStoryGenerator` — **default**. Requires LiteRT-LM model on disk; **throws** if missing or on inference failure. **No static story body.**
+  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4). Model downloaded once by `LiteRTLMModelStore` to `Documents/Vovozinha/Models/`. Metal `.gpu` backend. Fewer than 10 paragraphs → generation error (never pads empty scenes).
+- **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
 ## Static text (Markdown on disk)
 
-All user-facing / generator copy lives in **Markdown** (`## key` sections, `{{placeholders}}`), loaded by `MarkdownTextCatalog`:
+UI strings and **LLM prompt instructions** (not story bodies) live in **Markdown**:
 
 | Package | Path | Purpose |
 |---------|------|---------|
 | **VovoUI** | `Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md` | UI strings |
-| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/offline.<lang>.md` | Offline story templates (fallback generator) |
-| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/litert.<lang>.md` | LiteRT-LM prompt templates (instruct `TITLE:`/`SUMMARY:` + 10 paragraphs) |
+| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/litert.<lang>.md` | LiteRT-LM prompts (`TITLE:`/`SUMMARY:` + 10 paragraphs) |
 
 Edit the `.md` files and rebuild. See each folder’s `README.md`.
 

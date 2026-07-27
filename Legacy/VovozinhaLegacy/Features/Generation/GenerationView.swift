@@ -344,11 +344,11 @@ struct GenerationView: View {
     private func run() async {
         errorMessage = nil
         finishedStory = nil
-        // Fresh profile/planner each run (dev fallback on sim / Mac / DEBUG).
+        // Fresh profile/planner each run (FM or fail — no static story).
         service = StoryGenerationService.makeDefault(profile: .current)
         service.reset()
         generationLog.info(
-            "Generation started actor=\(self.draft.resolvedActorName(), privacy: .public) planner=\(StoryGenerationService.plannerKind(for: .current).rawValue, privacy: .public) devFallback=\(DeviceProfile.allowsDevStoryFallback) onMac=\(DeviceProfile.isIOSAppOnMac)"
+            "Generation started actor=\(self.draft.resolvedActorName(), privacy: .public) planner=\(StoryGenerationService.plannerKind(for: .current).rawValue, privacy: .public) onMac=\(DeviceProfile.isIOSAppOnMac)"
         )
 
         do {
@@ -365,36 +365,10 @@ struct GenerationView: View {
         } catch is CancellationError {
             generationLog.notice("Generation cancelled")
         } catch {
-            let msg = StoryPlanningError.displayMessage(
-                for: error,
-                language: lang,
-                allowsDevFallback: DeviceProfile.allowsDevStoryFallback
-            )
+            let msg = StoryPlanningError.displayMessage(for: error, language: lang)
             generationLog.error(
                 "Generation failed: \(msg, privacy: .public) raw=\(String(describing: error), privacy: .public)"
             )
-            // Last resort on any dev environment: force offline story planner once.
-            if DeviceProfile.allowsDevStoryFallback {
-                generationLog.notice("Dev fallback: retrying with explicit OfflineDevStoryPlanner")
-                do {
-                    var input = draft
-                    input.language = lang
-                    service = StoryGenerationService(
-                        analyzer: MockCharacterAnalyzer(),
-                        planner: OfflineDevStoryPlanner(),
-                        illustrator: ProceduralKidsIllustrator()
-                    )
-                    let story = try await service.generate(input: input, modelContext: modelContext)
-                    finishedStory = story
-                    errorMessage = nil
-                    return
-                } catch {
-                    let retryMsg = StoryPlanningError.failed.localizedDescription(for: lang)
-                    errorMessage = retryMsg
-                    service.stage = .failed(retryMsg)
-                    return
-                }
-            }
             errorMessage = msg
             service.stage = .failed(msg)
         }

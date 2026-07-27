@@ -11,9 +11,8 @@ public struct StoryPromptFeatureView: View {
     @State private var generator: any StoryFromPromptGenerating
 
     public init(generator: (any StoryFromPromptGenerating)? = nil) {
-        // Default: on-device LiteRT-LM when its model is present, else offline fallback.
-        // Both apps inherit this; `StoryPromptDebug` injects an explicit generator + download UI.
-        _generator = State(initialValue: generator ?? OfflineFirstStoryGenerator())
+        // Default: on-device LiteRT-LM only (no static story). Requires the model on disk.
+        _generator = State(initialValue: generator ?? DeviceStoryGenerator())
     }
 
     private var lang: AppLanguage { languageStore.language }
@@ -180,6 +179,13 @@ public struct StoryPromptFeatureView: View {
             draft = try await generator.generate(from: seed)
         } catch let e as StorySeedPrompt.ValidationError {
             errorMessage = validationMessage(e)
+        } catch let e as StoryPromptError {
+            switch e {
+            case .modelNotInstalled:
+                errorMessage = VovoL10n.t(.storyModelNotInstalled, lang)
+            case .generationFailed, .invalidPrompt:
+                errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
+            }
         } catch {
             errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
         }

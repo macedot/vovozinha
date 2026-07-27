@@ -28,27 +28,12 @@ struct DeviceProfile: Sendable {
         ProcessInfo.processInfo.isiOSAppOnMac
     }
 
-    /// Offline draft-parameterized stories allowed (no Foundation Models required).
-    /// - iOS app on Mac (Designed for iPad)
-    /// - Any **DEBUG** build (physical device while developing)
-    /// - **Release** on a real iPhone: `false` → product FM/pack rules
-    static var allowsDevStoryFallback: Bool {
-        if isIOSAppOnMac { return true }
-        #if DEBUG
-        return true
-        #else
-        return false
-        #endif
-    }
-
     static var current: DeviceProfile {
-        let dev = allowsDevStoryFallback
         return make(
             os: .fromProcessInfo(),
             chipClass: detectChipClass(),
-            // Dev environments: unlock pack-dependent UI flags for iteration.
-            localLLMPackInstalled: dev,
-            localImagePackInstalled: dev ? true : ImagePackStore.isNeuralPackReady,
+            localLLMPackInstalled: false,
+            localImagePackInstalled: ImagePackStore.isNeuralPackReady,
             graphicsBuildEnabled: FeatureFlags.graphicsEnabled
         )
     }
@@ -60,18 +45,13 @@ struct DeviceProfile: Sendable {
         localImagePackInstalled: Bool = false,
         graphicsBuildEnabled: Bool = FeatureFlags.graphicsEnabled
     ) -> DeviceProfile {
-        let packsLLM = localLLMPackInstalled
-        let packsImage = localImagePackInstalled
-        let aiLikely = Self.computeAppleIntelligenceLikely(
-            unlockForDev: Self.allowsDevStoryFallback,
-            chipClass: chipClass
-        )
+        let aiLikely = Self.computeAppleIntelligenceLikely(chipClass: chipClass)
         return DeviceProfile(
             os: os,
             chipClass: chipClass,
             appleIntelligenceLikely: aiLikely,
-            localLLMPackInstalled: packsLLM,
-            localImagePackInstalled: packsImage,
+            localLLMPackInstalled: localLLMPackInstalled,
+            localImagePackInstalled: localImagePackInstalled,
             graphicsBuildEnabled: graphicsBuildEnabled
         )
     }
@@ -84,11 +64,7 @@ struct DeviceProfile: Sendable {
         #endif
     }
 
-    private static func computeAppleIntelligenceLikely(
-        unlockForDev: Bool,
-        chipClass: ChipClass
-    ) -> Bool {
-        if unlockForDev { return true }
+    private static func computeAppleIntelligenceLikely(chipClass: ChipClass) -> Bool {
         switch chipClass {
         case .a17OrNewer: return true
         case .a16, .unknown: return false
@@ -100,13 +76,6 @@ struct DeviceProfile: Sendable {
     }
 
     func availability(for feature: AppFeature, lang: AppLanguage = .englishUS) -> FeatureAvailability {
-        if Self.allowsDevStoryFallback {
-            if feature.requiresGraphicsBuildFlag, !graphicsBuildEnabled {
-                return .disabledInBuild(L10n.t(.featureBannerGraphicsOff, lang))
-            }
-            return .available
-        }
-
         if feature.requiresGraphicsBuildFlag, !graphicsBuildEnabled {
             return .disabledInBuild(L10n.t(.featureBannerGraphicsOff, lang))
         }
@@ -143,19 +112,16 @@ struct DeviceProfile: Sendable {
         return .available
     }
 
-    /// Prefer on-device Foundation Models, then optional local LLM pack. No template planner.
+    /// Prefer on-device Foundation Models, then optional local LLM pack. No static story body.
     var preferredStoryPlannerKind: StoryPlannerKind {
         if isEnabled(.foundationModelsStory) { return .foundationModels }
         if isEnabled(.localLLMPack) { return .localLLMPack }
-        if Self.allowsDevStoryFallback { return .foundationModels }
         return .none
     }
 
-    /// Stories require a real on-device LLM (FM or pack) on Release devices.
-    /// DEBUG / iOS-on-Mac always allows generation via offline dev planner.
+    /// Stories require a real on-device LLM (FM or pack). No template fallback.
     var canGenerateStories: Bool {
-        if Self.allowsDevStoryFallback { return true }
-        return preferredStoryPlannerKind != .none
+        preferredStoryPlannerKind != .none
     }
 
     var canUsePhotos: Bool { isEnabled(.photosPicker) }

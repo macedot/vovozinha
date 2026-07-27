@@ -205,7 +205,7 @@ struct CustomCreateStoryView: View {
                 text: L10n.t(.createImagePackHint, lang)
             )
         }
-        if !DeviceProfile.allowsDevStoryFallback, !deviceProfile.canGenerateStories {
+        if !deviceProfile.canGenerateStories {
             capabilityBanner(
                 icon: "exclamationmark.triangle.fill",
                 text: StoryPlanningError.llmUnavailable.localizedDescription(for: lang)

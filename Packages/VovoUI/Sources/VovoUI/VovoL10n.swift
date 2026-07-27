@@ -19,6 +19,7 @@ public enum VovoL10n {
         case storyScene
         case storyInvalidPrompt
         case storyGenerateFailed
+        case storyModelNotInstalled
         case storyValidationTooShort
         case storyValidationTooLong
     }

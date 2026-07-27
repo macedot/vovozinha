@@ -33,6 +33,9 @@ Invalid prompt.
 ## storyGenerateFailed
 Could not create the story. Try again.
 
+## storyModelNotInstalled
+On-device story model is not installed. Download it in the app before creating a story.
+
 ## storyValidationTooShort
 Too short
 

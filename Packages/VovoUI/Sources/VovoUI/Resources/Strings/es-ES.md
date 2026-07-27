@@ -33,6 +33,9 @@ Idea no válida.
 ## storyGenerateFailed
 No se pudo crear el cuento. Inténtalo de nuevo.
 
+## storyModelNotInstalled
+El modelo de cuento en el dispositivo no está instalado. Descárgalo en la app antes de crear un cuento.
+
 ## storyValidationTooShort
 Demasiado corto
 

@@ -4,9 +4,8 @@ import VovoUI
 
 /// DEBUG harness: runs `StoryPromptKit` alone with the shared Vovo visual template.
 ///
-/// Injects an explicit `OfflineFirstStoryGenerator` (on-device LiteRT-LM when its model is
-/// present, offline fallback otherwise) and adds a model-download control so the full LiteRT-LM
-/// path can be exercised on a physical device after the one-time fetch.
+/// Injects `DeviceStoryGenerator` (LiteRT-LM only — no static stories) and a model-download
+/// control so generation can run after the one-time model fetch.
 @main
 struct StoryPromptDebugApp: App {
     @State private var languageStore = LanguageStore()
@@ -16,7 +15,7 @@ struct StoryPromptDebugApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                StoryPromptFeatureView(generator: OfflineFirstStoryGenerator(modelStore: modelStore))
+                StoryPromptFeatureView(generator: DeviceStoryGenerator(modelStore: modelStore))
                     .navigationTitle("StoryPrompt · Debug")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarColorScheme(.dark, for: .navigationBar)

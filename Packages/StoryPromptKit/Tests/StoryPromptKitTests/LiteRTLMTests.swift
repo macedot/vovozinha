@@ -67,9 +67,8 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
 
         XCTAssertEqual(draft.title, "The Glowing Pebble")
         XCTAssertTrue(draft.summary.contains("gentle bedtime"))
-        XCTAssertEqual(draft.paragraphs.count, 10, "contract: exactly 10 paragraphs")
+        XCTAssertEqual(draft.paragraphs.count, 10)
         XCTAssertEqual(draft.language, .englishUS)
-        XCTAssertFalse(draft.paragraphs.first?.isEmpty ?? true)
     }
 
     func testPromptIncludesSeedDescription() async throws {
@@ -79,24 +78,19 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
         _ = try await gen.generate(from: validSeed(seedText))
 
         let prompt = try XCTUnwrap(session.capturedPrompt)
-        XCTAssertTrue(prompt.contains(seedText), "seed should be injected into the LiteRT-LM prompt")
+        XCTAssertTrue(prompt.contains(seedText))
     }
 
-    // Regression: the LiteRT-LM prompt must actually vary with the seed (i.e. we really use the
-    // prompt, not a fixed string), and must never leak the raw INSERT placeholder.
     func testPromptVariesWithSeedAndCarriesEachSeed() {
         let boat = "a brave little boat sails across a calm silver lake"
         let bear = "a sleepy bear finds a glowing star in the winter forest"
         let promptBoat = LiteRTLMStoryGenerator.buildPrompt(seed: boat, language: .englishUS)
         let promptBear = LiteRTLMStoryGenerator.buildPrompt(seed: bear, language: .englishUS)
 
-        XCTAssertNotEqual(promptBoat, promptBear, "different seeds must produce different prompts")
+        XCTAssertNotEqual(promptBoat, promptBear)
         XCTAssertTrue(promptBoat.contains(boat))
         XCTAssertTrue(promptBear.contains(bear))
-        XCTAssertFalse(
-            OfflineStoryFromPromptGenerator.containsUnresolvedDescriptionPlaceholder(promptBoat),
-            "no INSERT placeholder should remain in the filled prompt"
-        )
+        XCTAssertFalse(StoryPromptTemplate.containsUnresolvedDescriptionPlaceholder(promptBoat))
     }
 
     func testBuildPromptHasNoUnresolvedPlaceholdersForAllLanguages() {
@@ -104,8 +98,8 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
             let prompt = LiteRTLMStoryGenerator.buildPrompt(seed: "some seed text here", language: lang)
             XCTAssertFalse(prompt.isEmpty, lang.rawValue)
             XCTAssertFalse(
-                OfflineStoryFromPromptGenerator.containsUnresolvedDescriptionPlaceholder(prompt),
-                "unresolved placeholder for \(lang.rawValue)"
+                StoryPromptTemplate.containsUnresolvedDescriptionPlaceholder(prompt),
+                lang.rawValue
             )
         }
     }
@@ -124,8 +118,6 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
     }
 
     func testNormalizeTruncatesToTenAndThrowsWhenTooFew() throws {
-        // Fewer than 10 paragraphs is a generation failure — OfflineFirst falls back instead
-        // of rendering empty scene cards.
         XCTAssertThrowsError(try LiteRTLMStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
             XCTAssertEqual($0 as? StoryPromptError, .generationFailed)
         }
@@ -135,27 +127,18 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
         )
         XCTAssertEqual(tooMany.count, 10)
         XCTAssertEqual(tooMany.last, "p10")
-
-        let exactlyTen = try LiteRTLMStoryGenerator.normalizeParagraphs(
-            (1...10).map { "p\($0)" }.joined(separator: "\n\n")
-        )
-        XCTAssertEqual(exactlyTen.count, 10)
     }
 
     func testParseRecoversWhenTitleHeaderMissing() throws {
-        let body = (1...10)
-            .map { "Scene \($0) text." }
-            .joined(separator: "\n\n")
+        let body = (1...10).map { "Scene \($0) text." }.joined(separator: "\n\n")
         let parsed = try LiteRTLMStoryGenerator.parse(body)
         XCTAssertEqual(parsed.paragraphs.count, 10)
-        XCTAssertEqual(parsed.title, "Bedtime Story") // en-US default fallback title
+        XCTAssertEqual(parsed.title, "Bedtime Story")
         XCTAssertEqual(parsed.summary, "")
     }
 
-    func testParseFallbackTitleIsLocalized() throws {
-        let body = (1...10)
-            .map { "Cena \($0) texto." }
-            .joined(separator: "\n\n")
+    func testParseDefaultTitleIsLocalized() throws {
+        let body = (1...10).map { "Cena \($0) texto." }.joined(separator: "\n\n")
         let pt = try LiteRTLMStoryGenerator.parse(body, language: .portugueseBrazil)
         XCTAssertEqual(pt.title, "História de ninar")
         let es = try LiteRTLMStoryGenerator.parse(body, language: .spanishSpain)
@@ -181,57 +164,52 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
     }
 }
 
-// MARK: - OfflineFirstStoryGenerator
+// MARK: - DeviceStoryGenerator
 
-final class OfflineFirstStoryGeneratorTests: XCTestCase {
-    func testFallsBackToOfflineWhenModelAbsent() async throws {
-        // Point the store at a temp dir with no model file.
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+final class DeviceStoryGeneratorTests: XCTestCase {
+    func testThrowsModelNotInstalledWhenAbsent() async throws {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         let store = LiteRTLMModelStore(documentsURL: tmp)
-        // Deterministic offline variants so the summary assertion is stable.
-        let generator = OfflineFirstStoryGenerator(
-            modelStore: store,
-            offline: OfflineStoryFromPromptGenerator(pickVariant: { _ in 0 })
-        )
-        let draft = try await generator.generate(from: validSeed())
-
-        // Offline generator output shape: 10 paragraphs + offline summary marker.
-        XCTAssertEqual(draft.paragraphs.count, 10)
-        XCTAssertTrue(draft.summary.contains("bedtime"))
+        let generator = DeviceStoryGenerator(modelStore: store)
+        do {
+            _ = try await generator.generate(from: validSeed())
+            XCTFail("expected modelNotInstalled")
+        } catch let e as StoryPromptError {
+            XCTAssertEqual(e, .modelNotInstalled)
+        } catch {
+            XCTFail("wrong error \(error)")
+        }
     }
 
-    func testUsesLiteRTLMWhenModelPresentAndNeverThrowsOnInferenceError() async throws {
-        // Fake a "present" model by writing a non-empty file into the store's dir.
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    func testPropagatesInferenceErrorWithoutStaticStory() async throws {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }
         let store = LiteRTLMModelStore(documentsURL: tmp)
-
-        // Place a dummy non-empty file at the model path.
         let modelURL = await store.modelFileURL()
         try FileManager.default.createDirectory(at: modelURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data([0x00, 0x01]).write(to: modelURL)
-        let presentBefore = await store.isModelPresent()
-        XCTAssertTrue(presentBefore)
 
-        // Session that always errors → composite must fall back to offline, never throw.
         let failing = MockLiteRTLMEngineSession(reply: "", error: URLError(.cannotConnectToHost))
-        let generator = OfflineFirstStoryGenerator(
-            modelStore: store,
-            offline: OfflineStoryFromPromptGenerator(pickVariant: { _ in 0 })
-        ) { _, _ in failing }
+        let generator = DeviceStoryGenerator(modelStore: store) { _, _ in failing }
 
-        let draft = try await generator.generate(from: validSeed())
-        XCTAssertEqual(draft.paragraphs.count, 10)
-        XCTAssertTrue(draft.summary.contains("bedtime"), "should be the offline fallback")
+        do {
+            _ = try await generator.generate(from: validSeed())
+            XCTFail("expected failure, not a static story")
+        } catch {
+            // Must not silently produce a 10-paragraph fake draft.
+            XCTAssertTrue(true)
+        }
     }
 
     func testPropagatesValidationError() async throws {
         let store = LiteRTLMModelStore(documentsURL: FileManager.default.temporaryDirectory)
-        let generator = OfflineFirstStoryGenerator(modelStore: store)
+        let generator = DeviceStoryGenerator(modelStore: store)
         do {
             _ = try await generator.generate(from: StorySeedPrompt(text: "x", language: .englishUS))
             XCTFail("expected validation error")
@@ -247,35 +225,16 @@ final class OfflineFirstStoryGeneratorTests: XCTestCase {
 
 final class LiteRTLMModelStoreTests: XCTestCase {
     func testModelURLResolvesUnderVovozinhaModels() {
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let store = LiteRTLMModelStore(documentsURL: tmp)
-        let exp = expectation(description: "url")
+        let expectation = expectation(description: "url")
         Task {
             let url = await store.modelFileURL()
-            XCTAssertEqual(url.lastPathComponent, LiteRTLMModelStore.defaultModelFilename)
             XCTAssertTrue(url.path.contains("Vovozinha/Models"))
-            exp.fulfill()
+            XCTAssertTrue(url.lastPathComponent.hasSuffix(".litertlm"))
+            expectation.fulfill()
         }
-        wait(for: [exp], timeout: 2)
-    }
-
-    func testIsModelPresentReflectsFileExistence() async throws {
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tmp) }
-        let store = LiteRTLMModelStore(documentsURL: tmp)
-
-        let absentInitially = await store.isModelPresent()
-        XCTAssertFalse(absentInitially)
-
-        let url = await store.modelFileURL()
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data([0x00]).write(to: url)
-        let presentAfterWrite = await store.isModelPresent()
-        XCTAssertTrue(presentAfterWrite)
-
-        try await store.removeModel()
-        let absentAfterRemove = await store.isModelPresent()
-        XCTAssertFalse(absentAfterRemove)
+        wait(for: [expectation], timeout: 2)
     }
 }

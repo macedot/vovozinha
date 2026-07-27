@@ -18,12 +18,13 @@ Legacy monolithic app: scheme **VovozinhaLegacy** (reference only).
 | **Devices** | **iPhone 15+** (physical device) |
 | **AI** | **Strictly on-device** (no cloud generation) |
 | **Languages** | **pt-BR / en-US / es-ES** (language bar; default = system) |
-| **This phase** | Story description → on-device / offline draft (10 scenes) |
+| **This phase** | Story description → **on-device LiteRT-LM only** (10 scenes) |
 
 ## Story generation (this phase)
 
 - Short **story description** (about **10–20 words**).
-- **On-device LiteRT-LM** when the model is installed; otherwise offline draft generator.
+- **On-device LiteRT-LM only** (Gemma model must be installed on the device).
+- **No static / template story generation.** If the model is missing or inference fails, creation **fails** with an error.
 - Output: title, summary, **exactly 10 scene paragraphs**.
 - Languages: **pt-BR / en-US / es-ES**.
 - **No cloud AI** for generation.
@@ -33,7 +34,7 @@ Legacy monolithic app: scheme **VovozinhaLegacy** (reference only).
 | Device | Stories |
 |--------|---------|
 | **Physical iPhone 15+** with LiteRT-LM model downloaded | **Yes** — on-device LLM |
-| **Physical iPhone 15+** without model yet | Offline draft fallback |
+| Model not installed / inference fails | **No** — error (no fake story) |
 | **iOS Simulator** | **Not supported** |
 
 ## Dev requirements
@@ -68,15 +69,15 @@ cd Packages/StoryPromptKit && swift test
 
 1. Language bar (system / PT / EN / ES)  
 2. Enter a short **story description** (10–20 words)  
-3. **Create story** — on-device LiteRT-LM or offline draft  
+3. **Create story** — requires on-device LiteRT-LM model  
 4. Scroll to read title, summary, and 10 scenes  
 
 ## Architecture (summary)
 
 - Host: `Apps/Vovozinha` + kits `Packages/StoryPromptKit`, `Packages/VovoUI`  
 - Protocol: `StoryFromPromptGenerating`  
-- Default: `OfflineFirstStoryGenerator` (LiteRT-LM when model present; offline fallback)  
-- Static copy/prompts: Markdown under package `Resources/`  
+- Default: `DeviceStoryGenerator` → **LiteRT-LM only** (no static body)  
+- UI strings + LLM prompt files: Markdown under package `Resources/`  
 
 See `docs/MODULES.md` and `AGENTS.md`.
 
@@ -157,8 +158,8 @@ Caveats:
 
 1. Pick language (**PT / EN / ES**) on the language bar.  
 2. Type a short **story description** (about **10–20 words**).  
-3. Tap **Create story** — on-device / offline path produces title, summary, and **10 scenes**.  
-4. Scroll to read the full draft.
+3. Ensure the on-device model is installed, then tap **Create story**.  
+4. Scroll to read title, summary, and **10 scenes** (real model output only).
 
 ### Troubleshooting
 
