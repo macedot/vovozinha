@@ -8,7 +8,7 @@ private let storyGenLog = Logger(subsystem: "app.vovozinha", category: "StoryGen
 
 /// Which planner `makeDefault` / `plannerKind(for:)` selects (testable without FM assets).
 enum StoryPlannerSelection: String, Equatable, Sendable {
-    case simulatorDev
+    case offlineDev
     case foundationModels
     case unavailable
 }
@@ -81,10 +81,10 @@ final class StoryGenerationService {
     }
 
     /// Testable planner selection (mirrors `makeDefault` rules).
-    /// Dev fallback (Simulator, iOS-on-Mac, DEBUG) → offline `SimulatorDevStoryPlanner`.
+    /// Dev fallback (iOS-on-Mac, DEBUG) → offline `OfflineDevStoryPlanner`.
     nonisolated static func plannerKind(for profile: DeviceProfile) -> StoryPlannerSelection {
         if DeviceProfile.allowsDevStoryFallback {
-            return .simulatorDev
+            return .offlineDev
         }
         switch profile.preferredStoryPlannerKind {
         case .foundationModels: return .foundationModels
@@ -94,8 +94,8 @@ final class StoryGenerationService {
 
     nonisolated private static func makePlanner(for profile: DeviceProfile) -> any StoryPlanning {
         switch plannerKind(for: profile) {
-        case .simulatorDev:
-            return SimulatorDevStoryPlanner()
+        case .offlineDev:
+            return OfflineDevStoryPlanner()
         case .foundationModels:
             return FoundationModelsStoryPlanner()
         case .unavailable:
@@ -117,7 +117,7 @@ final class StoryGenerationService {
         deviceProfile = .current
         let devFallback = DeviceProfile.allowsDevStoryFallback
 
-        // Release real iPhone only: need FM/pack. Dev (sim / Mac / DEBUG) never blocked here.
+        // Release real iPhone only: need FM/pack. Dev (Mac / DEBUG) never blocked here.
         if !devFallback, !deviceProfile.canGenerateStories {
             let err = StoryPlanningError.llmUnavailable
             stage = .failed(err.localizedDescription(for: input.language))
@@ -146,14 +146,14 @@ final class StoryGenerationService {
         stage = .planningStory
         await Task.yield()
         storyGenLog.info(
-            "planning devFallback=\(devFallback) isiOSAppOnMac=\(DeviceProfile.isIOSAppOnMac) sim=\(DeviceProfile.isRunningInSimulator)"
+            "planning devFallback=\(devFallback) isiOSAppOnMac=\(DeviceProfile.isIOSAppOnMac) "
         )
 
         let plan: StoryPlan
         if devFallback {
-            // Offline draft-parameterized story — never call FM on Mac/sim/DEBUG without assets.
+            // Offline draft-parameterized story — never call FM on Mac/DEBUG without assets.
             // Never throws llmUnavailable.
-            plan = try await SimulatorDevStoryPlanner().plan(input: draft, character: character)
+            plan = try await OfflineDevStoryPlanner().plan(input: draft, character: character)
         } else {
             do {
                 plan = try await planner.plan(input: draft, character: character)

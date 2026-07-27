@@ -375,13 +375,13 @@ struct GenerationView: View {
             )
             // Last resort on any dev environment: force offline story planner once.
             if DeviceProfile.allowsDevStoryFallback {
-                generationLog.notice("Dev fallback: retrying with explicit SimulatorDevStoryPlanner")
+                generationLog.notice("Dev fallback: retrying with explicit OfflineDevStoryPlanner")
                 do {
                     var input = draft
                     input.language = lang
                     service = StoryGenerationService(
                         analyzer: MockCharacterAnalyzer(),
-                        planner: SimulatorDevStoryPlanner(),
+                        planner: OfflineDevStoryPlanner(),
                         illustrator: ProceduralKidsIllustrator()
                     )
                     let story = try await service.generate(input: input, modelContext: modelContext)

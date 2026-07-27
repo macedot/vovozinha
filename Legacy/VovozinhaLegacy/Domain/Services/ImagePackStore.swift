@@ -47,7 +47,7 @@ enum ImagePackStore {
         packRootURL.appendingPathComponent(manifestFileName)
     }
 
-    /// Documents mirror for Simulator convenience (optional).
+    /// Documents mirror for local development (optional).
     static var documentsPackURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         return docs

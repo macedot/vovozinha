@@ -5,17 +5,17 @@ import os
 import FoundationModels
 #endif
 
-private let simPlannerLog = Logger(subsystem: "app.vovozinha", category: "SimDevPlanner")
+private let offlineDevPlannerLog = Logger(subsystem: "app.vovozinha", category: "OfflineDevPlanner")
 
-/// **Simulator-only entry point for story planning.**
+/// **DEBUG / Mac (Designed for iPad) entry point for story planning.**
 ///
 /// Invariant: never surfaces `StoryPlanningError.llmUnavailable` to the UI.
 /// Tries Foundation Models when assets exist; on any failure (or if FM is missing),
-/// builds a draft-parameterized 10-page arc so Create/Generate always completes in sim.
+/// builds a draft-parameterized 10-page arc so Create/Generate always completes in DEBUG/Mac.
 ///
-/// Not used on physical devices. Not a fixed story library — pages use the current
+/// Not a fixed story library — pages use the current
 /// actor / world / lesson / language.
-struct SimulatorAwareStoryPlanner: StoryPlanning {
+struct OfflineAwareStoryPlanner: StoryPlanning {
     func plan(input: StoryDraftInput, character: CharacterProfile) async throws -> StoryPlan {
         #if canImport(FoundationModels)
         if #available(iOS 26.0, *) {
@@ -23,33 +23,33 @@ struct SimulatorAwareStoryPlanner: StoryPlanning {
             let ready = model.isAvailable || SystemLanguageModel.default.isAvailable
             if ready {
                 do {
-                    simPlannerLog.info("Simulator: trying Foundation Models")
+                    offlineDevPlannerLog.info("Dev offline: trying Foundation Models")
                     return try await FoundationModelsStoryPlanner().plan(input: input, character: character)
                 } catch is CancellationError {
                     throw CancellationError()
                 } catch {
                     // FM claimed ready then failed (common when assets flaky) → always recover.
-                    simPlannerLog.notice(
-                        "Simulator: FM failed (\(String(describing: error), privacy: .public)) — dev story builder"
+                    offlineDevPlannerLog.notice(
+                        "Dev offline: FM failed (\(String(describing: error), privacy: .public)) — dev story builder"
                     )
                 }
             } else {
-                simPlannerLog.notice("Simulator: Foundation Models not ready — dev story builder")
+                offlineDevPlannerLog.notice("Dev offline: Foundation Models not ready — dev story builder")
             }
         } else {
-            simPlannerLog.notice("Simulator: iOS < 26 — dev story builder")
+            offlineDevPlannerLog.notice("Dev offline: iOS < 26 — dev story builder")
         }
         #else
-        simPlannerLog.notice("Simulator: FoundationModels not linked — dev story builder")
+        offlineDevPlannerLog.notice("Dev offline: FoundationModels not linked — dev story builder")
         #endif
 
-        return try await SimulatorDevStoryPlanner().plan(input: input, character: character)
+        return try await OfflineDevStoryPlanner().plan(input: input, character: character)
     }
 }
 
-/// Builds a gentle continuous 10-page story from the draft (Simulator development only).
+/// Builds a gentle continuous 10-page story from the draft (DEBUG development only).
 /// Prefer never throwing (except cancellation).
-struct SimulatorDevStoryPlanner: StoryPlanning {
+struct OfflineDevStoryPlanner: StoryPlanning {
     func plan(input: StoryDraftInput, character: CharacterProfile) async throws -> StoryPlan {
         try Task.checkCancellation()
         try await Task.sleep(for: .milliseconds(200))
@@ -87,7 +87,7 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
         plan = StoryDraftRepair.repair(plan, language: lang)
 
         if !KidsSafetyFilter.safetyIssues(plan: plan).isEmpty {
-            simPlannerLog.notice("Simulator dev plan safety issues — using ultra-safe pages")
+            offlineDevPlannerLog.notice("Offline dev plan safety issues — using ultra-safe pages")
             plan = Self.ultraSafePlan(
                 name: name,
                 world: world,
@@ -113,7 +113,7 @@ struct SimulatorDevStoryPlanner: StoryPlanning {
             )
         }
 
-        simPlannerLog.info("Simulator dev story ready words=\(KidsSafetyFilter.wordCount(plan))")
+        offlineDevPlannerLog.info("Offline dev story ready words=\(KidsSafetyFilter.wordCount(plan))")
         return plan
     }
 

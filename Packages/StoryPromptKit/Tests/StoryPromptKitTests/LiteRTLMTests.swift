@@ -204,7 +204,7 @@ final class OfflineFirstStoryGeneratorTests: XCTestCase {
     }
 
     func testUsesLiteRTLMWhenModelPresentAndNeverThrowsOnInferenceError() async throws {
-        // Simulate a "present" model by writing a non-empty file into the store's dir.
+        // Fake a "present" model by writing a non-empty file into the store's dir.
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }

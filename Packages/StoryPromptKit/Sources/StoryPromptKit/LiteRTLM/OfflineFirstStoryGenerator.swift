@@ -4,11 +4,9 @@ import VovoUI
 /// Default generator for the apps: use **on-device LiteRT-LM** when the model is present,
 /// and fall back to the deterministic offline generator so the app stays usable without a model.
 ///
-/// Decision rule (per `generate(from:)` on a **physical iOS device**):
+/// Decision rule (per `generate(from:)`):
 /// 1. No model file on disk → offline (model not yet downloaded).
 /// 2. Model present → LiteRT-LM; on **any** inference error → offline (never throws for LLM failures).
-///
-/// Product target is **physical iPhone only**. Non-device build configurations use offline only.
 ///
 /// Validation errors (`StorySeedPrompt.ValidationError`) are always propagated unchanged so the
 /// UI's specific too-short/too-long messaging keeps working.
@@ -36,8 +34,7 @@ public struct OfflineFirstStoryGenerator: StoryFromPromptGenerating {
         self.sessionProvider = sessionProvider
     }
 
-    /// Builds the real LiteRT-LM engine session. Device-only product path.
-    #if os(iOS) && !targetEnvironment(simulator)
+    #if canImport(LiteRTLM)
     static let defaultSessionProvider: @Sendable (String, String) throws -> any LiteRTLMEngineSessioning = { modelPath, cacheDir in
         try LiteRTLMEngineSession(modelPath: modelPath, cacheDir: cacheDir)
     }
@@ -50,8 +47,7 @@ public struct OfflineFirstStoryGenerator: StoryFromPromptGenerating {
     public func generate(from prompt: StorySeedPrompt) async throws -> StoryDraft {
         try prompt.validate()
 
-        #if os(iOS) && !targetEnvironment(simulator)
-        // Physical device: LiteRT-LM when model is present; offline otherwise / on failure.
+        #if canImport(LiteRTLM)
         guard await modelStore.isModelPresent() else {
             return try await offline.generate(from: prompt)
         }
@@ -68,7 +64,6 @@ public struct OfflineFirstStoryGenerator: StoryFromPromptGenerating {
             return try await offline.generate(from: prompt)
         }
         #else
-        // Non-device configurations are not a supported product target.
         return try await offline.generate(from: prompt)
         #endif
     }

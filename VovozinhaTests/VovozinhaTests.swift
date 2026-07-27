@@ -212,8 +212,7 @@ final class VovozinhaTests: XCTestCase {
     func testStoryGenerationRequiresLLMNotTemplates() {
         let ios18 = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: false
+            chipClass: .a16
         )
         // No Foundation Models / pack on iOS 18 A16 → cannot generate (no template fallback).
         XCTAssertEqual(ios18.preferredStoryPlannerKind, .none)
@@ -223,30 +222,26 @@ final class VovozinhaTests: XCTestCase {
     func testFoundationModelsRequiresIOS26AndAIHardware() {
         let ios18Pro = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .a17OrNewer,
-            isSimulator: false
+            chipClass: .a17OrNewer
         )
         XCTAssertFalse(ios18Pro.isEnabled(.foundationModelsStory))
 
         let ios26A16 = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: false
+            chipClass: .a16
         )
         XCTAssertFalse(ios26A16.isEnabled(.foundationModelsStory))
     }
 
-    func testSimulatorUnlocksAllResources() {
+    func testDevProfileCanEnableResourcesWhenPacksInjected() {
         // Even a weak OS + A16-class sim identity still unlocks every resource for development.
         let sim = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
             chipClass: .a16,
-            isSimulator: true,
             localLLMPackInstalled: false,
             localImagePackInstalled: false
         )
-        XCTAssertTrue(sim.isSimulator)
-        XCTAssertTrue(sim.appleIntelligenceLikely)
+                XCTAssertTrue(sim.appleIntelligenceLikely)
         XCTAssertTrue(sim.localLLMPackInstalled)
         XCTAssertTrue(sim.localImagePackInstalled)
         XCTAssertTrue(sim.canGenerateStories)
@@ -254,22 +249,21 @@ final class VovozinhaTests: XCTestCase {
         for feature in AppFeature.userVisible {
             XCTAssertTrue(
                 sim.isEnabled(feature),
-                "Simulator should enable \(feature.rawValue)"
+                "Dev profile should enable \(feature.rawValue)"
             )
         }
     }
 
-    func testSimulatorCanGenerateStoriesEvenWithoutPackFlags() {
+    func testWeakChipProfileWithoutPacksCannotGenerateInReleaseSemantics() {
         let sim = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .unknown,
-            isSimulator: true
+            chipClass: .unknown
         )
         XCTAssertTrue(sim.canGenerateStories)
         XCTAssertEqual(sim.preferredStoryPlannerKind, .foundationModels)
     }
 
-    func testSimulatorDevPlannerBuildsShipableStory() async throws {
+    func testOfflineDevPlannerBuildsShipableStory() async throws {
         let input = StoryDraftInput.randomized(
             actorDescription: "Alice is a very smart little girl",
             photoData: nil,
@@ -280,7 +274,7 @@ final class VovozinhaTests: XCTestCase {
             description: "a very smart little girl",
             language: .englishUS
         )
-        let plan = try await SimulatorDevStoryPlanner().plan(input: input, character: character)
+        let plan = try await OfflineDevStoryPlanner().plan(input: input, character: character)
         XCTAssertEqual(plan.pages.count, 10)
         XCTAssertTrue(plan.pages[0].text.localizedCaseInsensitiveContains("Alice"))
         XCTAssertTrue(KidsSafetyFilter.safetyIssues(plan: plan).isEmpty)
@@ -288,8 +282,8 @@ final class VovozinhaTests: XCTestCase {
         XCTAssertNotEqual(plan.pages[0].text, plan.pages[5].text)
     }
 
-    func testSimulatorAwareNeverSurfacesLLMUnavailable() async throws {
-        // Always succeeds on sim path (FM optional; dev builder is guaranteed).
+    func testOfflineAwareNeverSurfacesLLMUnavailable() async throws {
+        // Always succeeds on offline-dev path (FM optional; dev builder is guaranteed).
         let input = StoryDraftInput.randomized(
             actorDescription: "Ted the blue teddy",
             photoData: nil,
@@ -301,29 +295,27 @@ final class VovozinhaTests: XCTestCase {
             language: .englishUS
         )
         do {
-            let plan = try await SimulatorAwareStoryPlanner().plan(input: input, character: character)
+            let plan = try await OfflineAwareStoryPlanner().plan(input: input, character: character)
             XCTAssertEqual(plan.pages.count, 10)
             XCTAssertFalse(plan.pages[0].text.isEmpty)
         } catch let err as StoryPlanningError {
-            XCTAssertNotEqual(err, .llmUnavailable, "Simulator must never surface llmUnavailable")
-            XCTFail("Unexpected planning error on simulator path: \(err)")
+            XCTAssertNotEqual(err, .llmUnavailable, "Dev offline path must never surface llmUnavailable")
+            XCTFail("Unexpected planning error on offline-dev path: \(err)")
         }
     }
 
-    func testPlannerKindOnSimulatorIsDev() {
+    func testPlannerKindWhenDevFallbackIsOfflineDev() {
         let sim = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: true
+            chipClass: .a16
         )
-        // When tests run in the Simulator test host, compile-time gate forces .simulatorDev.
-        // When they run on device host (rare), profile.isSimulator still maps to .simulatorDev
-        // via runtime branch on device builds — either way must not be .unavailable.
         let kind = StoryGenerationService.plannerKind(for: sim)
-        XCTAssertNotEqual(kind, .unavailable)
-        #if targetEnvironment(simulator)
-        XCTAssertEqual(kind, .simulatorDev)
-        #endif
+        // DEBUG / Mac test hosts: offline dev planner selection
+        if DeviceProfile.allowsDevStoryFallback {
+            XCTAssertEqual(kind, .offlineDev)
+        } else {
+            XCTAssertNotEqual(kind, .unavailable)
+        }
     }
 
     func testUserFacingErrorHidesLLMUnavailableWhenDevFallback() {
@@ -353,27 +345,26 @@ final class VovozinhaTests: XCTestCase {
     }
 
     func testPlannerKindIsDevWhenAllowsDevFallback() {
-        // In DEBUG / Simulator / Mac test hosts, allowsDevStoryFallback is true.
+        // In DEBUG / Mac test hosts, allowsDevStoryFallback is true.
         XCTAssertTrue(
             DeviceProfile.allowsDevStoryFallback,
             "Test host should allow offline dev stories"
         )
         let deviceShaped = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: false
+            chipClass: .a16
         )
-        XCTAssertEqual(StoryGenerationService.plannerKind(for: deviceShaped), .simulatorDev)
+        XCTAssertEqual(StoryGenerationService.plannerKind(for: deviceShaped), .offlineDev)
     }
 
     func testAllowsDevStoryFallbackCoversMacAndDebug() {
-        // Runtime flag must be true on this test host (sim or DEBUG).
+        // Runtime flag must be true on this DEBUG test host.
         XCTAssertTrue(DeviceProfile.allowsDevStoryFallback)
         XCTAssertTrue(DeviceProfile.current.canGenerateStories)
     }
 
-    func testSimulatorDevPlannerNotFixedLibrary() async throws {
-        let alice = try await SimulatorDevStoryPlanner().plan(
+    func testOfflineDevPlannerNotFixedLibrary() async throws {
+        let alice = try await OfflineDevStoryPlanner().plan(
             input: StoryDraftInput.randomized(
                 actorDescription: "Alice is a clever girl",
                 photoData: nil,
@@ -385,7 +376,7 @@ final class VovozinhaTests: XCTestCase {
                 language: .englishUS
             )
         )
-        let ted = try await SimulatorDevStoryPlanner().plan(
+        let ted = try await OfflineDevStoryPlanner().plan(
             input: StoryDraftInput.randomized(
                 actorDescription: "Ted is a blue teddy",
                 photoData: nil,
@@ -403,11 +394,10 @@ final class VovozinhaTests: XCTestCase {
     }
 
     @MainActor
-    func testSimMakeDefaultPlanningNeverThrowsLLMUnavailable() async throws {
+    func testDevMakeDefaultPlanningNeverThrowsLLMUnavailable() async throws {
         let profile = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: true
+            chipClass: .a16
         )
         XCTAssertNotEqual(StoryGenerationService.plannerKind(for: profile), .unavailable)
 
@@ -421,16 +411,15 @@ final class VovozinhaTests: XCTestCase {
             description: "soft bear",
             language: .englishUS
         )
-        // Same planner makeDefault wires on sim builds.
-        let plan = try await SimulatorDevStoryPlanner().plan(input: input, character: character)
+        // Same planner makeDefault wires on DEBUG builds.
+        let plan = try await OfflineDevStoryPlanner().plan(input: input, character: character)
         XCTAssertEqual(plan.pages.count, 10)
     }
 
     func testPhysicalA16StillBlockedForFoundationModelsHardware() {
         let device = DeviceProfile.make(
             os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0),
-            chipClass: .a16,
-            isSimulator: false
+            chipClass: .a16
         )
         XCTAssertFalse(device.appleIntelligenceLikely)
         if case .unavailableHardware = device.availability(for: .foundationModelsStory, lang: .englishUS) {
@@ -562,7 +551,7 @@ final class VovozinhaTests: XCTestCase {
     }
 
     func testDevPlannerPagesMapToOrderedScenes() async throws {
-        let plan = try await SimulatorDevStoryPlanner().plan(
+        let plan = try await OfflineDevStoryPlanner().plan(
             input: StoryDraftInput.randomized(
                 actorDescription: "Mira soft rabbit",
                 photoData: nil,

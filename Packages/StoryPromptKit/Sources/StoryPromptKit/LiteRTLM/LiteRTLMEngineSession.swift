@@ -11,15 +11,12 @@ public protocol LiteRTLMEngineSessioning: Sendable {
     func send(_ prompt: String) async throws -> String
 }
 
-// MARK: - Concrete adapter (physical iOS device only)
+// MARK: - Concrete adapter
 
-/// **Physical iOS device only.** LiteRT-LM uses the Metal `.gpu` backend. The concrete
-/// session is compiled only for device iOS builds (`os(iOS)` device, matching the package’s
-/// `.when(platforms: [.iOS])` product condition).
-#if os(iOS) && !targetEnvironment(simulator)
+#if canImport(LiteRTLM)
 @preconcurrency import LiteRTLM
 
-/// Concrete LiteRT-LM adapter.
+/// Concrete LiteRT-LM adapter (Metal `.gpu` backend).
 ///
 /// Holds one `Engine` instance for its lifetime; `initialize()` is performed lazily on the
 /// first `send(_:)` so a missing/unavailable model fails at generation, not at construction.
@@ -44,12 +41,8 @@ final class LiteRTLMEngineSession: LiteRTLMEngineSessioning, @unchecked Sendable
     }
 
     func send(_ prompt: String) async throws -> String {
-        // `Engine` is an actor; initialize() (expensive first time — model compile + cache) and
-        // createConversation() hop onto it. Run off the main actor so the UI stays responsive.
         try await Task.detached(priority: .userInitiated) { [engine] in
             try await engine.initialize()
-            // Sample (don't decode greedily) with a fresh random seed per message: the engine's
-            // defaults (seed 0) make identical prompts produce identical stories.
             let sampler = try SamplerConfig(
                 topK: 40,
                 topP: 0.95,
@@ -64,7 +57,6 @@ final class LiteRTLMEngineSession: LiteRTLMEngineSessioning, @unchecked Sendable
         }.value
     }
 
-    /// Always the Metal/GPU backend (device only — see file-level note).
     static func defaultBackend() -> LiteRTLM.Backend { .gpu }
 }
 #endif

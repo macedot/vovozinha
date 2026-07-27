@@ -20,8 +20,7 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
     /// - Parameters:
     ///   - modelPath: Filesystem path to the downloaded `.litertlm` model.
     ///   - cacheDir: Writable dir for the compiled-model cache.
-    ///   - session: Inject a conformer for tests; defaults to the real LiteRT-LM engine
-    ///              (**physical iOS device only**).
+    ///   - session: Inject a conformer for tests; defaults to the real LiteRT-LM engine.
     public init(
         modelPath: String,
         cacheDir: String,
@@ -30,7 +29,7 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
         if let session {
             self.session = session
         } else {
-            #if os(iOS) && !targetEnvironment(simulator)
+            #if canImport(LiteRTLM)
             self.session = try LiteRTLMEngineSession(modelPath: modelPath, cacheDir: cacheDir)
             #else
             throw StoryPromptError.generationFailed
