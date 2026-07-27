@@ -36,6 +36,45 @@ Não foi possível criar a história. Tente de novo.
 ## storyModelNotInstalled
 O modelo de história no aparelho não está instalado. Baixe-o no app antes de criar uma história.
 
+## storyModelGateTitle
+Modelo de história necessário
+
+## storyModelGateBody
+As histórias precisam de um modelo no aparelho (~3,5 GB). Baixe uma vez no Wi‑Fi. Se a descarga automática falhar, abra a página alternativa, salve em Downloads e Importe.
+
+## storyModelGateDownload
+Baixar modelo
+
+## storyModelGateImport
+Importar dos Arquivos
+
+## storyModelGateOpenFallback
+Abrir página alternativa
+
+## storyModelGateNotNow
+Agora não
+
+## storyModelGateDownloading
+Baixando modelo…
+
+## storyModelGateImporting
+Importando modelo…
+
+## storyModelGateRetry
+Tentar de novo
+
+## storyModelGateHaltedTitle
+Criação de história indisponível
+
+## storyModelGateHaltedBody
+Sem o modelo no aparelho, não é possível criar histórias. Baixe ou importe o arquivo de Downloads.
+
+## storyModelGateChecking
+Verificando o modelo de história…
+
+## storyModelGateFilenameHint
+Arquivo: gemma-4-E4B-it.litertlm. Prefira Wi‑Fi.
+
 ## storyValidationTooShort
 Muito curto
 

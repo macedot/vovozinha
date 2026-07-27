@@ -158,8 +158,12 @@ Caveats:
 
 1. Pick language (**PT / EN / ES**) on the language bar.  
 2. Type a short **story description** (about **10–20 words**).  
-3. Ensure the on-device model is installed, then tap **Create story**.  
-4. Scroll to read title, summary, and **10 scenes** (real model output only).
+3. **Model install (first time):**  
+   - Tap **Download model** — automatic fetch from [files.kraftek.dev](https://files.kraftek.dev/gemma4/gemma-4-E4B-it.litertlm) (**Wi‑Fi**, ~3.5 GB).  
+   - If that fails: **Open backup download page** (Hugging Face) → save to **Downloads** → **Import from Files**.  
+   - Declining leaves story creation unavailable until the model is installed.  
+4. After the model is ready, enter a description and tap **Create story**.  
+5. Scroll to read title, summary, and **10 scenes** (model output only).
 
 ### Troubleshooting
 

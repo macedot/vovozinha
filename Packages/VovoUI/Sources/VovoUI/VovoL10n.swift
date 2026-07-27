@@ -20,6 +20,19 @@ public enum VovoL10n {
         case storyInvalidPrompt
         case storyGenerateFailed
         case storyModelNotInstalled
+        case storyModelGateTitle
+        case storyModelGateBody
+        case storyModelGateDownload
+        case storyModelGateImport
+        case storyModelGateOpenFallback
+        case storyModelGateNotNow
+        case storyModelGateDownloading
+        case storyModelGateImporting
+        case storyModelGateRetry
+        case storyModelGateHaltedTitle
+        case storyModelGateHaltedBody
+        case storyModelGateChecking
+        case storyModelGateFilenameHint
         case storyValidationTooShort
         case storyValidationTooLong
     }

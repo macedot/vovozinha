@@ -32,7 +32,8 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
 - Output: `StoryDraft` = title, summary, **exactly 10 paragraphs**, with the story language pinned on `StoryDraft.language`.
 - Feature boundary protocol: `StoryFromPromptGenerating`. **No static / template story generation.**
   - `DeviceStoryGenerator` — **default**. Model missing → `modelNotInstalled`; inference/parse failure → error. Never invents a story body.
-  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4, local checkout `../../../LiteRT-LM` at v0.13.1). Model downloaded once by `LiteRTLMModelStore` into `Documents/Vovozinha/Models/`. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.9 / topK 40 / topP 0.95 / random seed per generation.
+  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 4 E4B weights as `gemma-4-E4B-it.litertlm`). Runtime checkout `../../../LiteRT-LM` at v0.13.1. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.9 / topK 40 / topP 0.95 / random seed per generation.
+  - **Model install:** automatic download from `https://files.kraftek.dev/gemma4/gemma-4-E4B-it.litertlm` into `Documents/Vovozinha/Models/`. Fallback: open Hugging Face model page + user **Import** from Files/Downloads.
 - **Markdown on disk** (edit, rebuild):
   - UI: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
   - LiteRT prompts only: `Packages/StoryPromptKit/.../Resources/Prompts/litert.<lang>.md` (description placeholders must be filled — `StoryPromptTemplate`).
@@ -40,12 +41,15 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
 ## Build & test
 Requires **Xcode 27 beta** (`/Applications/Xcode-beta.app`); always set `DEVELOPER_DIR` first.
 
-> **One-time setup — LiteRT-LM local checkout (required to build).** `StoryPromptKit` depends on LiteRT-LM as a **local path package** (`../../../LiteRT-LM`) because the upstream repo is currently unresolvable via SPM/Xcode — see [google-ai-edge/LiteRT-LM#2407](https://github.com/google-ai-edge/LiteRT-LM/issues/2407): (a) v0.14.0+ pins checksums that don't match its release binaries, and (b) SPM clones to a bare mirror and runs `git lfs pull` against it, but the `prebuilt/*` LFS objects only exist on the GitHub remote, not the mirror. Set it up once:
+> **One-time setup — LiteRT-LM local checkout (required to build).** `StoryPromptKit` depends on LiteRT-LM as a **local path package** (`../../../LiteRT-LM` → sibling of the vovozinha folder under `Projects/`) because remote SPM resolution is flaky ([google-ai-edge/LiteRT-LM#2407](https://github.com/google-ai-edge/LiteRT-LM/issues/2407)). Set it up once:
 > ```bash
 > git clone -b v0.13.1 https://github.com/google-ai-edge/LiteRT-LM.git /Users/thiago/Projects/LiteRT-LM
 > cd /Users/thiago/Projects/LiteRT-LM && git lfs install --local && git lfs pull
+> # XCFrameworks (CLiteRTLM) — required; without them Xcode reports "No XCFramework found":
+> ./scripts/setup_litert_xcframeworks.sh   # from the vovozinha repo
+> # or manually unzip v0.13.0 CLiteRTLM*.xcframework.zip into LiteRT-LM/.xcframeworks/
 > ```
-> Do **not** move the checkout inside the vovozinha repo (it'd pollute git status); keep it as a sibling. The `Package.swift` documents this too.
+> Do **not** move the checkout inside the vovozinha repo. After adding frameworks: Xcode → Packages → Reset Package Caches, then clean build.
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer

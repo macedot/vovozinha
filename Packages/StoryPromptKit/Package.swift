@@ -16,9 +16,10 @@ let package = Package(
         // (a) v0.14.0+ pins checksums that don't match its release binaries, and
         // (b) SPM clones to a bare mirror and runs `git lfs pull` against that mirror, which
         //     lacks the `prebuilt/*` LFS objects (only the GitHub remote has them).
-        // To set up the local checkout:
-        //   git clone -b v0.13.1 https://github.com/google-ai-edge/LiteRT-LM.git ../../../LiteRT-LM
-        //   cd ../../../LiteRT-LM && git lfs install --local && git lfs pull
+        // To set up the local checkout (from repo root):
+        //   git clone -b v0.13.1 https://github.com/google-ai-edge/LiteRT-LM.git ../LiteRT-LM
+        //   ./scripts/setup_litert_xcframeworks.sh
+        // Package uses local .xcframeworks/CLiteRTLM*.xcframework (not remote SPM artifacts).
         .package(path: "../../../LiteRT-LM")
     ],
     targets: [

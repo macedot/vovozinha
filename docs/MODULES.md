@@ -36,7 +36,8 @@ Legacy/
 - Output: title, summary, **10 scene paragraphs**; story language stored on `StoryDraft`.
 - **Generator backends** (protocol `StoryFromPromptGenerating`):
   - `DeviceStoryGenerator` — **default**. Requires LiteRT-LM model on disk; **throws** if missing or on inference failure. **No static story body.**
-  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4). Model downloaded once by `LiteRTLMModelStore` to `Documents/Vovozinha/Models/`. Metal `.gpu` backend. Fewer than 10 paragraphs → generation error (never pads empty scenes).
+  - `StoryPromptFeatureView` **gates** on model presence: open HF download link → user saves to **Downloads** → **Import** into the app (or halt).
+  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM**. Model file `gemma-4-E4B-it.litertlm` imported via gate into `Documents/Vovozinha/Models/`. Metal `.gpu` backend. Fewer than 10 paragraphs → generation error (never pads empty scenes).
 - **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
 ## Static text (Markdown on disk)

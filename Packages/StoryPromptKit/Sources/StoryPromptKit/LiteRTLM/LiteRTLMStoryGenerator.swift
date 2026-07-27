@@ -1,7 +1,7 @@
 import Foundation
 import VovoUI
 
-/// On-device LLM story generator backed by LiteRT-LM (Gemma 3n E2B int4).
+/// On-device LLM story generator backed by LiteRT-LM (Gemma 4 E4B `.litertlm` weights).
 ///
 /// Inference is **100% local**. The model file is obtained out-of-band by `LiteRTLMModelStore`.
 /// There is **no** static story fallback: failures throw.

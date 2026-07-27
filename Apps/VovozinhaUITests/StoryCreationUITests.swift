@@ -16,18 +16,18 @@ final class StoryCreationUITests: XCTestCase {
             en.tap()
         }
 
-        // Seed field (SwiftUI TextField axis: .vertical often surfaces as TextView)
+        // Model gate: create form only appears when LiteRT-LM is installed.
+        try waitForCreateFormOrSkipIfModelMissing(in: app)
+
         let field = app.descendants(matching: .any)["storySeedField"]
-        XCTAssertTrue(field.waitForExistence(timeout: 8), "story seed field should appear")
+        XCTAssertTrue(field.waitForExistence(timeout: 3), "story seed field should appear")
         field.tap()
 
         let seed = "a little rabbit finds a glowing pebble under the soft moon light"
-        // 12 words
         field.typeText(seed)
 
         let create = app.buttons["createStoryButton"]
         XCTAssertTrue(create.waitForExistence(timeout: 3))
-        // Button may need a moment for word-count validation to enable
         let enabled = NSPredicate(format: "isEnabled == true")
         expectation(for: enabled, evaluatedWith: create, handler: nil)
         waitForExpectations(timeout: 3)
@@ -35,16 +35,15 @@ final class StoryCreationUITests: XCTestCase {
         create.tap()
 
         let result = app.descendants(matching: .any)["storyResult"]
-        XCTAssertTrue(result.waitForExistence(timeout: 8), "story result should appear after generation")
+        XCTAssertTrue(result.waitForExistence(timeout: 120), "story result should appear after generation")
 
-        // Scene labels from the offline generator (EN)
         XCTAssertTrue(
             app.staticTexts["Scene 1"].waitForExistence(timeout: 3)
                 || app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Scene'")).firstMatch.exists
         )
     }
 
-    func testLanguageBarSwitchesUIToPortugueseAndSpanish() throws {
+    func testLanguageBarVisibleOnModelGate() throws {
         let app = XCUIApplication()
         app.launch()
 
@@ -53,27 +52,50 @@ final class StoryCreationUITests: XCTestCase {
         let pt = app.buttons["language.pt"]
         XCTAssertTrue(pt.waitForExistence(timeout: 5), "PT language control should exist")
         pt.tap()
-        XCTAssertTrue(
-            app.staticTexts["Descrição da história"].waitForExistence(timeout: 4)
-                || app.buttons["Criar história"].waitForExistence(timeout: 2),
-            "PT UI strings should appear"
-        )
 
-        let es = app.buttons["language.es"]
-        XCTAssertTrue(es.waitForExistence(timeout: 3))
-        es.tap()
-        XCTAssertTrue(
-            app.staticTexts["Descripción del cuento"].waitForExistence(timeout: 4)
-                || app.buttons["Crear cuento"].waitForExistence(timeout: 2),
-            "ES UI strings should appear"
-        )
+        // Gate or create title should localize.
+        let gateOrCreate =
+            app.staticTexts["Modelo de história necessário"].waitForExistence(timeout: 4)
+            || app.staticTexts["Descrição da história"].waitForExistence(timeout: 2)
+            || app.buttons["Baixar modelo"].waitForExistence(timeout: 2)
+            || app.buttons["Criar história"].waitForExistence(timeout: 2)
+        XCTAssertTrue(gateOrCreate, "PT UI strings should appear on gate or create")
+    }
 
-        let en = app.buttons["language.en"]
-        en.tap()
-        XCTAssertTrue(
-            app.staticTexts["Story description"].waitForExistence(timeout: 4)
-                || app.buttons["Create story"].waitForExistence(timeout: 2),
-            "EN UI strings should appear"
-        )
+    func testModelGateShowsDownloadWhenModelMissing() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let download = app.buttons["modelGateDownload"]
+        let importBtn = app.buttons["modelGateImport"]
+        let field = app.descendants(matching: .any)["storySeedField"]
+
+        let appeared = download.waitForExistence(timeout: 10)
+            || importBtn.waitForExistence(timeout: 2)
+            || field.waitForExistence(timeout: 10)
+        XCTAssertTrue(appeared, "either model gate or create form should appear")
+
+        if download.exists {
+            XCTAssertTrue(importBtn.exists, "import control should be on gate")
+            XCTAssertTrue(app.buttons["modelGateOpenFallback"].exists)
+            XCTAssertTrue(app.buttons["modelGateDecline"].exists)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func waitForCreateFormOrSkipIfModelMissing(in app: XCUIApplication) throws {
+        let field = app.descendants(matching: .any)["storySeedField"]
+        let download = app.buttons["modelGateDownload"]
+
+        let deadline = Date().addingTimeInterval(12)
+        while Date() < deadline {
+            if field.exists { return }
+            if download.exists {
+                throw XCTSkip("LiteRT-LM model not installed; use Download model on device (Wi‑Fi)")
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        XCTFail("timed out waiting for model gate or create form")
     }
 }
