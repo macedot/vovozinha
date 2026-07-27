@@ -82,6 +82,23 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
         XCTAssertTrue(prompt.contains(seedText), "seed should be injected into the LiteRT-LM prompt")
     }
 
+    // Regression: the LiteRT-LM prompt must actually vary with the seed (i.e. we really use the
+    // prompt, not a fixed string), and must never leak the raw INSERT placeholder.
+    func testPromptVariesWithSeedAndCarriesEachSeed() {
+        let boat = "a brave little boat sails across a calm silver lake"
+        let bear = "a sleepy bear finds a glowing star in the winter forest"
+        let promptBoat = LiteRTLMStoryGenerator.buildPrompt(seed: boat, language: .englishUS)
+        let promptBear = LiteRTLMStoryGenerator.buildPrompt(seed: bear, language: .englishUS)
+
+        XCTAssertNotEqual(promptBoat, promptBear, "different seeds must produce different prompts")
+        XCTAssertTrue(promptBoat.contains(boat))
+        XCTAssertTrue(promptBear.contains(bear))
+        XCTAssertFalse(
+            OfflineStoryFromPromptGenerator.containsUnresolvedDescriptionPlaceholder(promptBoat),
+            "no INSERT placeholder should remain in the filled prompt"
+        )
+    }
+
     func testBuildPromptHasNoUnresolvedPlaceholdersForAllLanguages() {
         for lang in AppLanguage.allCases {
             let prompt = LiteRTLMStoryGenerator.buildPrompt(seed: "some seed text here", language: lang)
@@ -106,27 +123,57 @@ final class LiteRTLMStoryGeneratorTests: XCTestCase {
         }
     }
 
-    func testNormalizePadsAndTruncatesToTen() {
-        let tooFew = LiteRTLMStoryGenerator.normalizeParagraphs("one\n\ntwo")
-        XCTAssertEqual(tooFew.count, 10)
-        XCTAssertEqual(tooFew.first, "one")
+    func testNormalizeTruncatesToTenAndThrowsWhenTooFew() throws {
+        // Fewer than 10 paragraphs is a generation failure — OfflineFirst falls back instead
+        // of rendering empty scene cards.
+        XCTAssertThrowsError(try LiteRTLMStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
+            XCTAssertEqual($0 as? StoryPromptError, .generationFailed)
+        }
 
-        let tooMany = LiteRTLMStoryGenerator.normalizeParagraphs(
+        let tooMany = try LiteRTLMStoryGenerator.normalizeParagraphs(
             (1...13).map { "p\($0)" }.joined(separator: "\n\n")
         )
         XCTAssertEqual(tooMany.count, 10)
         XCTAssertEqual(tooMany.last, "p10")
+
+        let exactlyTen = try LiteRTLMStoryGenerator.normalizeParagraphs(
+            (1...10).map { "p\($0)" }.joined(separator: "\n\n")
+        )
+        XCTAssertEqual(exactlyTen.count, 10)
     }
 
     func testParseRecoversWhenTitleHeaderMissing() throws {
-        let body = """
-        Evening light comes. A rabbit rests.
-
-        Night arrives. Stars wink.
-        """
+        let body = (1...10)
+            .map { "Scene \($0) text." }
+            .joined(separator: "\n\n")
         let parsed = try LiteRTLMStoryGenerator.parse(body)
-        XCTAssertEqual(parsed.paragraphs.count, 10) // padded
-        XCTAssertEqual(parsed.title, "Bedtime Story") // default fallback title
+        XCTAssertEqual(parsed.paragraphs.count, 10)
+        XCTAssertEqual(parsed.title, "Bedtime Story") // en-US default fallback title
+        XCTAssertEqual(parsed.summary, "")
+    }
+
+    func testParseFallbackTitleIsLocalized() throws {
+        let body = (1...10)
+            .map { "Cena \($0) texto." }
+            .joined(separator: "\n\n")
+        let pt = try LiteRTLMStoryGenerator.parse(body, language: .portugueseBrazil)
+        XCTAssertEqual(pt.title, "História de ninar")
+        let es = try LiteRTLMStoryGenerator.parse(body, language: .spanishSpain)
+        XCTAssertEqual(es.title, "Cuento de dormir")
+    }
+
+    func testParseThrowsWhenReplyHasTooFewParagraphs() {
+        let body = """
+        TITLE: Short Tale
+        SUMMARY: Too short.
+
+        Only one paragraph here.
+
+        And another.
+        """
+        XCTAssertThrowsError(try LiteRTLMStoryGenerator.parse(body)) {
+            XCTAssertEqual($0 as? StoryPromptError, .generationFailed)
+        }
     }
 
     func testThrowsOnEmptyBody() {
@@ -144,7 +191,11 @@ final class OfflineFirstStoryGeneratorTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         let store = LiteRTLMModelStore(documentsURL: tmp)
-        let generator = OfflineFirstStoryGenerator(modelStore: store)
+        // Deterministic offline variants so the summary assertion is stable.
+        let generator = OfflineFirstStoryGenerator(
+            modelStore: store,
+            offline: OfflineStoryFromPromptGenerator(pickVariant: { _ in 0 })
+        )
         let draft = try await generator.generate(from: validSeed())
 
         // Offline generator output shape: 10 paragraphs + offline summary marker.
@@ -170,7 +221,7 @@ final class OfflineFirstStoryGeneratorTests: XCTestCase {
         let failing = MockLiteRTLMEngineSession(reply: "", error: URLError(.cannotConnectToHost))
         let generator = OfflineFirstStoryGenerator(
             modelStore: store,
-            offline: OfflineStoryFromPromptGenerator()
+            offline: OfflineStoryFromPromptGenerator(pickVariant: { _ in 0 })
         ) { _, _ in failing }
 
         let draft = try await generator.generate(from: validSeed())

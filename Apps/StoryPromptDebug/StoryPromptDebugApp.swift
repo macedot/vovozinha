@@ -66,18 +66,6 @@ private struct LiteRTLMModelSheet: View {
                             .foregroundStyle(VovoTheme.cream)
                     }
 
-                    #if targetEnvironment(simulator)
-                    // ⚠️ LiteRT-LM cannot run in the iOS Simulator (Metal `.gpu` backend only, no
-                    // CPU fallback). Story generation here always uses the offline generator.
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(VovoTheme.softPink)
-                        Text("LiteRT-LM does NOT work in the Simulator. Run on a physical device (iPhone 15+) to use on-device generation.")
-                            .font(.caption)
-                            .foregroundStyle(VovoTheme.softPink)
-                    }
-                    #endif
-
                     if isDownloading {
                         ProgressView(value: progress) {
                             Text("Downloading… \(Int(progress * 100))%")

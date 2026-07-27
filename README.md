@@ -2,37 +2,39 @@
 
 Offline-first **children’s bedtime stories** for iOS.
 
+> **WARNING: This project does NOT support the iOS Simulator.**  
+> Develop, run, and test story generation on a **physical iPhone** (or install a development `.ipa`).  
+> Simulator usage is unsupported and will not provide a working product experience.
+
 **Branch `multi`:** modular architecture — feature kits + DEBUG harness apps + thin host.  
 See [`docs/MODULES.md`](docs/MODULES.md).
 
-Legacy monolithic app: scheme **VovozinhaLegacy**.
+Legacy monolithic app: scheme **VovozinhaLegacy** (reference only).
 
 | | |
 |--|--|
 | **Content** | Kids ~3–8 |
 | **Who uses the app** | Parents / caregivers **18+** |
-| **Devices** | **iPhone 15+** |
+| **Devices** | **iPhone 15+** (physical device) |
 | **AI** | **Strictly on-device** (no cloud generation) |
 | **Languages** | **pt-BR / en-US / es-ES** (language bar; default = system) |
-| **This phase** | Stories + **offline procedural page art** (neural pack later) |
+| **This phase** | Story description → on-device / offline draft (10 scenes) |
 
 ## Story generation (this phase)
 
-- **Body text:** local **LLM only** — Apple **Foundation Models** when available.
-- **No** pre-written / template story body in the product path.
-- **10 pages** = one continuous chronological story split into 10 paragraphs.
-- Target **~280 words** total (band ~150–480); **3–5 short sentences per page** with sensory scene detail.
-- **Kids content filter** with rewrite retries until pass.
-- **Graphics:** on-device art per page — **Core ML Stable Diffusion pack** when installed (text2img + img2img continuity), else **procedural** fallback. Install: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`).
+- Short **story description** (about **10–20 words**).
+- **On-device LiteRT-LM** when the model is installed; otherwise offline draft generator.
+- Output: title, summary, **exactly 10 scene paragraphs**.
+- Languages: **pt-BR / en-US / es-ES**.
+- **No cloud AI** for generation.
 
 ### Who can generate today
 
-| Device / OS | Stories |
-|-------------|---------|
-| **iOS 26+** with **Apple Intelligence** (typically Pro-class / A17+) | **Yes** — Foundation Models |
-| **iPhone 15 / 15 Plus (A16)** | **Not yet** — needs optional **local LLM pack** (stub; coming later) |
-| Older / no FM assets | No — clear in-app message; no template fallback |
-| Simulator | Usually no FM path; UI works |
+| Device | Stories |
+|--------|---------|
+| **Physical iPhone 15+** with LiteRT-LM model downloaded | **Yes** — on-device LLM |
+| **Physical iPhone 15+** without model yet | Offline draft fallback |
+| **iOS Simulator** | **Not supported** |
 
 ## Dev requirements
 
@@ -41,39 +43,42 @@ Legacy monolithic app: scheme **VovozinhaLegacy**.
 | macOS | Beta ok |
 | Xcode | **Xcode 27 beta** (`/Applications/Xcode-beta.app`) |
 | Deployment | iOS **18.0+**, iPhone only |
-| Simulator | iOS 27 (e.g. iPhone 17) for UI |
+| Run target | **Physical device** only |
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 open /Users/thiago/Projects/vovozinha/Vovozinha.xcodeproj
 ```
 
+Build for a connected device (replace the destination id with yours):
+
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 cd /Users/thiago/Projects/vovozinha
-xcodebuild -scheme Vovozinha -destination 'platform=iOS Simulator,name=iPhone 17' -configuration Debug build
+xcodebuild -scheme Vovozinha -destination 'generic/platform=iOS' -configuration Debug build
 ```
 
-## App flow
+Unit tests for the kit (macOS host, no device required):
 
-1. **18+** age gate  
-2. Language bar (system / PT / EN / ES)  
-3. **Quick create** — description + optional photo; rest randomized  
-4. **Custom create** — full form (world, lesson, age, style, idea)  
-5. **Generate** — character → on-device LLM story → library  
-6. **Reader** — swipe text pages, TTS in story language, parent read-aloud, text PDF  
-7. **Library** offline  
+```bash
+cd Packages/StoryPromptKit && swift test
+```
+
+## App flow (multi host)
+
+1. Language bar (system / PT / EN / ES)  
+2. Enter a short **story description** (10–20 words)  
+3. **Create story** — on-device LiteRT-LM or offline draft  
+4. Scroll to read title, summary, and 10 scenes  
 
 ## Architecture (summary)
 
-- SwiftUI + SwiftData  
-- Protocols: `CharacterAnalyzing`, `StoryPlanning`, `Illustrating`  
-- Product planner: `FoundationModelsStoryPlanner` or `UnavailableLLMStoryPlanner`  
-- Scene beat labels: `StorySceneTags` (not a story body source)  
-- Illustrator: scene-aware **procedural** art; swap-in for local neural pack later  
+- Host: `Apps/Vovozinha` + kits `Packages/StoryPromptKit`, `Packages/VovoUI`  
+- Protocol: `StoryFromPromptGenerating`  
+- Default: `OfflineFirstStoryGenerator` (LiteRT-LM when model present; offline fallback)  
+- Static copy/prompts: Markdown under package `Resources/`  
 
-
-See `docs/SPIKE.md` and `AGENTS.md`.
+See `docs/MODULES.md` and `AGENTS.md`.
 
 ## Install a development `.ipa` (physical device)
 
@@ -86,7 +91,6 @@ On branch **`multi`**, the **Vovozinha** host is the story-generation app
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 cd /Users/thiago/Projects/vovozinha
 
-# exportOptions (development)
 mkdir -p build
 cat > build/exportOptions-development.plist <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -129,7 +133,7 @@ Requires Xcode signed in with an Apple ID on team **FTS4YLJNG3**, and a valid **
 ### Install on an iPhone
 
 **1. Xcode**  
-Window → Devices and Simulators → select the phone → under Installed Apps, **+** → choose `Vovozinha.ipa`.  
+Window → **Devices** → select the phone → under Installed Apps, **+** → choose `Vovozinha.ipa`.  
 Then on the phone: **Settings → General → VPN & Device Management** → trust the developer.
 
 **2. Apple Configurator**  

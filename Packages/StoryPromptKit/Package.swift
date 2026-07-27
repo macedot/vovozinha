@@ -26,7 +26,8 @@ let package = Package(
             name: "StoryPromptKit",
             dependencies: [
                 "VovoUI",
-                .product(name: "LiteRTLM", package: "LiteRT-LM")
+                // LiteRT-LM is for physical iOS devices only (linked on the iOS platform).
+                .product(name: "LiteRTLM", package: "LiteRT-LM", condition: .when(platforms: [.iOS]))
             ],
             path: "Sources/StoryPromptKit",
             resources: [

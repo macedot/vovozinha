@@ -3,7 +3,7 @@
 ## Project overview
 - Offline-first **kids bedtime stories** iOS app. Content for kids ~3–8; the app's users are parents/caregivers **18+** (there is an age gate).
 - **No cloud AI for generation** — all inference is on-device. The network is used only to *download model assets once*; after that the app is fully offline.
-- Devices: **iPhone 15+**. Deployment target **iOS 18.0+**, iPhone only.
+- Devices: **physical iPhone 15+ only** (iOS Simulator is **not supported**). Deployment target **iOS 18.0+**, iPhone only.
 - Languages **pt-BR / en-US / es-ES** (default = system language).
 - License: AGPL-3.0. Development happens on branch `multi`.
 
@@ -31,9 +31,9 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
 - Input: free-form **story seed**, **10–20 words** (validated by `StorySeedPrompt`).
 - Output: `StoryDraft` = title, summary, **exactly 10 paragraphs**, with the story language pinned on `StoryDraft.language`.
 - Feature boundary protocol: `StoryFromPromptGenerating` (`Packages/StoryPromptKit/Sources/StoryPromptKit/StoryFromPromptGenerating.swift`). Implementations:
-  - `OfflineFirstStoryGenerator` — **the default used by both apps**. Decision rule: iOS Simulator → offline; no model file on disk → offline; model present → LiteRT-LM, falling back to offline on any inference error (never throws for LLM failures).
-  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4, SPM dependency `google-ai-edge/LiteRT-LM` — the Swift API is "Early Preview", keep the pin). The ~3.66 GB `.litertlm` model is downloaded once from Hugging Face by `LiteRTLMModelStore` into `Documents/Vovozinha/Models/`. Parses a strict `TITLE:` / `SUMMARY:` header + 10 blank-line-separated paragraphs. **LiteRT-LM does NOT work in the iOS Simulator** (Metal `.gpu` backend only; no CPU fallback) — `OfflineFirstStoryGenerator` uses the offline generator in the simulator, and live LiteRT-LM inference is only testable on a physical device after the one-time model download.
-  - `OfflineStoryFromPromptGenerator` — deterministic fallback, always available.
+  - `OfflineFirstStoryGenerator` — **the default used by both apps**. On a **physical device**: no model on disk → offline; model present → LiteRT-LM, falling back to offline on any inference error (never throws for LLM failures).
+  - `LiteRTLMStoryGenerator` — on-device LLM via **LiteRT-LM** (Gemma 3n E2B int4, local path checkout `../../../LiteRT-LM` at v0.13.1 — see the setup note below; the Swift API is "Early Preview"). The ~3.66 GB `.litertlm` model is downloaded once from Hugging Face by `LiteRTLMModelStore` into `Documents/Vovozinha/Models/`. Parses a strict `TITLE:` / `SUMMARY:` header + 10 blank-line-separated paragraphs; a reply with **fewer than 10 paragraphs fails parsing** so the composite falls back (never pads empty scenes). Inference samples with temperature 0.9 / topK 40 / topP 0.95 and a **random seed per generation** (the engine default seed 0 is deterministic — same prompt would repeat verbatim). **Physical iPhone only** (Metal `.gpu` backend).
+  - `OfflineStoryFromPromptGenerator` — template-based fallback, always available. **Analyzes the seed** (per-language stopword/common-verb filtering → up to 3 key elements) and **randomly picks 1 of 3 copy variants per narrative beat** (10 beats × en/pt/es), weaving the elements through the story — the same seed yields a fresh story each time; the full seed text appears verbatim exactly once (spark paragraph). Variant selection is injectable (`init(pickVariant:)`) so tests stay deterministic.
 - **Static text lives in Markdown on disk** (edit files, rebuild; never rewrite these from code):
   - UI strings: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
   - Generation prompts: `Packages/StoryPromptKit/Sources/StoryPromptKit/Resources/Prompts/{offline,litert}.<lang>.md` — each contains a parent-description placeholder (`[INSERT STORY DESCRIPTION HERE]` and pt/es equivalents, plus `{{seed}}`/`{{idea}}`/`{{description}}`) that **must never be left unreplaced** (enforced by `replaceDescriptionPlaceholders` / `containsUnresolvedDescriptionPlaceholder`).
@@ -51,28 +51,23 @@ Requires **Xcode 27 beta** (`/Applications/Xcode-beta.app`); always set `DEVELOP
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 
-# Host app
-xcodebuild -scheme Vovozinha -destination 'platform=iOS Simulator,name=iPhone 17' build
+# Host app (physical device / generic iOS — not the Simulator)
+xcodebuild -scheme Vovozinha -destination 'generic/platform=iOS' build
 
 # Single kit in isolation (DEBUG harness)
-xcodebuild -scheme StoryPromptDebug -destination 'platform=iOS Simulator,name=iPhone 17' build
+xcodebuild -scheme StoryPromptDebug -destination 'generic/platform=iOS' build
 
-# UI tests (XCUITest, the only testables wired into the Vovozinha scheme)
-xcodebuild -scheme Vovozinha -destination 'platform=iOS Simulator,name=iPhone 17' test
-
-# StoryPromptKit unit tests — MUST use xcodebuild, not `swift test`.
-# (LiteRT-LM's target declares `unsafeFlags`, which the command-line `swift` tool rejects;
-#  Xcode accepts them.)
-cd Packages/StoryPromptKit && xcodebuild test -scheme StoryPromptKit -destination 'platform=iOS Simulator,name=iPhone 17'
+# StoryPromptKit unit tests (macOS package tests; mocks only — no real model)
+cd Packages/StoryPromptKit && swift test
 
 # Legacy reference app
-xcodebuild -scheme VovozinhaLegacy -destination 'platform=iOS Simulator,name=iPhone 17' build
+xcodebuild -scheme VovozinhaLegacy -destination 'generic/platform=iOS' build
 ```
 Shared schemes (in `Vovozinha.xcodeproj/xcshareddata/xcschemes`): **Vovozinha** (host), **StoryPromptDebug** (kit harness), **VovozinhaLegacy** (old monolith). The `StoryPromptKit` scheme is auto-generated by Xcode from the package for running its unit tests.
 
 ## Testing
-- **StoryPromptKitTests** (`Packages/StoryPromptKit/Tests/StoryPromptKitTests/`): XCTest. Covers seed validation, the offline generator in all three languages, prompt-placeholder substitution, and the LiteRT-LM layer (`LiteRTLMTests.swift`) with injected mock sessions — **never hit the network or a real model in tests** (inject a mock `LiteRTLMEngineSessioning` / point `LiteRTLMModelStore` at a temp dir). Run with `xcodebuild test -scheme StoryPromptKit …` (not `swift test` — see "Build & test" above). Live LiteRT-LM inference only runs on a physical device after the model download; in the simulator the composite always uses the offline path.
-- **VovozinhaUITests** (`Apps/VovozinhaUITests/`): XCUITest against the host app (seed → story flow, language bar). UI elements are located by accessibility identifiers (`storySeedField`, `createStoryButton`, `storyResult`, `language.en/pt/es`).
+- **StoryPromptKitTests** (`Packages/StoryPromptKit/Tests/StoryPromptKitTests/`): XCTest, run with `swift test` from `Packages/StoryPromptKit`. Covers seed validation, the offline generator in all three languages (randomness injected via `init(pickVariant:)`), prompt-placeholder substitution, and the LiteRT-LM layer (`LiteRTLMTests.swift`) with injected mock sessions — **never hit the network or a real model in tests** (inject a mock `LiteRTLMEngineSessioning` / point `LiteRTLMModelStore` at a temp dir). Live LiteRT-LM inference only runs on a **physical device** after the model download.
+- **VovozinhaUITests** (`Apps/VovozinhaUITests/`): optional XCUITest harness for the host app (seed → story flow, language bar). Accessibility identifiers: `storySeedField`, `createStoryButton`, `storyResult`, `language.en/pt/es`. Prefer validating story generation on a physical device.
 - **VovozinhaTests** (`VovozinhaTests/`): **stale**. The target still exists in the project but is wired into no scheme's test action, and its sources test legacy-domain types (`DeviceProfile`, `KidsSafetyFilter`, `FoundationModelsStoryPlanner`, …) that are not part of the thin host target. Treat as legacy reference, not a suite to run; port or delete when touching it.
 
 ## Code norms

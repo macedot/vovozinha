@@ -1,6 +1,6 @@
 import XCTest
 
-/// CLI-driven story creation on Simulator (no manual Simulator.app required).
+/// XCUITest coverage for story creation (host app).
 final class StoryCreationUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -10,7 +10,7 @@ final class StoryCreationUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Pin EN so scene labels are stable regardless of simulator system language.
+        // Pin EN so scene labels are stable regardless of system language.
         let en = app.buttons["language.en"]
         if en.waitForExistence(timeout: 5) {
             en.tap()

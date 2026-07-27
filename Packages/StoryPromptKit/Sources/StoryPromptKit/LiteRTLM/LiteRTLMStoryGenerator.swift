@@ -20,7 +20,8 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
     /// - Parameters:
     ///   - modelPath: Filesystem path to the downloaded `.litertlm` model.
     ///   - cacheDir: Writable dir for the compiled-model cache.
-    ///   - session: Inject a conformer for tests; defaults to the real LiteRT-LM engine.
+    ///   - session: Inject a conformer for tests; defaults to the real LiteRT-LM engine
+    ///              (**physical iOS device only**).
     public init(
         modelPath: String,
         cacheDir: String,
@@ -29,7 +30,11 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
         if let session {
             self.session = session
         } else {
+            #if os(iOS) && !targetEnvironment(simulator)
             self.session = try LiteRTLMEngineSession(modelPath: modelPath, cacheDir: cacheDir)
+            #else
+            throw StoryPromptError.generationFailed
+            #endif
         }
     }
 
@@ -47,7 +52,7 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
         }
 
         let raw = try await session.send(userPrompt)
-        let parsed = try Self.parse(raw)
+        let parsed = try Self.parse(raw, language: lang)
 
         return StoryDraft(
             title: parsed.title,
@@ -101,8 +106,9 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
     /// ...
     /// ```
     /// Tolerant of missing headers, leading/trailing whitespace, and models that ignore the
-    /// format: paragraphs are coalesced/split so the contract (10 entries) always holds.
-    static func parse(_ raw: String) throws -> ParsedStory {
+    /// format. A reply with **fewer than 10 paragraphs** is a generation failure (throw) so
+    /// `OfflineFirstStoryGenerator` can fall back — never padded with empty scenes.
+    static func parse(_ raw: String, language: AppLanguage = .englishUS) throws -> ParsedStory {
         var title: String?
         var summary: String?
         var body = raw
@@ -132,18 +138,27 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
         }
         body = lines.dropFirst(consumedUpTo).joined(separator: "\n")
 
-        let paragraphs = normalizeParagraphs(body)
+        let paragraphs = try normalizeParagraphs(body)
 
-        let finalTitle = (title?.isEmpty == false ? title : nil) ?? "Bedtime Story"
+        let finalTitle = (title?.isEmpty == false ? title : nil) ?? Self.fallbackTitle(for: language)
         let finalSummary = (summary?.isEmpty == false ? summary : nil) ?? ""
-        guard !paragraphs.isEmpty else { throw StoryPromptError.generationFailed }
 
         return ParsedStory(title: finalTitle, summary: finalSummary, paragraphs: paragraphs)
     }
 
+    /// Localized title used when the model omits the `TITLE:` header.
+    static func fallbackTitle(for language: AppLanguage) -> String {
+        switch language {
+        case .englishUS: return "Bedtime Story"
+        case .portugueseBrazil: return "História de ninar"
+        case .spanishSpain: return "Cuento de dormir"
+        }
+    }
+
     /// Splits the body into blank-line-separated paragraphs, trims each, drops empties, and
-    /// pads/truncates to **exactly 10** so the downstream contract holds.
-    static func normalizeParagraphs(_ body: String, target: Int = 10) -> [String] {
+    /// truncates to **exactly 10**. Throws when the model produced fewer than 10 — the caller
+    /// treats that as a generation failure and falls back instead of showing empty scenes.
+    static func normalizeParagraphs(_ body: String, target: Int = 10) throws -> [String] {
         // Split on one-or-more blank lines.
         let chunks = body
             .components(separatedBy: "\n\n")
@@ -160,12 +175,7 @@ public struct LiteRTLMStoryGenerator: StoryFromPromptGenerating {
             if bySingle.count > 1 { paragraphs = bySingle }
         }
 
-        if paragraphs.count > target {
-            return Array(paragraphs.prefix(target))
-        }
-        while paragraphs.count < target {
-            paragraphs.append("")
-        }
-        return paragraphs
+        guard paragraphs.count >= target else { throw StoryPromptError.generationFailed }
+        return Array(paragraphs.prefix(target))
     }
 }

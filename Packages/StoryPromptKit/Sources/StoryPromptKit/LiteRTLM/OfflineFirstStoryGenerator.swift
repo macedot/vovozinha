@@ -2,12 +2,13 @@ import Foundation
 import VovoUI
 
 /// Default generator for the apps: use **on-device LiteRT-LM** when the model is present,
-/// and always fall back to the deterministic offline generator so the app works **100% offline**.
+/// and fall back to the deterministic offline generator so the app stays usable without a model.
 ///
-/// Decision rule (per `generate(from:)`):
-/// 1. In the iOS Simulator → offline (the `.gpu` Metal backend doesn't work there).
-/// 2. No model file on disk → offline (model not yet downloaded).
-/// 3. Model present → LiteRT-LM; on **any** inference error → fall back to offline, never throw.
+/// Decision rule (per `generate(from:)` on a **physical iOS device**):
+/// 1. No model file on disk → offline (model not yet downloaded).
+/// 2. Model present → LiteRT-LM; on **any** inference error → offline (never throws for LLM failures).
+///
+/// Product target is **physical iPhone only**. Non-device build configurations use offline only.
 ///
 /// Validation errors (`StorySeedPrompt.ValidationError`) are always propagated unchanged so the
 /// UI's specific too-short/too-long messaging keeps working.
@@ -35,28 +36,26 @@ public struct OfflineFirstStoryGenerator: StoryFromPromptGenerating {
         self.sessionProvider = sessionProvider
     }
 
-    /// Builds the real LiteRT-LM engine session. Internal so the public init's signature never
-    /// references an internal type.
+    /// Builds the real LiteRT-LM engine session. Device-only product path.
+    #if os(iOS) && !targetEnvironment(simulator)
     static let defaultSessionProvider: @Sendable (String, String) throws -> any LiteRTLMEngineSessioning = { modelPath, cacheDir in
         try LiteRTLMEngineSession(modelPath: modelPath, cacheDir: cacheDir)
     }
+    #else
+    static let defaultSessionProvider: @Sendable (String, String) throws -> any LiteRTLMEngineSessioning = { _, _ in
+        throw StoryPromptError.generationFailed
+    }
+    #endif
 
     public func generate(from prompt: StorySeedPrompt) async throws -> StoryDraft {
-        // Validate once here; both backends validate again but that's cheap and idempotent.
         try prompt.validate()
 
-        // 1. ⚠️ LiteRT-LM does NOT work in the iOS Simulator (Metal `.gpu` backend unsupported,
-        //    and we don't fall back to CPU). Route to the offline generator there. Run LiteRT-LM
-        //    only on a physical device (iPhone 15+) after the one-time model download.
-        #if targetEnvironment(simulator)
-        return try await offline.generate(from: prompt)
-        #else
-        // 2. No model on disk → offline.
+        #if os(iOS) && !targetEnvironment(simulator)
+        // Physical device: LiteRT-LM when model is present; offline otherwise / on failure.
         guard await modelStore.isModelPresent() else {
             return try await offline.generate(from: prompt)
         }
 
-        // 3. Model present → LiteRT-LM, fall back on any failure.
         let modelURL = await modelStore.modelFileURL()
         let cacheDir = await modelStore.cacheDirectory().path
         do {
@@ -64,12 +63,13 @@ public struct OfflineFirstStoryGenerator: StoryFromPromptGenerating {
             let litert = try LiteRTLMStoryGenerator(modelPath: modelURL.path, cacheDir: cacheDir, session: session)
             return try await litert.generate(from: prompt)
         } catch let e as StorySeedPrompt.ValidationError {
-            // Propagate validation errors so UI messaging stays specific.
             throw e
         } catch {
-            // Never let an LLM/runtime failure break the offline guarantee.
             return try await offline.generate(from: prompt)
         }
+        #else
+        // Non-device configurations are not a supported product target.
+        return try await offline.generate(from: prompt)
         #endif
     }
 }
