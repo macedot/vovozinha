@@ -57,6 +57,27 @@ Not now
 ## storyModelGateDownloading
 Downloading model…
 
+## storyModelGateVerifying
+Checking download…
+
+## storyModelGateUnpacking
+Unpacking model…
+
+## storyModelGateDownloadSpeed
+{{speed}}/s
+
+## storyModelGateDownloadElapsed
+Elapsed: {{time}}
+
+## storyModelGateDownloadETA
+About {{time}} left
+
+## storyModelGateDownloadETAUnknown
+Estimating time…
+
+## storyModelGateDownloadBytes
+{{received}} of {{total}}
+
 ## storyModelGateImporting
 Importing model…
 

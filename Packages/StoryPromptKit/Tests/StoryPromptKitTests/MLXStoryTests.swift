@@ -199,11 +199,46 @@ final class OnDeviceMLXModelStoreTests: XCTestCase {
             OnDeviceMLXModelStore.defaultHostFallbackPageURL.absoluteString
                 .contains("mlx-community/Qwen3.5-4B-MLX-4bit")
         )
-        XCTAssertEqual(
-            OnDeviceMLXModelStore.defaultHostZipSHA256.count,
-            64,
-            "pinned host SHA-256 must be 64 hex chars"
+        XCTAssertTrue(
+            OnDeviceMLXModelStore.defaultHostSHA256URL.absoluteString.hasSuffix(".zip.sha256")
         )
+        XCTAssertTrue(
+            OnDeviceMLXModelStore.defaultHostSHA256URL.absoluteString.contains("files.kraftek.dev")
+        )
+    }
+
+    func testParseSHA256FileAcceptsShasumAndBareHex() throws {
+        let hex = String(repeating: "ab", count: 32) // 64 chars
+        XCTAssertEqual(
+            try OnDeviceMLXModelStore.parseSHA256File("\(hex)  Qwen3.5-4B-MLX-4bit.zip\n"),
+            hex
+        )
+        XCTAssertEqual(try OnDeviceMLXModelStore.parseSHA256File("\(hex)\n"), hex)
+        XCTAssertEqual(
+            try OnDeviceMLXModelStore.parseSHA256File("# comment\n\(hex.uppercased())  file.zip\n"),
+            hex
+        )
+        XCTAssertThrowsError(try OnDeviceMLXModelStore.parseSHA256File("not-a-hash")) {
+            XCTAssertEqual($0 as? OnDeviceMLXModelStore.DownloadError, .checksumFileInvalid)
+        }
+    }
+
+    func testDownloadProgressFormatsDurationAndETA() {
+        let snap = ModelDownloadProgress(
+            fraction: 0.5,
+            bytesReceived: 500_000_000,
+            bytesTotal: 1_000_000_000,
+            bytesPerSecond: 10_000_000,
+            elapsed: 50,
+            estimatedRemaining: 50,
+            phase: .downloading
+        )
+        XCTAssertEqual(ModelDownloadProgress.formatDuration(65), "1:05")
+        XCTAssertEqual(ModelDownloadProgress.formatDuration(3661), "1:01:01")
+        XCTAssertEqual(snap.formattedElapsed, "0:50")
+        XCTAssertEqual(snap.formattedETA, "0:50")
+        XCTAssertFalse(snap.formattedSpeed.isEmpty)
+        XCTAssertNotNil(snap.formattedTotal)
     }
 
     func testVerifySHA256AcceptsMatchingFile() throws {

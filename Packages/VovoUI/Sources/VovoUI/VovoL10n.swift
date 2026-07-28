@@ -27,12 +27,19 @@ public enum VovoL10n {
         case storyModelGateOpenFallback
         case storyModelGateNotNow
         case storyModelGateDownloading
+        case storyModelGateVerifying
+        case storyModelGateUnpacking
         case storyModelGateImporting
         case storyModelGateRetry
         case storyModelGateHaltedTitle
         case storyModelGateHaltedBody
         case storyModelGateChecking
         case storyModelGateFilenameHint
+        case storyModelGateDownloadSpeed
+        case storyModelGateDownloadElapsed
+        case storyModelGateDownloadETA
+        case storyModelGateDownloadETAUnknown
+        case storyModelGateDownloadBytes
         case storyValidationTooShort
         case storyValidationTooLong
     }
@@ -74,6 +81,26 @@ public enum VovoL10n {
             "validationTooLong",
             lang: lang,
             vars: ["max": "\(max)", "current": "\(current)"]
+        )
+    }
+
+    public static func downloadSpeed(_ speed: String, lang: AppLanguage) -> String {
+        string("storyModelGateDownloadSpeed", lang: lang, vars: ["speed": speed])
+    }
+
+    public static func downloadElapsed(_ time: String, lang: AppLanguage) -> String {
+        string("storyModelGateDownloadElapsed", lang: lang, vars: ["time": time])
+    }
+
+    public static func downloadETA(_ time: String, lang: AppLanguage) -> String {
+        string("storyModelGateDownloadETA", lang: lang, vars: ["time": time])
+    }
+
+    public static func downloadBytes(received: String, total: String, lang: AppLanguage) -> String {
+        string(
+            "storyModelGateDownloadBytes",
+            lang: lang,
+            vars: ["received": received, "total": total]
         )
     }
 

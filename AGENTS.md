@@ -33,7 +33,7 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
 - Feature boundary protocol: `StoryFromPromptGenerating`. **No static / template story generation.**
   - `DeviceStoryGenerator` — **default**. Model missing → `modelNotInstalled`; inference/parse failure → error. Never invents a story body.
   - `MLXStoryGenerator` — on-device LLM via **MLX** + **mlx-community/Qwen3.5-4B-MLX-4bit** (~3 GB pack). Runtime: stock `mlx-swift` + `mlx-swift-lm`. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.7 / topK 20 / topP 0.95 / maxTokens 1024.
-  - **Model install:** automatic download from `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` into `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`. Fallback: HF page + **Import** zip/folder. Package CDN zip: `./scripts/package_qwen35_4b_mlx_zip.sh`.
+  - **Model install:** automatic download from `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` into `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`. Host integrity: fetch `…zip.sha256` first, then verify the zip. Fallback: HF page + **Import** zip/folder (no checksum). Package CDN zip + sidecar: `./scripts/package_qwen35_4b_mlx_zip.sh`.
   - Seams / packaging notes: `docs/ON_DEVICE_LLM.md`.
 - **Markdown on disk** (edit, rebuild):
   - UI: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`

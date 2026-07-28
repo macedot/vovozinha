@@ -6,7 +6,7 @@ enum StoryModelGateState: Equatable {
     case checking
     case ready
     case needsModel
-    case downloading(progress: Double)
+    case downloading(ModelDownloadProgress)
     case importing
     case failed(message: String)
     case halted
@@ -59,8 +59,8 @@ public struct StoryPromptFeatureView: View {
                 createFlow
             case .needsModel:
                 gateNeedsModel
-            case .downloading(let progress):
-                gateDownloading(progress: progress)
+            case .downloading(let snapshot):
+                gateDownloading(snapshot)
             case .importing:
                 gateImporting
             case .failed(let message):
@@ -145,24 +145,86 @@ public struct StoryPromptFeatureView: View {
         }
     }
 
-    private func gateDownloading(progress: Double) -> some View {
+    private func gateDownloading(_ snapshot: ModelDownloadProgress) -> some View {
         VovoScreen(
             title: VovoL10n.t(.storyModelGateTitle, lang),
-            subtitle: VovoL10n.t(.storyModelGateDownloading, lang),
+            subtitle: downloadPhaseSubtitle(snapshot),
             scrolls: false
         ) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 14) {
                 Spacer(minLength: 0)
-                ProgressView(value: max(progress, 0.02)) {
-                    Text("\(Int(progress * 100))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(VovoTheme.cream.opacity(0.85))
+
+                if snapshot.bytesTotal != nil || snapshot.fraction > 0 {
+                    ProgressView(value: max(snapshot.fraction, 0.02)) {
+                        Text("\(Int(snapshot.fraction * 100))%")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(VovoTheme.cream.opacity(0.85))
+                    }
+                    .tint(VovoTheme.amber)
+                    .accessibilityIdentifier("modelGateProgress")
+                } else {
+                    ProgressView()
+                        .tint(VovoTheme.amber)
+                        .accessibilityIdentifier("modelGateProgress")
                 }
-                .tint(VovoTheme.amber)
-                .accessibilityIdentifier("modelGateProgress")
+
+                VStack(alignment: .leading, spacing: 6) {
+                    if let total = snapshot.formattedTotal {
+                        downloadStatLine(
+                            VovoL10n.downloadBytes(
+                                received: snapshot.formattedReceived,
+                                total: total,
+                                lang: lang
+                            )
+                        )
+                    } else if snapshot.bytesReceived > 0 {
+                        downloadStatLine(snapshot.formattedReceived)
+                    }
+
+                    if snapshot.phase == .downloading, snapshot.bytesPerSecond > 0 {
+                        downloadStatLine(
+                            VovoL10n.downloadSpeed(snapshot.formattedSpeed, lang: lang)
+                        )
+                    }
+
+                    downloadStatLine(
+                        VovoL10n.downloadElapsed(snapshot.formattedElapsed, lang: lang)
+                    )
+
+                    if snapshot.phase == .downloading {
+                        if let eta = snapshot.formattedETA {
+                            downloadStatLine(VovoL10n.downloadETA(eta, lang: lang))
+                        } else if snapshot.bytesReceived > 0 {
+                            downloadStatLine(VovoL10n.t(.storyModelGateDownloadETAUnknown, lang))
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("modelGateDownloadStats")
+
                 Spacer(minLength: 0)
             }
         }
+    }
+
+    private func downloadPhaseSubtitle(_ snapshot: ModelDownloadProgress) -> String {
+        switch snapshot.phase {
+        case .downloading:
+            return VovoL10n.t(.storyModelGateDownloading, lang)
+        case .verifying:
+            return VovoL10n.t(.storyModelGateVerifying, lang)
+        case .unpacking:
+            return VovoL10n.t(.storyModelGateUnpacking, lang)
+        case .finished:
+            return VovoL10n.t(.storyModelGateDownloading, lang)
+        }
+    }
+
+    private func downloadStatLine(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(VovoTheme.cream.opacity(0.8))
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var gateImporting: some View {
@@ -392,10 +454,10 @@ public struct StoryPromptFeatureView: View {
 
     @MainActor
     private func startModelDownload() async {
-        modelGate = .downloading(progress: 0)
+        modelGate = .downloading(.zero)
         do {
-            try await modelStore.download { fraction in
-                modelGate = .downloading(progress: min(max(fraction, 0), 1))
+            try await modelStore.download { snapshot in
+                modelGate = .downloading(snapshot)
             }
             modelGate = await modelStore.isModelPresent()
                 ? .ready

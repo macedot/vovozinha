@@ -9,12 +9,18 @@ import zlib
 /// fallback and the user **imports** a zip or unpacked folder. Sandbox path:
 /// `<Documents>/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`.
 ///
-/// Host downloads are integrity-checked with a pinned SHA-256. Manual Import / HF browser
-/// paths are not (external sources are not our responsibility).
+/// Host downloads are integrity-checked by fetching a sidecar `.sha256` from our CDN
+/// and comparing it to the zip. Manual Import / HF browser paths are not checked
+/// (external sources are not our responsibility).
 public actor OnDeviceMLXModelStore {
     /// Automatic in-app download (zip of MLX weights + tokenizer).
     public static let defaultHostDownloadURL = URL(string:
         "https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip"
+    )!
+
+    /// Sidecar checksum for the host zip (`*.zip.sha256`, shasum-style text).
+    public static let defaultHostSHA256URL = URL(string:
+        "https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256"
     )!
 
     /// Manual browser fallback when automatic download fails.
@@ -28,22 +34,19 @@ public actor OnDeviceMLXModelStore {
     /// Zip filename expected for Downloads auto-import.
     public static let defaultZipFilename = "Qwen3.5-4B-MLX-4bit.zip"
 
-    /// Lowercase hex SHA-256 of the CDN zip produced by `scripts/package_qwen35_4b_mlx_zip.sh`.
-    /// Update whenever the hosted pack is rebuilt.
-    public static let defaultHostZipSHA256 =
-        "8b788dc7ca49b3527228159132a810106004218242652e71a13d1bdee8d8cebb"
-
     private let modelDirectoryURL: URL
     private let sourceURL: URL
+    /// Host checksum file; when non-nil, `download` fetches it and verifies the zip.
+    private let sha256URL: URL?
     private let session: URLSession
-    /// When non-nil, `download` verifies the zip against this hex SHA-256 (host path only).
-    private let expectedHostZipSHA256: String?
 
     public enum DownloadError: Error, LocalizedError, Equatable {
         case http(statusCode: Int)
         case emptyFile
         case unzipFailed
         case checksumMismatch
+        case checksumFileInvalid
+        case checksumUnavailable
 
         public var errorDescription: String? {
             switch self {
@@ -55,6 +58,10 @@ public actor OnDeviceMLXModelStore {
                 return "Could not unpack the model archive. Try Import from Files."
             case .checksumMismatch:
                 return "Model download failed integrity check. Try again on Wi‑Fi, or open the backup download page."
+            case .checksumFileInvalid:
+                return "Could not read the download checksum from the server. Try again later."
+            case .checksumUnavailable:
+                return "Could not download the integrity checksum. Try again on Wi‑Fi."
             }
         }
     }
@@ -85,13 +92,13 @@ public actor OnDeviceMLXModelStore {
     /// - Parameters:
     ///   - documentsURL: Container whose `Vovozinha/Models/` holds the model directory.
     ///   - sourceURL: Automatic download URL (defaults to kraftek host zip).
-    ///   - expectedHostZipSHA256: Hex SHA-256 required for host `download` (default: pinned CDN pack).
+    ///   - sha256URL: Sidecar checksum URL (defaults to `*.zip.sha256` on the same host).
     ///     Pass `nil` only in tests that skip integrity checks.
     ///   - session: Injectable for tests.
     public init(
         documentsURL: URL? = nil,
         sourceURL: URL = OnDeviceMLXModelStore.defaultHostDownloadURL,
-        expectedHostZipSHA256: String? = OnDeviceMLXModelStore.defaultHostZipSHA256,
+        sha256URL: URL? = OnDeviceMLXModelStore.defaultHostSHA256URL,
         session: URLSession = .shared
     ) {
         let docs = documentsURL ?? OnDeviceMLXModelStore.defaultDocumentsURL()
@@ -100,7 +107,7 @@ public actor OnDeviceMLXModelStore {
             .appendingPathComponent("Models", isDirectory: true)
             .appendingPathComponent(Self.defaultModelDirectoryName, isDirectory: true)
         self.sourceURL = sourceURL
-        self.expectedHostZipSHA256 = expectedHostZipSHA256
+        self.sha256URL = sha256URL
         self.session = session
     }
 
@@ -111,7 +118,11 @@ public actor OnDeviceMLXModelStore {
     }
 
     /// Downloads the model zip from our host, unpacks into the app sandbox (with progress).
-    public func download(progress: (@MainActor @Sendable (Double) -> Void)? = nil) async throws {
+    ///
+    /// - Parameter progress: Optional main-actor callback with fraction, speed, elapsed, and ETA.
+    public func download(
+        progress: (@MainActor @Sendable (ModelDownloadProgress) -> Void)? = nil
+    ) async throws {
         try FileManager.default.createDirectory(
             at: modelDirectoryURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -121,6 +132,40 @@ public actor OnDeviceMLXModelStore {
         request.setValue("Vovozinha/1.0 (iOS; Qwen3.5 MLX model fetch)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
 
+        let started = Date()
+        if let progress {
+            await progress(ModelDownloadProgress(phase: .downloading))
+        }
+
+        // Fetch CDN checksum first (small) so we fail fast if the sidecar is missing.
+        let expectedHash: String?
+        if let sha256URL {
+            if let progress {
+                await progress(
+                    Self.makeDownloadSnapshot(
+                        started: started,
+                        received: 0,
+                        bytesTotal: nil,
+                        phase: .verifying,
+                        fractionOverride: 0.02
+                    )
+                )
+            }
+            do {
+                expectedHash = try await Self.fetchRemoteSHA256(from: sha256URL, session: session)
+            } catch let e as DownloadError {
+                throw e
+            } catch {
+                throw DownloadError.checksumUnavailable
+            }
+        } else {
+            expectedHash = nil
+        }
+
+        if let progress {
+            await progress(ModelDownloadProgress(fraction: 0.03, phase: .downloading))
+        }
+
         let (asyncBytes, response) = try await session.bytes(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw DownloadError.http(statusCode: -1)
@@ -129,7 +174,8 @@ public actor OnDeviceMLXModelStore {
             throw DownloadError.http(statusCode: http.statusCode)
         }
 
-        let expected = http.expectedContentLength
+        let expectedLength = http.expectedContentLength
+        let bytesTotal: Int64? = expectedLength > 0 ? expectedLength : nil
         let tempZip = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(UUID().uuidString).zip")
         FileManager.default.createFile(atPath: tempZip.path, contents: nil)
@@ -139,6 +185,8 @@ public actor OnDeviceMLXModelStore {
         var received: Int64 = 0
         var buffer = Data()
         buffer.reserveCapacity(1 << 20)
+        var lastReport = Date.distantPast
+        let reportInterval: TimeInterval = 0.25
 
         for try await byte in asyncBytes {
             buffer.append(byte)
@@ -146,8 +194,17 @@ public actor OnDeviceMLXModelStore {
                 try handle.write(contentsOf: buffer)
                 received &+= Int64(buffer.count)
                 buffer.removeAll(keepingCapacity: true)
-                if let progress, expected > 0 {
-                    await progress(min(Double(received) / Double(expected) * 0.95, 0.95))
+                let now = Date()
+                if let progress, now.timeIntervalSince(lastReport) >= reportInterval {
+                    lastReport = now
+                    await progress(
+                        Self.makeDownloadSnapshot(
+                            started: started,
+                            received: received,
+                            bytesTotal: bytesTotal,
+                            phase: .downloading
+                        )
+                    )
                 }
             }
         }
@@ -161,14 +218,49 @@ public actor OnDeviceMLXModelStore {
             throw DownloadError.emptyFile
         }
 
+        if let progress {
+            await progress(
+                Self.makeDownloadSnapshot(
+                    started: started,
+                    received: received,
+                    bytesTotal: bytesTotal,
+                    phase: .downloading,
+                    fractionOverride: 0.92
+                )
+            )
+        }
+
         // Integrity check only for host auto-download (not Import / external sources).
-        if let expected = expectedHostZipSHA256 {
+        if let expectedHash {
+            if let progress {
+                await progress(
+                    Self.makeDownloadSnapshot(
+                        started: started,
+                        received: received,
+                        bytesTotal: bytesTotal,
+                        phase: .verifying,
+                        fractionOverride: 0.94
+                    )
+                )
+            }
             do {
-                try Self.verifySHA256(ofFileAt: tempZip, expectedHex: expected)
+                try Self.verifySHA256(ofFileAt: tempZip, expectedHex: expectedHash)
             } catch {
                 try? FileManager.default.removeItem(at: tempZip)
                 throw error
             }
+        }
+
+        if let progress {
+            await progress(
+                Self.makeDownloadSnapshot(
+                    started: started,
+                    received: received,
+                    bytesTotal: bytesTotal,
+                    phase: .unpacking,
+                    fractionOverride: 0.96
+                )
+            )
         }
 
         do {
@@ -180,7 +272,52 @@ public actor OnDeviceMLXModelStore {
         }
 
         guard isModelPresent() else { throw DownloadError.unzipFailed }
-        if let progress { await progress(1.0) }
+        if let progress {
+            await progress(
+                Self.makeDownloadSnapshot(
+                    started: started,
+                    received: received,
+                    bytesTotal: bytesTotal ?? received,
+                    phase: .finished,
+                    fractionOverride: 1
+                )
+            )
+        }
+    }
+
+    private static func makeDownloadSnapshot(
+        started: Date,
+        received: Int64,
+        bytesTotal: Int64?,
+        phase: ModelDownloadProgress.Phase,
+        fractionOverride: Double? = nil
+    ) -> ModelDownloadProgress {
+        let elapsed = max(Date().timeIntervalSince(started), 0.001)
+        let bps = Double(received) / elapsed
+        let fraction: Double
+        if let fractionOverride {
+            fraction = fractionOverride
+        } else if let bytesTotal, bytesTotal > 0 {
+            // Leave headroom for verify + unpack.
+            fraction = min(Double(received) / Double(bytesTotal) * 0.92, 0.92)
+        } else {
+            fraction = 0
+        }
+        var eta: TimeInterval?
+        if phase == .downloading, let bytesTotal, bytesTotal > received, bps > 1 {
+            eta = Double(bytesTotal - received) / bps
+        } else if phase == .finished {
+            eta = 0
+        }
+        return ModelDownloadProgress(
+            fraction: fraction,
+            bytesReceived: received,
+            bytesTotal: bytesTotal,
+            bytesPerSecond: bps,
+            elapsed: elapsed,
+            estimatedRemaining: eta,
+            phase: phase
+        )
     }
 
     /// Imports a user-provided **zip** or **folder** into the app model directory.
@@ -244,6 +381,44 @@ public actor OnDeviceMLXModelStore {
     }
 
     // MARK: - Host integrity
+
+    /// Downloads and parses a shasum-style sidecar (`hex  filename` or bare hex).
+    static func fetchRemoteSHA256(from url: URL, session: URLSession) async throws -> String {
+        var request = URLRequest(url: url)
+        request.setValue("Vovozinha/1.0 (iOS; Qwen3.5 MLX checksum fetch)", forHTTPHeaderField: "User-Agent")
+        request.setValue("text/plain", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 60
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw DownloadError.checksumUnavailable
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw DownloadError.http(statusCode: http.statusCode)
+        }
+        guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else {
+            throw DownloadError.checksumFileInvalid
+        }
+        return try parseSHA256File(text)
+    }
+
+    /// Accepts `8b78…  Qwen3.5-4B-MLX-4bit.zip` or a bare 64-char hex line.
+    static func parseSHA256File(_ text: String) throws -> String {
+        let lines = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+
+        for line in lines {
+            let token = line.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? ""
+            let hex = token.lowercased()
+            if hex.count == 64, hex.unicodeScalars.allSatisfy({ CharacterSet(charactersIn: "0123456789abcdef").contains($0) }) {
+                return hex
+            }
+        }
+        throw DownloadError.checksumFileInvalid
+    }
 
     /// SHA-256 (lowercase hex) of the file at `url`. Used for host CDN downloads only.
     static func sha256Hex(ofFileAt url: URL) throws -> String {

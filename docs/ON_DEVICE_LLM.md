@@ -8,8 +8,8 @@
 | **Runtime** | Local `mlx-swift` + `mlx-swift-lm` @ 3.31.4 (see `./scripts/setup_mlx_local.sh`) |
 | **Pack path** | `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/` |
 | **CDN zip** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` |
-| **Host SHA-256** | Pinned in `OnDeviceMLXModelStore.defaultHostZipSHA256` (host download only) |
-| **Package zip** | `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` |
+| **CDN checksum** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256` (fetched before zip; host download only) |
+| **Package zip** | `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` + `.sha256` |
 | **Gate** | Download zip / Import folder\|zip / HF fallback / halt |
 | **Output contract** | `TITLE:` / `SUMMARY:` + **exactly 10** paragraphs |
 | **Fallback stories** | **None** — missing model or bad parse → error |
@@ -38,9 +38,9 @@
 
 ```bash
 ./scripts/package_qwen35_4b_mlx_zip.sh
-# → build/Qwen3.5-4B-MLX-4bit.zip (+ .sha256)
-# Upload to files.kraftek.dev/qwen/
-# Pin SHA-256 in OnDeviceMLXModelStore.defaultHostZipSHA256
+# → build/Qwen3.5-4B-MLX-4bit.zip + .sha256
+# Upload BOTH to files.kraftek.dev/qwen/
+# App downloads the .sha256 sidecar and verifies the zip against it.
 # Do not commit the zip into git.
 ```
 
