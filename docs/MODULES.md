@@ -37,7 +37,7 @@ Legacy/
 - **Generator backends** (protocol `StoryFromPromptGenerating`):
   - `DeviceStoryGenerator` — **default**. Requires **Bonsai MLX** pack on disk; **throws** if missing or on inference failure. **No static story body.**
   - `StoryPromptFeatureView` **gates** on model presence: auto-download zip → or HF backup page → **Import** zip/folder (or halt).
-  - `MLXBonsaiStoryGenerator` — on-device LLM via **MLX** + `prism-ml/Bonsai-27B-mlx-1bit`. Pack under `Documents/Vovozinha/Models/Bonsai-27B-mlx-1bit/`. Fewer than 10 paragraphs → generation error (never pads empty scenes).
+  - `MLXBonsaiStoryGenerator` — on-device LLM via **MLX** + `prism-ml/Bonsai-27B-mlx-1bit`. Pack under `Documents/Vovozinha/Models/Bonsai-27B-mlx-1bit/`. Fewer than 10 paragraphs → generation error (never pads empty scenes). **Trial only** — device quality was poor; see `docs/ON_DEVICE_LLM.md` for the next swap checklist.
 - **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
 ## Static text (Markdown on disk)

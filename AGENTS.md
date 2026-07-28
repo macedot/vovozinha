@@ -32,8 +32,9 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
 - Output: `StoryDraft` = title, summary, **exactly 10 paragraphs**, with the story language pinned on `StoryDraft.language`.
 - Feature boundary protocol: `StoryFromPromptGenerating`. **No static / template story generation.**
   - `DeviceStoryGenerator` — **default**. Model missing → `modelNotInstalled`; inference/parse failure → error. Never invents a story body.
-  - `MLXBonsaiStoryGenerator` — on-device LLM via **MLX** + **prism-ml/Bonsai-27B-mlx-1bit** (~5.13 GB pack). Runtime: Prism `mlx-swift` (1-bit) + `mlx-swift-lm`. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.7 / topK 20 / topP 0.95 / maxTokens 1024.
+  - `MLXBonsaiStoryGenerator` — on-device LLM via **MLX** + **prism-ml/Bonsai-27B-mlx-1bit** (~5.13 GB pack). Runtime: Prism `mlx-swift` (1-bit) + `mlx-swift-lm` @ 3.31.4. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.7 / topK 20 / topP 0.95 / maxTokens 1024.
   - **Model install:** automatic download from `https://files.kraftek.dev/bonsai/Bonsai-27B-mlx-1bit.zip` into `Documents/Vovozinha/Models/Bonsai-27B-mlx-1bit/`. Fallback: open Hugging Face model page + user **Import** zip or folder from Files/Downloads.
+  - **Status:** Bonsai **did not meet quality on device tests** — expect another backend swap. Stable seams + checklist: `docs/ON_DEVICE_LLM.md`.
 - **Markdown on disk** (edit, rebuild):
   - UI: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
   - Story prompts: `Packages/StoryPromptKit/.../Resources/Prompts/litert.<lang>.md` (description placeholders must be filled — `StoryPromptTemplate`).
