@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import zlib
 
 /// Owns the on-device **Qwen3.5-4B-MLX-4bit** MLX model directory.
@@ -7,6 +8,9 @@ import zlib
 /// host (`files.kraftek.dev`). If that fails, the UI can open Hugging Face as a manual
 /// fallback and the user **imports** a zip or unpacked folder. Sandbox path:
 /// `<Documents>/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`.
+///
+/// Host downloads are integrity-checked with a pinned SHA-256. Manual Import / HF browser
+/// paths are not (external sources are not our responsibility).
 public actor OnDeviceMLXModelStore {
     /// Automatic in-app download (zip of MLX weights + tokenizer).
     public static let defaultHostDownloadURL = URL(string:
@@ -24,14 +28,22 @@ public actor OnDeviceMLXModelStore {
     /// Zip filename expected for Downloads auto-import.
     public static let defaultZipFilename = "Qwen3.5-4B-MLX-4bit.zip"
 
+    /// Lowercase hex SHA-256 of the CDN zip produced by `scripts/package_qwen35_4b_mlx_zip.sh`.
+    /// Update whenever the hosted pack is rebuilt.
+    public static let defaultHostZipSHA256 =
+        "8b788dc7ca49b3527228159132a810106004218242652e71a13d1bdee8d8cebb"
+
     private let modelDirectoryURL: URL
     private let sourceURL: URL
     private let session: URLSession
+    /// When non-nil, `download` verifies the zip against this hex SHA-256 (host path only).
+    private let expectedHostZipSHA256: String?
 
     public enum DownloadError: Error, LocalizedError, Equatable {
         case http(statusCode: Int)
         case emptyFile
         case unzipFailed
+        case checksumMismatch
 
         public var errorDescription: String? {
             switch self {
@@ -41,6 +53,8 @@ public actor OnDeviceMLXModelStore {
                 return "Model download finished but the file is empty."
             case .unzipFailed:
                 return "Could not unpack the model archive. Try Import from Files."
+            case .checksumMismatch:
+                return "Model download failed integrity check. Try again on Wi‑Fi, or open the backup download page."
             }
         }
     }
@@ -71,10 +85,13 @@ public actor OnDeviceMLXModelStore {
     /// - Parameters:
     ///   - documentsURL: Container whose `Vovozinha/Models/` holds the model directory.
     ///   - sourceURL: Automatic download URL (defaults to kraftek host zip).
+    ///   - expectedHostZipSHA256: Hex SHA-256 required for host `download` (default: pinned CDN pack).
+    ///     Pass `nil` only in tests that skip integrity checks.
     ///   - session: Injectable for tests.
     public init(
         documentsURL: URL? = nil,
         sourceURL: URL = OnDeviceMLXModelStore.defaultHostDownloadURL,
+        expectedHostZipSHA256: String? = OnDeviceMLXModelStore.defaultHostZipSHA256,
         session: URLSession = .shared
     ) {
         let docs = documentsURL ?? OnDeviceMLXModelStore.defaultDocumentsURL()
@@ -83,6 +100,7 @@ public actor OnDeviceMLXModelStore {
             .appendingPathComponent("Models", isDirectory: true)
             .appendingPathComponent(Self.defaultModelDirectoryName, isDirectory: true)
         self.sourceURL = sourceURL
+        self.expectedHostZipSHA256 = expectedHostZipSHA256
         self.session = session
     }
 
@@ -143,6 +161,16 @@ public actor OnDeviceMLXModelStore {
             throw DownloadError.emptyFile
         }
 
+        // Integrity check only for host auto-download (not Import / external sources).
+        if let expected = expectedHostZipSHA256 {
+            do {
+                try Self.verifySHA256(ofFileAt: tempZip, expectedHex: expected)
+            } catch {
+                try? FileManager.default.removeItem(at: tempZip)
+                throw error
+            }
+        }
+
         do {
             try Self.installPack(fromZip: tempZip, to: modelDirectoryURL)
             try? FileManager.default.removeItem(at: tempZip)
@@ -156,6 +184,7 @@ public actor OnDeviceMLXModelStore {
     }
 
     /// Imports a user-provided **zip** or **folder** into the app model directory.
+    /// No SHA-256 check — external / user-provided packs are not our responsibility.
     public func importModel(from sourceURL: URL) throws {
         let accessed = sourceURL.startAccessingSecurityScopedResource()
         defer {
@@ -211,6 +240,30 @@ public actor OnDeviceMLXModelStore {
     public func removeModel() throws {
         if FileManager.default.fileExists(atPath: modelDirectoryURL.path) {
             try FileManager.default.removeItem(at: modelDirectoryURL)
+        }
+    }
+
+    // MARK: - Host integrity
+
+    /// SHA-256 (lowercase hex) of the file at `url`. Used for host CDN downloads only.
+    static func sha256Hex(ofFileAt url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+
+        var hasher = SHA256()
+        while true {
+            let chunk = try handle.read(upToCount: 1 << 20) // 1 MB
+            guard let chunk, !chunk.isEmpty else { break }
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    static func verifySHA256(ofFileAt url: URL, expectedHex: String) throws {
+        let actual = try sha256Hex(ofFileAt: url)
+        let expected = expectedHex.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard actual == expected else {
+            throw DownloadError.checksumMismatch
         }
     }
 

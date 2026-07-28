@@ -14,12 +14,6 @@ public protocol MLXStoryEngineSessioning: Sendable {
 #if canImport(MLXLLM) && canImport(MLXLMCommon)
 import MLXLLM
 import MLXLMCommon
-#if canImport(MLXHuggingFace)
-import MLXHuggingFace
-#endif
-#if canImport(Tokenizers)
-import Tokenizers
-#endif
 #if canImport(MLXVLM)
 import MLXVLM
 #endif
@@ -65,7 +59,7 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
     }
 
     private static func loadContainer(from directory: URL) async throws -> ModelContainer {
-        let tokenizerLoader = try makeTokenizerLoader()
+        let tokenizerLoader = makeTokenizerLoader()
 
         // Qwen3.5-4B ships as qwen3_5 VLM weights; VLM factory handles that model_type.
         // Fall back to LLM factory if VLM is not linked.
@@ -89,13 +83,8 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
         #endif
     }
 
-    private static func makeTokenizerLoader() throws -> any TokenizerLoader {
-        #if canImport(MLXHuggingFace)
-        // Macro expands to AutoTokenizer-backed loader (local directory; no hub download).
-        return #huggingFaceTokenizerLoader()
-        #else
-        throw StoryPromptError.generationFailed
-        #endif
+    private static func makeTokenizerLoader() -> any TokenizerLoader {
+        HuggingFaceTokenizerLoader()
     }
 }
 #endif

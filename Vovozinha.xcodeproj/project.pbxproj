@@ -45,7 +45,6 @@
 		A168BDD28CEA41CE92833D92 /* FeatureAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91DE753B34843CA898A5900 /* FeatureAvailability.swift */; };
 		A2C7C1D2F8603F6E3F3F0DF1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C43888ABA14734283D029121 /* Assets.xcassets */; };
 		AACD97F5768C8CF1DE8A8DA9 /* StoryCreationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */; };
-		AF0564E53017418F0076A3BD /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = B8C7D6E5F4030201AABBCCDD /* StableDiffusion */; };
 		B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */; };
 		B7113193C06D4D95B29FE761 /* DeviceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51ED58D03372498DBDA0B063 /* DeviceProfile.swift */; };
 		BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = FDAB148DEF7F7A680C1CFBAE /* VovoUI */; };
@@ -156,7 +155,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AF0564E53017418F0076A3BD /* StableDiffusion in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,7 +465,6 @@
 			);
 			name = VovozinhaLegacy;
 			packageProductDependencies = (
-				B8C7D6E5F4030201AABBCCDD /* StableDiffusion */,
 			);
 			productName = VovozinhaLegacy;
 			productReference = 19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */;
@@ -510,7 +507,6 @@
 			);
 			mainGroup = 845B03F833F34524B2568957;
 			packageReferences = (
-				A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
 				6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
 				482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
 			);
@@ -756,7 +752,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -950,7 +946,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -1088,17 +1084,6 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/ml-stable-diffusion.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
 		303C87C3C1A9EC708F67FBF9 /* VovoUI */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1109,11 +1094,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */;
 			productName = StoryPromptKit;
-		};
-		B8C7D6E5F4030201AABBCCDD /* StableDiffusion */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A9B8C7D6E5F4030201AABBCC /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
-			productName = StableDiffusion;
 		};
 		EEF2639B58A015CAB8F318EA /* StoryPromptKit */ = {
 			isa = XCSwiftPackageProductDependency;

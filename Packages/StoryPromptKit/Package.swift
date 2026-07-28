@@ -9,12 +9,15 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../VovoUI"),
-        // On-device LLM: stock MLX + mlx-swift-lm (4-bit Qwen3.5 — no Prism 1-bit fork).
-        // Metal shaders require Xcode / xcodebuild (and MetalToolchain on some Xcode betas).
-        .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.4")),
-        .package(url: "https://github.com/ml-explore/mlx-swift-lm", .upToNextMajor(from: "3.31.3")),
+        // Local mlx-swift (Prism or stock checkout). Prefer local over remote 0.31.6+ because
+        // remote mlx-swift’s host CudaBuild/encuda tool fails under Xcode 27 + Swift 6 when
+        // building the iOS app (ArgumentParser Sendable). 4-bit Qwen packs work on Prism kernels.
+        //
+        // Setup once from repo root:
+        //   ./scripts/setup_mlx_local.sh
+        .package(path: "../../../mlx-swift"),
+        .package(path: "../../../mlx-swift-lm"),
         .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
-        .package(url: "https://github.com/huggingface/swift-huggingface", from: "0.9.0"),
     ],
     targets: [
         .target(
@@ -26,9 +29,7 @@ let package = Package(
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXVLM", package: "mlx-swift-lm"),
-                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
-                .product(name: "HuggingFace", package: "swift-huggingface"),
             ],
             path: "Sources/StoryPromptKit",
             resources: [

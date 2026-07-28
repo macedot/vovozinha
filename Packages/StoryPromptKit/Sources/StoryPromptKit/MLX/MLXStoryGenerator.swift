@@ -56,7 +56,7 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
     // MARK: - Prompt building
 
     static func buildPrompt(seed: String, language: AppLanguage) -> String {
-        StoryPromptTemplate.filledLiteRTPrompt(description: seed, language: language)
+        StoryPromptTemplate.filledStoryPrompt(description: seed, language: language)
     }
 
     /// Drop optional Qwen-style thinking wrappers if the model emits them despite instructions.

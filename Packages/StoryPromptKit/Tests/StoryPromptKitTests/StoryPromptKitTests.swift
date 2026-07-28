@@ -58,14 +58,14 @@ final class StoryPromptKitTests: XCTestCase {
         )
     }
 
-    func testLiteRTPromptReplacesDescriptionPlaceholdersInAllLanguages() {
+    func testStoryPromptReplacesDescriptionPlaceholdersInAllLanguages() {
         let cases: [(AppLanguage, String)] = [
             (.englishUS, "a little rabbit finds a glowing pebble under the soft moon"),
             (.portugueseBrazil, "um coelhinho acha um seixo brilhante sob a lua macia"),
             (.spanishSpain, "un conejito halla un guijarro brillante bajo la luna suave")
         ]
         for (lang, description) in cases {
-            let filled = StoryPromptTemplate.filledLiteRTPrompt(
+            let filled = StoryPromptTemplate.filledStoryPrompt(
                 description: description,
                 language: lang
             )

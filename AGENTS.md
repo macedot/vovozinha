@@ -37,12 +37,17 @@ scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack instal
   - Seams / packaging notes: `docs/ON_DEVICE_LLM.md`.
 - **Markdown on disk** (edit, rebuild):
   - UI: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
-  - Story prompts: `Packages/StoryPromptKit/.../Resources/Prompts/litert.<lang>.md` (description placeholders must be filled — `StoryPromptTemplate`).
+  - Story prompts: `Packages/StoryPromptKit/.../Resources/Prompts/story.<lang>.md` (description placeholders must be filled — `StoryPromptTemplate`).
 
 ## Build & test
 Requires **Xcode 27 beta** (`/Applications/Xcode-beta.app`); always set `DEVELOPER_DIR` first.
 
-> **MLX:** SPM pulls `ml-explore/mlx-swift` + `mlx-swift-lm` remotely. Metal shaders need Xcode (and on some betas: `xcodebuild -downloadComponent MetalToolchain`).
+> **MLX (local path packages):**
+> ```bash
+> ./scripts/setup_mlx_local.sh   # clones ../mlx-swift (Prism) + ../mlx-swift-lm @ 3.31.4
+> xcodebuild -downloadComponent MetalToolchain   # if metal tool missing on Xcode beta
+> ```
+> Remote mlx-swift 0.31.6+ pulls a host `CudaBuild` plugin that fails under Xcode 27 / Swift 6, so we use local Prism mlx-swift (4-bit Qwen packs work; no Cuda plugin).
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
@@ -72,6 +77,6 @@ Shared schemes (in `Vovozinha.xcodeproj/xcshareddata/xcschemes`): **Vovozinha** 
 - Kids-safety and offline-first rules are hard constraints: no cloud generation, no cloud TTS, no accounts, no required analytics. User data stays under `Documents/Vovozinha/`.
 - Pin a story's language on `StoryDraft.language`; UI and offline story body follow the `LanguageStore` selection.
 - Parent-facing copy must stay parent-friendly — no model codenames (e.g. "VAEEncoder", "Core ML") in UI strings; those belong in docs/dev tooling only.
-- Narration / image packs remain legacy-only until ported as kits. Optional neural art pack: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`); procedural art is the fallback. The Legacy target links `apple/ml-stable-diffusion` (`StableDiffusion` product) for that pack.
+- Narration / image packs remain legacy-only until ported as kits. Optional neural art pack: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`); procedural art is the fallback. **Note:** `apple/ml-stable-diffusion` is **not** linked in the shared Xcode project (it pins `swift-transformers` 0.1.8, which conflicts with StoryPromptKit’s MLX stack needing transformers 1.x). Legacy still builds with `#if canImport(StableDiffusion)` → procedural path.
 - **Licensing — Qwen / MLX:** MLX / mlx-swift are under their upstream licenses (typically Apache-2.0 / MIT — keep NOTICE attribution). **Qwen3.5-4B** / MLX community quant weights are **Apache-2.0**. Independent of this repo's AGPL-3.0 license.
 - `.gitignore` excludes `.cache/`, `**/.build/`, model bundles (`*.mlmodel`, `*.mlpackage`, `/Models/`). `.pbx_ids.json` is a local agent/helper file, also ignored.

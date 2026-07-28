@@ -1,7 +1,7 @@
 import Foundation
 import VovoUI
 
-/// Loads on-disk **LLM prompt** Markdown (`litert.<lang>.md`) and injects the parent's
+/// Loads on-disk **LLM prompt** Markdown (`story.<lang>.md`) and injects the parent's
 /// short story description. These files are **instructions for the model**, not story bodies.
 public enum StoryPromptTemplate: Sendable {
     public static let descriptionPlaceholders: [String] = [
@@ -20,10 +20,10 @@ public enum StoryPromptTemplate: Sendable {
             .appendingPathComponent("Resources")
     }
 
-    /// Loads `litert.<lang>.md` (falls back to en-US) and substitutes the description.
-    public static func filledLiteRTPrompt(description: String, language: AppLanguage) -> String {
-        let path = "Prompts/litert.\(language.rawValue).md"
-        let fallback = "Prompts/litert.\(AppLanguage.englishUS.rawValue).md"
+    /// Loads `story.<lang>.md` (falls back to en-US) and substitutes the description.
+    public static func filledStoryPrompt(description: String, language: AppLanguage) -> String {
+        let path = "Prompts/story.\(language.rawValue).md"
+        let fallback = "Prompts/story.\(AppLanguage.englishUS.rawValue).md"
         var raw = MarkdownTextCatalog.loadFile(
             path,
             bundle: .module,

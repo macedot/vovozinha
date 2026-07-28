@@ -6,11 +6,9 @@ User-edited **LLM instructions** for the on-device **Qwen3.5 MLX** path. These a
 
 | File | Language |
 |------|----------|
-| `litert.en-US.md` | English (US) |
-| `litert.pt-BR.md` | Português (Brasil) |
-| `litert.es-ES.md` | Español (España) |
-
-(Filenames keep the historical `litert.*` prefix; content is engine-agnostic story instructions.)
+| `story.en-US.md` | English (US) |
+| `story.pt-BR.md` | Português (Brasil) |
+| `story.es-ES.md` | Español (España) |
 
 ## Placeholders
 

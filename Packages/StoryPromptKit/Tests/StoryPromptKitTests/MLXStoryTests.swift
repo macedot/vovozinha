@@ -199,6 +199,27 @@ final class OnDeviceMLXModelStoreTests: XCTestCase {
             OnDeviceMLXModelStore.defaultHostFallbackPageURL.absoluteString
                 .contains("mlx-community/Qwen3.5-4B-MLX-4bit")
         )
+        XCTAssertEqual(
+            OnDeviceMLXModelStore.defaultHostZipSHA256.count,
+            64,
+            "pinned host SHA-256 must be 64 hex chars"
+        )
+    }
+
+    func testVerifySHA256AcceptsMatchingFile() throws {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        let payload = Data("vovozinha-host-pack".utf8)
+        try payload.write(to: tmp)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let hex = try OnDeviceMLXModelStore.sha256Hex(ofFileAt: tmp)
+        XCTAssertNoThrow(try OnDeviceMLXModelStore.verifySHA256(ofFileAt: tmp, expectedHex: hex))
+        XCTAssertThrowsError(
+            try OnDeviceMLXModelStore.verifySHA256(ofFileAt: tmp, expectedHex: String(repeating: "0", count: 64))
+        ) {
+            XCTAssertEqual($0 as? OnDeviceMLXModelStore.DownloadError, .checksumMismatch)
+        }
     }
 
     func testDirectoryLooksLikeMLXPack() throws {

@@ -47,7 +47,7 @@ UI strings and **LLM prompt instructions** (not story bodies) live in **Markdown
 | Package | Path | Purpose |
 |---------|------|---------|
 | **VovoUI** | `Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md` | UI strings |
-| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/litert.<lang>.md` | Story LLM prompts (`TITLE:`/`SUMMARY:` + 10 paragraphs) |
+| **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/story.<lang>.md` | Story LLM prompts (`TITLE:`/`SUMMARY:` + 10 paragraphs) |
 
 Edit the `.md` files and rebuild. See each folder’s `README.md`.
 
