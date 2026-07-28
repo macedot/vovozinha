@@ -1,33 +1,33 @@
 import Foundation
 import VovoUI
 
-/// Production generator: **Bonsai MLX only**. No static / template story body.
+/// Production generator: **Qwen3.5 MLX only**. No static / template story body.
 ///
 /// - Model missing → `StoryPromptError.modelNotInstalled`
 /// - Inference or parse failure → `StoryPromptError.generationFailed` (or underlying error)
 /// - Never invents paragraphs without the model.
 public struct DeviceStoryGenerator: StoryFromPromptGenerating {
-    private let modelStore: BonsaiModelStore
-    private let sessionProvider: @Sendable (URL) throws -> any MLXBonsaiEngineSessioning
+    private let modelStore: OnDeviceMLXModelStore
+    private let sessionProvider: @Sendable (URL) throws -> any MLXStoryEngineSessioning
 
-    public init(modelStore: BonsaiModelStore = BonsaiModelStore()) {
+    public init(modelStore: OnDeviceMLXModelStore = OnDeviceMLXModelStore()) {
         self.init(modelStore: modelStore, sessionProvider: DeviceStoryGenerator.defaultSessionProvider)
     }
 
     init(
-        modelStore: BonsaiModelStore,
-        sessionProvider: @escaping @Sendable (URL) throws -> any MLXBonsaiEngineSessioning
+        modelStore: OnDeviceMLXModelStore,
+        sessionProvider: @escaping @Sendable (URL) throws -> any MLXStoryEngineSessioning
     ) {
         self.modelStore = modelStore
         self.sessionProvider = sessionProvider
     }
 
     #if canImport(MLXLLM) && canImport(MLXLMCommon)
-    static let defaultSessionProvider: @Sendable (URL) throws -> any MLXBonsaiEngineSessioning = { dir in
-        MLXBonsaiEngineSession(modelDirectory: dir)
+    static let defaultSessionProvider: @Sendable (URL) throws -> any MLXStoryEngineSessioning = { dir in
+        MLXStoryEngineSession(modelDirectory: dir)
     }
     #else
-    static let defaultSessionProvider: @Sendable (URL) throws -> any MLXBonsaiEngineSessioning = { _ in
+    static let defaultSessionProvider: @Sendable (URL) throws -> any MLXStoryEngineSessioning = { _ in
         throw StoryPromptError.generationFailed
     }
     #endif
@@ -41,7 +41,7 @@ public struct DeviceStoryGenerator: StoryFromPromptGenerating {
 
         let modelDir = await modelStore.modelDirectory()
         let session = try sessionProvider(modelDir)
-        let generator = try MLXBonsaiStoryGenerator(modelDirectory: modelDir, session: session)
+        let generator = try MLXStoryGenerator(modelDirectory: modelDir, session: session)
         return try await generator.generate(from: prompt)
     }
 }

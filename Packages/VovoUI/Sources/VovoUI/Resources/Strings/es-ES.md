@@ -40,7 +40,7 @@ El modelo de cuento en el dispositivo no está instalado. Descárgalo en la app 
 Modelo de cuento necesario
 
 ## storyModelGateBody
-Los cuentos necesitan un modelo en el dispositivo (~5 GB). Descárgalo una vez por Wi‑Fi. Si falla la descarga automática, abre la página alternativa, guarda el zip o carpeta en Descargas e Importa.
+Los cuentos necesitan un modelo en el dispositivo (~3 GB). Descárgalo una vez por Wi‑Fi. Si falla la descarga automática, abre la página alternativa, guarda el zip o carpeta en Descargas e Importa.
 
 ## storyModelGateDownload
 Descargar modelo
@@ -73,7 +73,7 @@ Sin el modelo en el dispositivo no se pueden crear cuentos. Descárgalo o impór
 Comprobando el modelo de cuento…
 
 ## storyModelGateFilenameHint
-Paquete: Bonsai-27B-mlx-1bit (zip o carpeta). Mejor con Wi‑Fi.
+Paquete: Qwen3.5-4B-MLX-4bit (zip o carpeta). Mejor con Wi‑Fi.
 
 ## storyValidationTooShort
 Demasiado corto

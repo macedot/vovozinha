@@ -1,27 +1,27 @@
 import Foundation
 import VovoUI
 
-/// On-device LLM story generator backed by **Bonsai-27B-mlx-1bit** (MLX).
+/// On-device LLM story generator backed by **Qwen3.5-4B-MLX-4bit** (MLX).
 ///
 /// Inference is **100% local**. The model directory is obtained out-of-band by
-/// `BonsaiModelStore`. There is **no** static story fallback: failures throw.
+/// `OnDeviceMLXModelStore`. There is **no** static story fallback: failures throw.
 ///
 /// Output: `StoryDraft` with title, summary, and **exactly 10 paragraphs**.
-public struct MLXBonsaiStoryGenerator: StoryFromPromptGenerating {
-    private let session: any MLXBonsaiEngineSessioning
+public struct MLXStoryGenerator: StoryFromPromptGenerating {
+    private let session: any MLXStoryEngineSessioning
 
     /// - Parameters:
     ///   - modelDirectory: Filesystem URL of the unpacked MLX model pack.
     ///   - session: Inject a conformer for tests; defaults to the real MLX engine when linked.
     public init(
         modelDirectory: URL,
-        session: (any MLXBonsaiEngineSessioning)? = nil
+        session: (any MLXStoryEngineSessioning)? = nil
     ) throws {
         if let session {
             self.session = session
         } else {
             #if canImport(MLXLLM) && canImport(MLXLMCommon)
-            self.session = MLXBonsaiEngineSession(modelDirectory: modelDirectory)
+            self.session = MLXStoryEngineSession(modelDirectory: modelDirectory)
             #else
             throw StoryPromptError.generationFailed
             #endif

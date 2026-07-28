@@ -14,9 +14,9 @@ enum StoryModelGateState: Equatable {
 
 /// UI surface for the Story Prompt feature (used by main app + DEBUG harness).
 ///
-/// On open, checks for the **Bonsai MLX** model pack. If missing, offers **automatic download**
-/// from our host (`files.kraftek.dev`). If that fails, Hugging Face is a **manual browser
-/// fallback**, plus **Import** of a zip or folder from Files/Downloads.
+/// On open, checks for the **Qwen3.5-4B MLX** model pack. If missing, offers **automatic
+/// download** from our host (`files.kraftek.dev`). If that fails, Hugging Face is a **manual
+/// browser fallback**, plus **Import** of a zip or folder from Files/Downloads.
 public struct StoryPromptFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
     @Environment(\.openURL) private var openURL
@@ -25,13 +25,13 @@ public struct StoryPromptFeatureView: View {
     @State private var draft: StoryDraft?
     @State private var errorMessage: String?
     @State private var generator: any StoryFromPromptGenerating
-    @State private var modelStore: BonsaiModelStore
+    @State private var modelStore: OnDeviceMLXModelStore
     @State private var modelGate: StoryModelGateState = .checking
     @State private var showFileImporter = false
 
     public init(
         generator: (any StoryFromPromptGenerating)? = nil,
-        modelStore: BonsaiModelStore = BonsaiModelStore()
+        modelStore: OnDeviceMLXModelStore = OnDeviceMLXModelStore()
     ) {
         let store = modelStore
         _modelStore = State(initialValue: store)
@@ -409,7 +409,7 @@ public struct StoryPromptFeatureView: View {
     }
 
     private func openFallbackHostPage() {
-        openURL(BonsaiModelStore.defaultHostFallbackPageURL)
+        openURL(OnDeviceMLXModelStore.defaultHostFallbackPageURL)
     }
 
     @MainActor
@@ -424,7 +424,7 @@ public struct StoryPromptFeatureView: View {
                 try await modelStore.importModel(from: url)
                 modelGate = await modelStore.isModelPresent()
                     ? .ready
-                    : .failed(message: BonsaiModelStore.ImportError.copyFailed.localizedDescription)
+                    : .failed(message: OnDeviceMLXModelStore.ImportError.copyFailed.localizedDescription)
             } catch {
                 let msg = error.localizedDescription
                 modelGate = .failed(

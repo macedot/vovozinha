@@ -9,19 +9,10 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../VovoUI"),
-        // On-device LLM: Prism MLX (1-bit kernels) + mlx-swift-lm.
-        //
-        // WORKAROUND: both packages are LOCAL path dependencies so we can point mlx-swift-lm
-        // at the Prism 1-bit mlx-swift fork (remote SPM would pin ml-explore/mlx-swift and
-        // collide on package identity).
-        //
-        // One-time setup from the vovozinha repo root:
-        //   ./scripts/setup_bonsai_mlx.sh
-        // This clones:
-        //   ../../mlx-swift      (PrismML-Eng/mlx-swift @ prism)
-        //   ../../mlx-swift-lm  (ml-explore/mlx-swift-lm, patched to use path mlx-swift)
-        .package(path: "../../../mlx-swift"),
-        .package(path: "../../../mlx-swift-lm"),
+        // On-device LLM: stock MLX + mlx-swift-lm (4-bit Qwen3.5 — no Prism 1-bit fork).
+        // Metal shaders require Xcode / xcodebuild (and MetalToolchain on some Xcode betas).
+        .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.4")),
+        .package(url: "https://github.com/ml-explore/mlx-swift-lm", .upToNextMajor(from: "3.31.3")),
         .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
         .package(url: "https://github.com/huggingface/swift-huggingface", from: "0.9.0"),
     ],

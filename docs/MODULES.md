@@ -35,9 +35,9 @@ Legacy/
 - Constraint: **10–20 words** (inclusive).
 - Output: title, summary, **10 scene paragraphs**; story language stored on `StoryDraft`.
 - **Generator backends** (protocol `StoryFromPromptGenerating`):
-  - `DeviceStoryGenerator` — **default**. Requires **Bonsai MLX** pack on disk; **throws** if missing or on inference failure. **No static story body.**
+  - `DeviceStoryGenerator` — **default**. Requires **Qwen3.5-4B MLX** pack on disk; **throws** if missing or on inference failure. **No static story body.**
   - `StoryPromptFeatureView` **gates** on model presence: auto-download zip → or HF backup page → **Import** zip/folder (or halt).
-  - `MLXBonsaiStoryGenerator` — on-device LLM via **MLX** + `prism-ml/Bonsai-27B-mlx-1bit`. Pack under `Documents/Vovozinha/Models/Bonsai-27B-mlx-1bit/`. Fewer than 10 paragraphs → generation error (never pads empty scenes). **Trial only** — device quality was poor; see `docs/ON_DEVICE_LLM.md` for the next swap checklist.
+  - `MLXStoryGenerator` — on-device LLM via **MLX** + `mlx-community/Qwen3.5-4B-MLX-4bit`. Pack under `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`. Fewer than 10 paragraphs → generation error (never pads empty scenes). See `docs/ON_DEVICE_LLM.md`.
 - **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
 ## Static text (Markdown on disk)

@@ -1,28 +1,28 @@
 import Foundation
 import zlib
 
-/// Owns the on-device **Bonsai-27B-mlx-1bit** MLX model directory.
+/// Owns the on-device **Qwen3.5-4B-MLX-4bit** MLX model directory.
 ///
 /// **Generation is offline.** Networking is only used to **download** a zip once from our
 /// host (`files.kraftek.dev`). If that fails, the UI can open Hugging Face as a manual
 /// fallback and the user **imports** a zip or unpacked folder. Sandbox path:
-/// `<Documents>/Vovozinha/Models/Bonsai-27B-mlx-1bit/`.
-public actor BonsaiModelStore {
+/// `<Documents>/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`.
+public actor OnDeviceMLXModelStore {
     /// Automatic in-app download (zip of MLX weights + tokenizer).
     public static let defaultHostDownloadURL = URL(string:
-        "https://files.kraftek.dev/bonsai/Bonsai-27B-mlx-1bit.zip"
+        "https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip"
     )!
 
     /// Manual browser fallback when automatic download fails.
     public static let defaultHostFallbackPageURL = URL(string:
-        "https://huggingface.co/prism-ml/Bonsai-27B-mlx-1bit"
+        "https://huggingface.co/mlx-community/Qwen3.5-4B-MLX-4bit"
     )!
 
     /// Directory name under `Vovozinha/Models/`.
-    public static let defaultModelDirectoryName = "Bonsai-27B-mlx-1bit"
+    public static let defaultModelDirectoryName = "Qwen3.5-4B-MLX-4bit"
 
     /// Zip filename expected for Downloads auto-import.
-    public static let defaultZipFilename = "Bonsai-27B-mlx-1bit.zip"
+    public static let defaultZipFilename = "Qwen3.5-4B-MLX-4bit.zip"
 
     private let modelDirectoryURL: URL
     private let sourceURL: URL
@@ -61,7 +61,7 @@ public actor BonsaiModelStore {
             case .copyFailed:
                 return "Could not copy the model into the app. Try again."
             case .missingConfig:
-                return "Model pack is incomplete (need config.json and weights). Import the full Bonsai MLX folder or zip."
+                return "Model pack is incomplete (need config.json and weights). Import the full Qwen3.5 MLX folder or zip."
             case .unzipFailed:
                 return "Could not unpack the model archive."
             }
@@ -74,10 +74,10 @@ public actor BonsaiModelStore {
     ///   - session: Injectable for tests.
     public init(
         documentsURL: URL? = nil,
-        sourceURL: URL = BonsaiModelStore.defaultHostDownloadURL,
+        sourceURL: URL = OnDeviceMLXModelStore.defaultHostDownloadURL,
         session: URLSession = .shared
     ) {
-        let docs = documentsURL ?? BonsaiModelStore.defaultDocumentsURL()
+        let docs = documentsURL ?? OnDeviceMLXModelStore.defaultDocumentsURL()
         self.modelDirectoryURL = docs
             .appendingPathComponent("Vovozinha", isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
@@ -100,7 +100,7 @@ public actor BonsaiModelStore {
         )
 
         var request = URLRequest(url: sourceURL)
-        request.setValue("Vovozinha/1.0 (iOS; Bonsai MLX model fetch)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Vovozinha/1.0 (iOS; Qwen3.5 MLX model fetch)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
 
         let (asyncBytes, response) = try await session.bytes(for: request)
@@ -317,13 +317,13 @@ public actor BonsaiModelStore {
 enum SimpleZip {
     static func extract(zipURL: URL, to destination: URL) throws {
         let data = try Data(contentsOf: zipURL, options: [.mappedIfSafe])
-        guard data.count >= 22 else { throw BonsaiModelStore.ImportError.unzipFailed }
+        guard data.count >= 22 else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
 
         var offset = 0
         while offset + 30 <= data.count {
             let sig = readUInt32(data, offset)
             if sig == 0x02014b50 || sig == 0x06054b50 { break }
-            guard sig == 0x04034b50 else { throw BonsaiModelStore.ImportError.unzipFailed }
+            guard sig == 0x04034b50 else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
 
             let method = Int(readUInt16(data, offset + 8))
             let flags = Int(readUInt16(data, offset + 6))
@@ -334,12 +334,12 @@ enum SimpleZip {
             let nameStart = offset + 30
             let nameEnd = nameStart + nameLen
             guard nameEnd + extraLen <= data.count else {
-                throw BonsaiModelStore.ImportError.unzipFailed
+                throw OnDeviceMLXModelStore.ImportError.unzipFailed
             }
 
             let nameData = data.subdata(in: nameStart..<nameEnd)
             guard let name = String(data: nameData, encoding: .utf8), !name.isEmpty else {
-                throw BonsaiModelStore.ImportError.unzipFailed
+                throw OnDeviceMLXModelStore.ImportError.unzipFailed
             }
 
             let dataStart = nameEnd + extraLen
@@ -347,11 +347,11 @@ enum SimpleZip {
 
             // Data descriptor (bit 3): sizes follow the payload; we cannot stream easily — fail.
             if flags & 0x8 != 0 {
-                throw BonsaiModelStore.ImportError.unzipFailed
+                throw OnDeviceMLXModelStore.ImportError.unzipFailed
             }
 
             let dataEnd = dataStart + compSize
-            guard dataEnd <= data.count else { throw BonsaiModelStore.ImportError.unzipFailed }
+            guard dataEnd <= data.count else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
             let payload = data.subdata(in: dataStart..<dataEnd)
             offset = dataEnd
 
@@ -373,7 +373,7 @@ enum SimpleZip {
                     expectedSize: uncompSize > 0 ? uncompSize : payload.count * 4
                 )
             default:
-                throw BonsaiModelStore.ImportError.unzipFailed
+                throw OnDeviceMLXModelStore.ImportError.unzipFailed
             }
             try bytes.write(to: outURL, options: .atomic)
         }
@@ -398,7 +398,7 @@ enum SimpleZip {
             ZLIB_VERSION,
             Int32(MemoryLayout<z_stream>.size)
         )
-        guard status == Z_OK else { throw BonsaiModelStore.ImportError.unzipFailed }
+        guard status == Z_OK else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
         defer { _ = inflateEnd(&stream) }
 
         var output = [UInt8](repeating: 0, count: max(expectedSize, 64 * 1024))
@@ -406,7 +406,7 @@ enum SimpleZip {
 
         try compressed.withUnsafeBytes { srcBuf in
             guard let src = srcBuf.bindMemory(to: Bytef.self).baseAddress else {
-                throw BonsaiModelStore.ImportError.unzipFailed
+                throw OnDeviceMLXModelStore.ImportError.unzipFailed
             }
             stream.next_in = UnsafeMutablePointer(mutating: src)
             stream.avail_in = uInt(compressed.count)
@@ -418,7 +418,7 @@ enum SimpleZip {
                 let remaining = output.count - outCount
                 try output.withUnsafeMutableBytes { dstBuf in
                     guard let dst = dstBuf.baseAddress?.assumingMemoryBound(to: Bytef.self) else {
-                        throw BonsaiModelStore.ImportError.unzipFailed
+                        throw OnDeviceMLXModelStore.ImportError.unzipFailed
                     }
                     stream.next_out = dst.advanced(by: outCount)
                     stream.avail_out = uInt(remaining)
@@ -426,7 +426,7 @@ enum SimpleZip {
                 }
                 outCount = Int(stream.total_out)
                 if status == Z_STREAM_END { break }
-                if status != Z_OK { throw BonsaiModelStore.ImportError.unzipFailed }
+                if status != Z_OK { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
             }
         }
 

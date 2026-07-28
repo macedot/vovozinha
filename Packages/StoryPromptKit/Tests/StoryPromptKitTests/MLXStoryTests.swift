@@ -5,7 +5,7 @@ import VovoUI
 
 // MARK: - Test helpers
 
-final class MockMLXBonsaiEngineSession: MLXBonsaiEngineSessioning, @unchecked Sendable {
+final class MockMLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable {
     let reply: String
     let error: (any Error)?
     private let lastPrompt = OSAllocatedUnfairLock<String?>(initialState: nil)
@@ -31,9 +31,9 @@ private func validSeed(
     StorySeedPrompt(text: text, language: language)
 }
 
-// MARK: - MLXBonsaiStoryGenerator
+// MARK: - MLXStoryGenerator
 
-final class MLXBonsaiStoryGeneratorTests: XCTestCase {
+final class MLXStoryGeneratorTests: XCTestCase {
     private static let wellFormedReply = """
     TITLE: The Glowing Pebble
     SUMMARY: A gentle bedtime tale about a curious rabbit.
@@ -60,8 +60,8 @@ final class MLXBonsaiStoryGeneratorTests: XCTestCase {
     """
 
     func testParsesWellFormedReplyIntoTenParagraphs() async throws {
-        let session = MockMLXBonsaiEngineSession(reply: Self.wellFormedReply)
-        let gen = try MLXBonsaiStoryGenerator(
+        let session = MockMLXStoryEngineSession(reply: Self.wellFormedReply)
+        let gen = try MLXStoryGenerator(
             modelDirectory: URL(fileURLWithPath: "/ignored"),
             session: session
         )
@@ -71,8 +71,8 @@ final class MLXBonsaiStoryGeneratorTests: XCTestCase {
     }
 
     func testPromptIncludesSeedDescription() async throws {
-        let session = MockMLXBonsaiEngineSession(reply: Self.wellFormedReply)
-        let gen = try MLXBonsaiStoryGenerator(
+        let session = MockMLXStoryEngineSession(reply: Self.wellFormedReply)
+        let gen = try MLXStoryGenerator(
             modelDirectory: URL(fileURLWithPath: "/ignored"),
             session: session
         )
@@ -82,7 +82,7 @@ final class MLXBonsaiStoryGeneratorTests: XCTestCase {
     }
 
     func testNormalizeThrowsWhenTooFew() throws {
-        XCTAssertThrowsError(try MLXBonsaiStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
+        XCTAssertThrowsError(try MLXStoryGenerator.normalizeParagraphs("one\n\ntwo")) {
             XCTAssertEqual($0 as? StoryPromptError, .generationFailed)
         }
     }
@@ -113,9 +113,9 @@ final class MLXBonsaiStoryGeneratorTests: XCTestCase {
 
         Para ten.
         """
-        let cleaned = MLXBonsaiStoryGenerator.stripThinkingBlocks(raw)
+        let cleaned = MLXStoryGenerator.stripThinkingBlocks(raw)
         XCTAssertFalse(cleaned.contains("<think>"))
-        let parsed = try? MLXBonsaiStoryGenerator.parse(cleaned)
+        let parsed = try? MLXStoryGenerator.parse(cleaned)
         XCTAssertEqual(parsed?.paragraphs.count, 10)
     }
 }
@@ -129,7 +129,7 @@ final class DeviceStoryGeneratorTests: XCTestCase {
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }
 
-        let store = BonsaiModelStore(documentsURL: tmp)
+        let store = OnDeviceMLXModelStore(documentsURL: tmp)
         let generator = DeviceStoryGenerator(modelStore: store)
         do {
             _ = try await generator.generate(from: validSeed())
@@ -142,9 +142,9 @@ final class DeviceStoryGeneratorTests: XCTestCase {
     }
 }
 
-// MARK: - BonsaiModelStore
+// MARK: - OnDeviceMLXModelStore
 
-final class BonsaiModelStoreTests: XCTestCase {
+final class OnDeviceMLXModelStoreTests: XCTestCase {
     func testImportModelFromFolderMakesModelPresent() async throws {
         let docs = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -158,14 +158,14 @@ final class BonsaiModelStoreTests: XCTestCase {
         try Data([0x01, 0x02, 0x03, 0x04]).write(to: pack.appendingPathComponent("model.safetensors"))
         defer { try? FileManager.default.removeItem(at: pack) }
 
-        let store = BonsaiModelStore(documentsURL: docs)
+        let store = OnDeviceMLXModelStore(documentsURL: docs)
         let before = await store.isModelPresent()
         XCTAssertFalse(before)
         try await store.importModel(from: pack)
         let after = await store.isModelPresent()
         XCTAssertTrue(after)
         let dest = await store.modelDirectory()
-        XCTAssertEqual(dest.lastPathComponent, BonsaiModelStore.defaultModelDirectoryName)
+        XCTAssertEqual(dest.lastPathComponent, OnDeviceMLXModelStore.defaultModelDirectoryName)
     }
 
     func testImportEmptyFileThrows() async throws {
@@ -179,11 +179,11 @@ final class BonsaiModelStoreTests: XCTestCase {
         try Data().write(to: source)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let store = BonsaiModelStore(documentsURL: docs)
+        let store = OnDeviceMLXModelStore(documentsURL: docs)
         do {
             try await store.importModel(from: source)
             XCTFail("expected emptyFile")
-        } catch let e as BonsaiModelStore.ImportError {
+        } catch let e as OnDeviceMLXModelStore.ImportError {
             XCTAssertEqual(e, .emptyFile)
         } catch {
             XCTFail("wrong error \(error)")
@@ -191,13 +191,13 @@ final class BonsaiModelStoreTests: XCTestCase {
     }
 
     func testHostDownloadURLIsKraftekZip() {
-        let url = BonsaiModelStore.defaultHostDownloadURL.absoluteString
+        let url = OnDeviceMLXModelStore.defaultHostDownloadURL.absoluteString
         XCTAssertTrue(url.contains("files.kraftek.dev"))
-        XCTAssertTrue(url.contains("Bonsai-27B-mlx-1bit.zip"))
-        XCTAssertEqual(BonsaiModelStore.defaultModelDirectoryName, "Bonsai-27B-mlx-1bit")
+        XCTAssertTrue(url.contains("Qwen3.5-4B-MLX-4bit.zip"))
+        XCTAssertEqual(OnDeviceMLXModelStore.defaultModelDirectoryName, "Qwen3.5-4B-MLX-4bit")
         XCTAssertTrue(
-            BonsaiModelStore.defaultHostFallbackPageURL.absoluteString
-                .contains("prism-ml/Bonsai-27B-mlx-1bit")
+            OnDeviceMLXModelStore.defaultHostFallbackPageURL.absoluteString
+                .contains("mlx-community/Qwen3.5-4B-MLX-4bit")
         )
     }
 
@@ -207,10 +207,10 @@ final class BonsaiModelStoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: pack) }
 
-        XCTAssertFalse(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
+        XCTAssertFalse(OnDeviceMLXModelStore.directoryLooksLikeMLXPack(pack))
         try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
-        XCTAssertFalse(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
+        XCTAssertFalse(OnDeviceMLXModelStore.directoryLooksLikeMLXPack(pack))
         try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
-        XCTAssertTrue(BonsaiModelStore.directoryLooksLikeMLXPack(pack))
+        XCTAssertTrue(OnDeviceMLXModelStore.directoryLooksLikeMLXPack(pack))
     }
 }

@@ -1,6 +1,6 @@
 # Story generation prompts (Markdown)
 
-User-edited **LLM instructions** for the on-device **Bonsai MLX** path. These are **not** static story bodies.
+User-edited **LLM instructions** for the on-device **Qwen3.5 MLX** path. These are **not** static story bodies.
 
 ## Files
 
@@ -24,7 +24,7 @@ Parent story description replaces:
 
 Also: `{{seed}}`, `{{idea}}`, `{{description}}`.
 
-`StoryPromptTemplate` / `MLXBonsaiStoryGenerator` perform substitution. **Never leave INSERT tokens unreplaced.**
+`StoryPromptTemplate` / `MLXStoryGenerator` perform substitution. **Never leave INSERT tokens unreplaced.**
 
 ## Product rule
 
