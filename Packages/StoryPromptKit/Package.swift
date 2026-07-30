@@ -18,6 +18,8 @@ let package = Package(
         .package(path: "../../../mlx-swift"),
         .package(path: "../../../mlx-swift-lm"),
         .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
+        // Native libcompression unzip — replaces pure-Swift SimpleZip (too slow for ~GB packs).
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19"),
     ],
     targets: [
         .target(
@@ -30,13 +32,11 @@ let package = Package(
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXVLM", package: "mlx-swift-lm"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
             ],
             path: "Sources/StoryPromptKit",
             resources: [
                 .process("Resources")
-            ],
-            linkerSettings: [
-                .linkedLibrary("z")
             ]
         ),
         .testTarget(

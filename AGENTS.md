@@ -1,58 +1,82 @@
 # Vovozinha — agent notes
 
-## Project overview
-- Offline-first **kids bedtime stories** iOS app. Content for kids ~3–8; the app's users are parents/caregivers **18+** (there is an age gate).
-- **No cloud AI for generation** — all inference is on-device. The network is used only to *download model assets once*; after that the app is fully offline.
-- Devices: **physical iPhone 15+ only** (iOS Simulator is **not supported**). Deployment target **iOS 18.0+**, iPhone only.
-- Languages **pt-BR / en-US / es-ES** (default = system language).
-- License: AGPL-3.0. Development happens on branch `multi`.
+Guidance for AI coding agents working in this repository. Assumes no prior knowledge of the project.
 
-## Repository layout (modular architecture, branch `multi`)
+## Project overview
+
+- Offline-first **kids bedtime stories** iOS app. Content is for kids ~3–8; the app's users are parents/caregivers **18+** (there is an age gate).
+- **No cloud AI for generation** — all inference is on-device. The network is used only to *download model assets once*; after that the app is fully offline.
+- Devices: **physical iPhone 15+ only**. The **iOS Simulator is not supported** — do not build or test against it. Deployment target **iOS 18.0+**, iPhone only.
+- Languages: **pt-BR / en-US / es-ES** (default = system language).
+- License: **AGPL-3.0** (see `LICENSE`). Development happens on branch **`multi`**.
+- Development toolchain: **Xcode 27 beta** at `/Applications/Xcode-beta.app` — always `export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` first.
+
+## Repository layout (modular architecture)
+
 ```
 Packages/
   VovoUI/                 # shared theme + screen chrome + localization (SwiftPM)
-  StoryPromptKit/         # feature kit: seed prompt → story draft (SwiftPM)
+  StoryPromptKit/         # feature kit: story seed prompt → story draft (SwiftPM)
 Apps/
   Vovozinha/              # product host app — thin, composes feature kits
   StoryPromptDebug/       # DEBUG-only harness app running StoryPromptKit alone
   VovozinhaUITests/       # XCUITest UI tests for the host app
 Legacy/
-  VovozinhaLegacy/        # previous full monolithic product (kept for reference/migration)
+  VovozinhaLegacy/        # previous full monolithic product (reference/migration only)
 VovozinhaTests/           # STALE — see "Testing" below
-docs/                     # MODULES.md (architecture), SPIKE.md (AI stack), IMAGE_PACK.md (art pack)
-scripts/download_sd_pack.sh  # optional Core ML Stable Diffusion art pack installer
+docs/                     # MODULES.md (architecture), ON_DEVICE_LLM.md (LLM seams),
+                          # SPIKE.md (AI stack), IMAGE_PACK.md (art pack)
+scripts/
+  setup_mlx_local.sh          # clone local mlx-swift / mlx-swift-lm checkouts (required)
+  package_qwen35_4b_mlx_zip.sh# build the CDN model zip + .sha256 sidecar
+  download_sd_pack.sh         # optional Core ML Stable Diffusion art pack installer (legacy)
+build/                    # gitignored artifacts (xcarchive, .ipa, model zips)
 ```
 
-- **Feature pattern (app + lib):** logic + UI surface live in a kit under `Packages/<Feature>Kit` (models, protocols, generators, `<Feature>FeatureView`); a harness app under `Apps/<Feature>Debug` shows that one feature with `VovoUI` chrome; the host `Apps/Vovozinha` imports kits and composes them. See `docs/MODULES.md`.
-- **VovoUI** provides `VovoTheme`, `VovoScreen`, `LanguageBar`, `LanguageStore`, `AppLanguage`, `VovoL10n`, and `MarkdownTextCatalog` (loads `## key` sections with `{{placeholders}}` from Markdown files).
-- Stack: **SwiftUI + SwiftData**, **Swift 6** (`swift-tools-version: 6.0`). SPM packages target iOS 18 / macOS 14.
+### Feature pattern (app + lib)
+
+Logic and UI surface live in a kit under `Packages/<Feature>Kit` (models, protocols, generators, `<Feature>FeatureView`); a harness app under `Apps/<Feature>Debug` shows that one feature with `VovoUI` chrome; the host `Apps/Vovozinha` imports kits and composes them (`Apps/Vovozinha/VovozinhaApp.swift` is ~30 lines). See `docs/MODULES.md`.
+
+- **VovoUI** (`Packages/VovoUI/Sources/VovoUI/`): `VovoTheme` + `VovoScreen` (both in `VovoTheme.swift`), button styles, `LanguageBar`, `LanguageStore`, `AppLanguage`, `VovoL10n`, `MarkdownTextCatalog` (loads `## key` sections with `{{placeholders}}` from Markdown files), `StoryExportLocationStore`.
+- **StoryPromptKit** (`Packages/StoryPromptKit/Sources/StoryPromptKit/`): `StorySeedPrompt`, `StoryPromptTemplate`, `StoryFromPromptGenerating` (protocol), `StoryPromptFeatureView`, and the `MLX/` folder (`DeviceStoryGenerator`, `MLXStoryGenerator`, `MLXStoryEngineSession`, `OnDeviceMLXModelStore`, `ModelDownloadProgress`, `HuggingFaceTokenizerBridge`).
+
+## Technology stack
+
+- **SwiftUI + SwiftData**, **Swift 6** (`swift-tools-version: 6.0`). SwiftPM packages target iOS 18 / macOS 14.
+- On-device LLM: **MLX** via local path packages `../mlx-swift` (Prism fork, `prism` branch) and `../mlx-swift-lm` @ **3.31.4**, plus `huggingface/swift-transformers` **1.1.0+** and **ZIPFoundation** 0.9.19+ (native libcompression unzip for the ~3 GB model pack).
+  - Remote mlx-swift 0.31.6+ pulls a host `CudaBuild` plugin that fails under Xcode 27 / Swift 6, hence the local Prism checkouts (4-bit Qwen packs work; no Cuda plugin).
+  - `setup_mlx_local.sh` clones the two repos as **siblings of this repo** (`Projects/mlx-swift`, `Projects/mlx-lm`→`mlx-swift-lm`) and patches mlx-swift-lm to path-depend on the local mlx-swift.
+- One Xcode project (`Vovozinha.xcodeproj`) with shared schemes in `xcshareddata/xcschemes`: **Vovozinha** (host), **StoryPromptDebug** (kit harness), **VovozinhaLegacy** (old monolith). The `StoryPromptKit` scheme is auto-generated by Xcode for package unit tests.
+- Static text is **Markdown on disk** — edit and rebuild, no code changes:
+  - UI strings: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
+  - LLM story prompts: `Packages/StoryPromptKit/Sources/StoryPromptKit/Resources/Prompts/story.<lang>.md`
 
 ## Current feature: Story Prompt
+
 - Input: free-form **story seed**, **10–20 words** (validated by `StorySeedPrompt`).
-- Output: `StoryDraft` = title, summary, **exactly 10 paragraphs**, with the story language pinned on `StoryDraft.language`.
-- Feature boundary protocol: `StoryFromPromptGenerating`. **No static / template story generation.**
-  - `DeviceStoryGenerator` — **default**. Model missing → `modelNotInstalled`; inference/parse failure → error. Never invents a story body.
-  - `MLXStoryGenerator` — on-device LLM via **MLX** + **mlx-community/Qwen3.5-4B-MLX-4bit** (~3 GB pack). Runtime: stock `mlx-swift` + `mlx-swift-lm`. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure. Sampling: temperature 0.7 / topK 20 / topP 0.95 / maxTokens 1024.
-  - **Model install:** automatic download from `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` into `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`. Host integrity: fetch `…zip.sha256` first, then verify the zip. Fallback: HF page + **Import** zip/folder (no checksum). Package CDN zip + sidecar: `./scripts/package_qwen35_4b_mlx_zip.sh`.
-  - Seams / packaging notes: `docs/ON_DEVICE_LLM.md`.
-- **Markdown on disk** (edit, rebuild):
-  - UI: `Packages/VovoUI/Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md`
-  - Story prompts: `Packages/StoryPromptKit/.../Resources/Prompts/story.<lang>.md` (description placeholders must be filled — `StoryPromptTemplate`).
+- Output: `StoryDraft` = title, summary, **exactly 10 paragraphs**, story language pinned on `StoryDraft.language`.
+- Feature boundary protocol: `StoryFromPromptGenerating`. **No static / template story generation** — a missing model or failed inference is an error, never a fabricated story.
+  - `DeviceStoryGenerator` — **default** production entry. Model missing → `modelNotInstalled`; inference/parse failure → `generationFailed`.
+  - `MLXStoryGenerator` — on-device LLM via MLX + `mlx-community/Qwen3.5-4B-MLX-4bit`. Parses `TITLE:` / `SUMMARY:` + **exactly 10** blank-line-separated paragraphs; fewer than 10 → failure (never pads). Sampling: temperature 0.7 / topK 20 / topP 0.95 / maxTokens 1024.
+  - `StoryPromptFeatureView` gates on model presence: auto-download → HF backup page → **Import** zip/folder → or halt.
+- **Model install:** automatic download from `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` (~3 GB, Wi-Fi) into private `Library/Application Support/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/` (never Documents/Downloads). Integrity: the app fetches the `…zip.sha256` sidecar first and verifies the zip. Fallback: Hugging Face page + **Import** via document picker (copied into Application Support; no checksum). Legacy installs under `Documents/Vovozinha/Models/` are migrated once.
+- **Story exports** (PDF/share): default `Documents/Vovozinha/Exports/`; user may pick another folder via `StoryExportLocationStore` bookmark.
+- Prompt contract: description placeholders in `story.<lang>.md` must be filled — `StoryPromptTemplate` enforces this.
+- Stable seams and packaging details: `docs/ON_DEVICE_LLM.md`.
 
 ## Build & test
-Requires **Xcode 27 beta** (`/Applications/Xcode-beta.app`); always set `DEVELOPER_DIR` first.
 
-> **MLX (local path packages):**
-> ```bash
-> ./scripts/setup_mlx_local.sh   # clones ../mlx-swift (Prism) + ../mlx-swift-lm @ 3.31.4
-> xcodebuild -downloadComponent MetalToolchain   # if metal tool missing on Xcode beta
-> ```
-> Remote mlx-swift 0.31.6+ pulls a host `CudaBuild` plugin that fails under Xcode 27 / Swift 6, so we use local Prism mlx-swift (4-bit Qwen packs work; no Cuda plugin).
+Requires **Xcode 27 beta**; always set `DEVELOPER_DIR` first.
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 
-# Host app (physical device / generic iOS — not the Simulator)
+# One-time MLX setup (clones sibling repos ../mlx-swift + ../mlx-swift-lm @ 3.31.4)
+./scripts/setup_mlx_local.sh
+# If the Metal toolchain is missing on Xcode beta:
+xcodebuild -downloadComponent MetalToolchain
+
+# Host app (physical device / generic iOS — NOT the Simulator)
 xcodebuild -scheme Vovozinha -destination 'generic/platform=iOS' build
 
 # Single kit in isolation (DEBUG harness)
@@ -64,19 +88,47 @@ cd Packages/StoryPromptKit && swift test
 # Legacy reference app
 xcodebuild -scheme VovozinhaLegacy -destination 'generic/platform=iOS' build
 ```
-Shared schemes (in `Vovozinha.xcodeproj/xcshareddata/xcschemes`): **Vovozinha** (host), **StoryPromptDebug** (kit harness), **VovozinhaLegacy** (old monolith). The `StoryPromptKit` scheme is auto-generated by Xcode from the package for running its unit tests.
 
 ## Testing
-- **StoryPromptKitTests**: seed validation, prompt placeholder injection, MLX parse/normalize, `DeviceStoryGenerator` throws without model; MLX tests use mock sessions only. Live inference only on a **physical device** after model download.
-- **VovozinhaUITests** (`Apps/VovozinhaUITests/`): optional XCUITest harness for the host app (seed → story flow, language bar). Accessibility identifiers: `storySeedField`, `createStoryButton`, `storyResult`, `language.en/pt/es`. Prefer validating story generation on a physical device.
-- **VovozinhaTests** (`VovozinhaTests/`): **stale**. The target still exists in the project but is wired into no scheme's test action, and its sources test legacy-domain types (`DeviceProfile`, `KidsSafetyFilter`, `FoundationModelsStoryPlanner`, …) that are not part of the thin host target. Treat as legacy reference, not a suite to run; port or delete when touching it.
 
-## Code norms
+- **StoryPromptKitTests** (`Packages/StoryPromptKit/Tests/StoryPromptKitTests/`): seed validation, prompt placeholder injection, MLX parse/normalize, `DeviceStoryGenerator` throws without a model. MLX tests use **mock sessions only**. Run with `swift test` on macOS — no device needed. Live inference is exercised only on a **physical device** after model download.
+- **VovozinhaUITests** (`Apps/VovozinhaUITests/StoryCreationUITests.swift`): optional XCUITest harness for the host app (seed → story flow, language bar). Accessibility identifiers: `storySeedField`, `createStoryButton`, `storyResult`, `language.en/pt/es`. Prefer validating story generation on a physical device.
+- **VovozinhaTests** (`VovozinhaTests/`): **STALE**. The target still exists in the project but is wired into no scheme's test action, and its sources test legacy-domain types (`DeviceProfile`, `KidsSafetyFilter`, `FoundationModelsStoryPlanner`, …) that are not part of the thin host target. Treat as legacy reference, not a suite to run; port or delete when touching it.
+- When adding features, add unit tests to the corresponding `Packages/<Feature>Kit/Tests/` target.
+
+## Code style & conventions
+
 - Prefer small, focused diffs. New product work goes in **kits + host**, never in `Legacy/`.
 - Match the surrounding style: `Sendable` value types, dependency injection via protocol + initializer defaults, doc comments on public API.
-- Kids-safety and offline-first rules are hard constraints: no cloud generation, no cloud TTS, no accounts, no required analytics. User data stays under `Documents/Vovozinha/`.
 - Pin a story's language on `StoryDraft.language`; UI and offline story body follow the `LanguageStore` selection.
 - Parent-facing copy must stay parent-friendly — no model codenames (e.g. "VAEEncoder", "Core ML") in UI strings; those belong in docs/dev tooling only.
-- Narration / image packs remain legacy-only until ported as kits. Optional neural art pack: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`); procedural art is the fallback. **Note:** `apple/ml-stable-diffusion` is **not** linked in the shared Xcode project (it pins `swift-transformers` 0.1.8, which conflicts with StoryPromptKit’s MLX stack needing transformers 1.x). Legacy still builds with `#if canImport(StableDiffusion)` → procedural path.
-- **Licensing — Qwen / MLX:** MLX / mlx-swift are under their upstream licenses (typically Apache-2.0 / MIT — keep NOTICE attribution). **Qwen3.5-4B** / MLX community quant weights are **Apache-2.0**. Independent of this repo's AGPL-3.0 license.
-- `.gitignore` excludes `.cache/`, `**/.build/`, model bundles (`*.mlmodel`, `*.mlpackage`, `/Models/`). `.pbx_ids.json` is a local agent/helper file, also ignored.
+- Kids-safety and offline-first rules are hard constraints: **no cloud generation, no cloud TTS, no accounts, no required analytics**.
+- Storage rules: **user stories/exports** default under `Documents/Vovozinha/`; **model packs** stay under private Application Support (never user Documents/Downloads).
+- Narration / image packs remain legacy-only until ported as kits. Optional neural art pack: `./scripts/download_sd_pack.sh` (see `docs/IMAGE_PACK.md`); procedural art is the fallback. **Note:** `apple/ml-stable-diffusion` is **not** linked in the shared Xcode project (it pins `swift-transformers` 0.1.8, which conflicts with StoryPromptKit's MLX stack needing transformers 1.x). Legacy builds with `#if canImport(StableDiffusion)` → procedural path.
+- Product invariants (from `docs/ON_DEVICE_LLM.md`): no cloud generation/TTS, no static/template story body, fixed 10 paragraphs, pt-BR/en-US/es-ES, physical iPhone floor, models never in user Documents/Downloads.
+
+## Security & privacy considerations
+
+- Offline-first by design: network access only for the one-time model download (zip + sha256 sidecar) and the Hugging Face fallback page. Do not add cloud endpoints for generation, TTS, accounts, or required analytics.
+- Verify the model zip against the CDN `.sha256` before install (host download path only); the document-picker import is the explicit no-checksum fallback.
+- Model weights licensing: MLX / mlx-swift are under their upstream licenses (typically Apache-2.0 / MIT — keep NOTICE attribution). **Qwen3.5-4B** / MLX community quant weights are **Apache-2.0**, independent of this repo's AGPL-3.0.
+- `.gitignore` excludes `build/`, `.cache/`, `**/.build/`, model bundles (`*.mlmodel`, `*.mlpackage`, `/Models/`, `**/MLModels/`), packaged zips, and local agent/IDE scratch (`.pbx_ids.json`, `.zcode/`). Never commit model packs or zips to git.
+
+## Deployment / distribution
+
+There is no CI/CD pipeline in the repo. Distribution is a manual **development-signed `.ipa`** for physical devices (see README "Install a development `.ipa`"):
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
+# build/exportOptions-development.plist already exists in the repo's build/ dir (gitignored)
+xcodebuild archive -project Vovozinha.xcodeproj -scheme Vovozinha \
+  -configuration Release -destination 'generic/platform=iOS' \
+  -archivePath build/Vovozinha.xcarchive \
+  DEVELOPMENT_TEAM=FTS4YLJNG3 CODE_SIGN_STYLE=Automatic
+xcodebuild -exportArchive -archivePath build/Vovozinha.xcarchive \
+  -exportPath build/ipa -exportOptionsPlist build/exportOptions-development.plist
+```
+
+Artifact: `build/ipa/Vovozinha.ipa` (gitignored). Requires Xcode signed into an Apple ID on team **FTS4YLJNG3** with a valid Apple Development certificate. Install via Xcode Devices window, Apple Configurator, or AltStore (free-ID sideloads expire ~every 7 days). This is **not** an App Store / TestFlight flow.
+
+To rebuild the CDN model pack: `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` + `.sha256`; upload **both** to `files.kraftek.dev/qwen/` (packaging uses `zip -0` store; the checksum changes on every repackaging).

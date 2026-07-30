@@ -40,9 +40,38 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
             throw StoryPromptError.generationFailed
         }
 
-        let raw = try await session.send(userPrompt)
+        let raw: String
+        do {
+            raw = try await session.send(userPrompt)
+        } catch {
+            #if DEBUG
+            print("[MLXStory] session.send failed: \(error)")
+            #endif
+            throw StoryPromptError.generationFailed
+        }
+
         let cleaned = Self.stripThinkingBlocks(raw)
-        let parsed = try Self.parse(cleaned, language: lang)
+        #if DEBUG
+        if cleaned.count < raw.count {
+            print("[MLXStory] stripped thinking; cleaned chars=\(cleaned.count)")
+        }
+        #endif
+
+        let parsed: ParsedStory
+        do {
+            parsed = try Self.parse(cleaned, language: lang)
+        } catch {
+            #if DEBUG
+            let chunks = cleaned
+                .components(separatedBy: "\n\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            print(
+                "[MLXStory] parse failed: blank=\(cleaned.isEmpty) doubleNewlineChunks=\(chunks.count) preview=\(cleaned.prefix(400).replacingOccurrences(of: "\n", with: "⏎"))"
+            )
+            #endif
+            throw StoryPromptError.generationFailed
+        }
 
         return StoryDraft(
             title: parsed.title,
@@ -59,10 +88,10 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
         StoryPromptTemplate.filledStoryPrompt(description: seed, language: language)
     }
 
-    /// Drop optional Qwen-style thinking wrappers if the model emits them despite instructions.
+    /// Drop Qwen-style thinking wrappers if the model emits them despite `enable_thinking: false`.
     static func stripThinkingBlocks(_ raw: String) -> String {
         var text = raw
-        // <think>...</think>
+        // Closed blocks: <think>...</think>
         if let regex = try? NSRegularExpression(
             pattern: #"(?is)<think>.*?</think>"#,
             options: []
@@ -70,6 +99,21 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
             let range = NSRange(text.startIndex..<text.endIndex, in: text)
             text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
         }
+        // Truncated / open block (hit maxTokens mid-think): drop from first <think> to end,
+        // then fall back to anything after a late </think> if present.
+        if let open = text.range(of: "<think>", options: .caseInsensitive) {
+            if let close = text.range(of: "</think>", options: [.caseInsensitive, .backwards]),
+               close.lowerBound > open.lowerBound {
+                text.removeSubrange(open.lowerBound..<close.upperBound)
+            } else {
+                // No usable story after an unfinished think — clear the think prefix.
+                text = String(text[text.startIndex..<open.lowerBound])
+            }
+        }
+        // Redundant empty markers some templates inject.
+        text = text
+            .replacingOccurrences(of: "<think>\n\n</think>", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "<think></think>", with: "", options: .caseInsensitive)
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -123,21 +167,35 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
     }
 
     static func normalizeParagraphs(_ body: String, target: Int = 10) throws -> [String] {
-        let chunks = body
+        let cleanedBody = stripLeadingListMarkers(body)
+        let chunks = cleanedBody
             .components(separatedBy: "\n\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .map { stripLeadingListMarkers($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
 
         var paragraphs = chunks
         if chunks.count == 1, let only = chunks.first {
             let bySingle = only
                 .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .map { stripLeadingListMarkers($0).trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
             if bySingle.count > 1 { paragraphs = bySingle }
         }
 
         guard paragraphs.count >= target else { throw StoryPromptError.generationFailed }
         return Array(paragraphs.prefix(target))
+    }
+
+    /// Drops optional `1.` / `1)` / `Paragraph 1:` prefixes models sometimes add.
+    static func stripLeadingListMarkers(_ text: String) -> String {
+        var line = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let regex = try? NSRegularExpression(
+            pattern: #"^(?i)(?:paragraph\s+)?\d+[\.\)\:\-]\s+"#,
+            options: []
+        ) {
+            let range = NSRange(line.startIndex..<line.endIndex, in: line)
+            line = regex.stringByReplacingMatches(in: line, options: [], range: range, withTemplate: "")
+        }
+        return line
     }
 }

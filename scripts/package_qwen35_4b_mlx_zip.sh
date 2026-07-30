@@ -56,12 +56,14 @@ if ! compgen -G "$CACHE_DIR/*.safetensors" >/dev/null; then
   exit 1
 fi
 
-echo "==> Building zip → $ZIP_PATH"
+echo "==> Building zip (store / -0) → $ZIP_PATH"
+# Store method: 4-bit safetensors barely shrink under deflate, and max compression
+# made iOS unpack painfully slow. Zip is slightly larger; device extract is mostly copy.
 rm -f "$ZIP_PATH"
 (
   cd "$(dirname "$CACHE_DIR")"
   # Folder name inside zip = PACK_NAME so app unpacker can find config.json one level deep.
-  zip -r -9 "$ZIP_PATH" "$(basename "$CACHE_DIR")" \
+  zip -r -0 "$ZIP_PATH" "$(basename "$CACHE_DIR")" \
     -x "*.DS_Store" \
     -x "**/.cache/**" \
     -x "**/.git/**" \
@@ -77,7 +79,7 @@ echo "Done."
 echo "  Upload BOTH files to the CDN (app fetches the sidecar for integrity):"
 echo "    $CDN_URL"
 echo "    ${CDN_URL}.sha256"
-echo "  App dir:    Documents/Vovozinha/Models/${PACK_NAME}/"
+echo "  App dir:    Application Support/Vovozinha/Models/${PACK_NAME}/"
 echo "  Zip:        $ZIP_PATH"
 echo "  SHA-256:    $SHA_PATH  ($HEX)"
 echo ""

@@ -37,7 +37,7 @@ Legacy/
 - **Generator backends** (protocol `StoryFromPromptGenerating`):
   - `DeviceStoryGenerator` — **default**. Requires **Qwen3.5-4B MLX** pack on disk; **throws** if missing or on inference failure. **No static story body.**
   - `StoryPromptFeatureView` **gates** on model presence: auto-download zip → or HF backup page → **Import** zip/folder (or halt).
-  - `MLXStoryGenerator` — on-device LLM via **MLX** + `mlx-community/Qwen3.5-4B-MLX-4bit`. Pack under `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`. Fewer than 10 paragraphs → generation error (never pads empty scenes). See `docs/ON_DEVICE_LLM.md`.
+  - `MLXStoryGenerator` — on-device LLM via **MLX** + `mlx-community/Qwen3.5-4B-MLX-4bit`. Pack under private `Application Support/Vovozinha/Models/…` (not Documents). Fewer than 10 paragraphs → generation error (never pads empty scenes). See `docs/ON_DEVICE_LLM.md`.
 - **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
 ## Static text (Markdown on disk)

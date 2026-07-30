@@ -40,7 +40,7 @@ O modelo de história no aparelho não está instalado. Baixe-o no app antes de 
 Modelo de história necessário
 
 ## storyModelGateBody
-As histórias precisam de um modelo no aparelho (~3 GB). Baixe uma vez no Wi‑Fi. Se a descarga automática falhar, abra a página alternativa, salve o zip ou pasta em Downloads e Importe.
+As histórias precisam de um modelo no aparelho (~3 GB). Baixe uma vez no Wi‑Fi — ele fica privado no app. Se a descarga automática falhar, abra a página alternativa e use Importar dos Arquivos para escolher o zip ou pasta.
 
 ## storyModelGateDownload
 Baixar modelo
@@ -88,7 +88,7 @@ Tentar de novo
 Criação de história indisponível
 
 ## storyModelGateHaltedBody
-Sem o modelo no aparelho, não é possível criar histórias. Baixe ou importe o arquivo de Downloads.
+Sem o modelo no aparelho, não é possível criar histórias. Baixe ou importe um zip ou pasta com Importar dos Arquivos.
 
 ## storyModelGateChecking
 Verificando o modelo de história…

@@ -160,7 +160,8 @@ Caveats:
 2. Type a short **story description** (about **10–20 words**).  
 3. **Model install (first time):**  
    - Tap **Download model** — automatic fetch of [Qwen3.5-4B-MLX-4bit.zip](https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip) (**Wi‑Fi**, ~3 GB).  
-   - If that fails: **Open backup download page** ([Hugging Face](https://huggingface.co/mlx-community/Qwen3.5-4B-MLX-4bit)) → save zip/folder to **Downloads** → **Import from Files**.  
+   - If that fails: **Open backup download page** ([Hugging Face](https://huggingface.co/mlx-community/Qwen3.5-4B-MLX-4bit)) → **Import from Files** (zip or folder is copied into private app storage).  
+
    - Declining leaves story creation unavailable until the model is installed.  
    - **Build CDN zip (dev/ops):** `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip`.
 4. After the model is ready, enter a description and tap **Create story**.  
@@ -176,7 +177,7 @@ Caveats:
 
 ## Privacy
 
-Photos and stories stay under `Documents/Vovozinha/`. No account, no required analytics, **no cloud generation or cloud TTS**. Optional downloads (voice/model packs) only install files; synthesis stays on-device.
+Story exports default under `Documents/Vovozinha/Exports/` (user can change the folder). **Model packs** stay in private Application Support (not Documents/Downloads). No account, no required analytics, **no cloud generation or cloud TTS**.
 
 ## License
 

@@ -40,7 +40,7 @@ On-device story model is not installed. Download it in the app before creating a
 Story model required
 
 ## storyModelGateBody
-Stories need an on-device model (~3 GB). Download it once over Wi‑Fi. If automatic download fails, open the backup page, save the zip or folder to Downloads, then Import.
+Stories need an on-device model (~3 GB). Download it once over Wi‑Fi — it stays private inside the app. If automatic download fails, open the backup page, then use Import from Files to choose the zip or folder.
 
 ## storyModelGateDownload
 Download model
@@ -88,7 +88,7 @@ Try again
 Story creation unavailable
 
 ## storyModelGateHaltedBody
-Without the on-device model, stories cannot be created. Download it, or import the file from Downloads.
+Without the on-device model, stories cannot be created. Download it, or import a zip or folder with Import from Files.
 
 ## storyModelGateChecking
 Checking for story model…
