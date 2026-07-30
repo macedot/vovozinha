@@ -149,3 +149,21 @@ Use no máximo {{max}} palavras (agora {{current}}).
 
 ## seedSubtitle
 Descreva com poucas palavras a história a ser gerada ({{min}}–{{max}} palavras).
+
+## photoDescribeTitle
+Descrever uma foto
+
+## photoDescribeSubtitle
+Escolha uma foto. Neste aparelho escrevemos uma legenda curta — pessoas primeiro, depois objetos, depois a cena. Nada é enviado.
+
+## photoDescribePick
+Escolher foto
+
+## photoDescribeAction
+Descrever foto
+
+## photoDescribeFailed
+Não foi possível descrever a foto. Tente de novo.
+
+## photoDescribeInvalidImage
+Não foi possível ler essa foto. Escolha outra.

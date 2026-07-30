@@ -13,6 +13,7 @@
 | **Remove model** | Clears Application Support pack + install hash; returns to needs-model gate |
 | **Package zip** | `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` + `.sha256` |
 | **Gate** | Download zip / Import folder\|zip / HF fallback / halt |
+| **PhotoDescribe** | Same pack via **`VLMModelFactory`** (vision weights kept); scheme **PhotoDescribeDebug** only — not in host yet |
 | **Output contract** | `TITLE:` / `SUMMARY:` + **exactly 10** paragraphs |
 | **Fallback stories** | **None** — missing model or bad parse → error |
 
@@ -74,9 +75,11 @@ once into Application Support on first access.
 
 ## Memory budget (~3.8 GiB jetsam limit on 6 GB iPhones)
 
-- **Text-only load:** `MLXStoryEngineSession` loads through `LLMModelFactory` (falling back to
+- **Text-only load (Story Prompt):** `MLXStoryEngineSession` loads through `LLMModelFactory` (falling back to
   `VLMModelFactory`). The LLM `Qwen3.5` `sanitize` drops the `vision_tower` weights
-  (**~0.67 GB** of the pack) before they materialize — the app never uses vision.
+  (**~0.67 GB** of the pack) before they materialize — the story path never uses vision.
+- **VLM load (Photo Describe):** `MLXPhotoDescribeSession` loads through `VLMModelFactory` so
+  vision weights stay available for image captions. Heavier residency; same increased-memory entitlement.
 - **Entitlement:** both app targets set `com.apple.developer.kernel.increased-memory-limit`
   (`Apps/Vovozinha/Vovozinha.entitlements`, `Apps/StoryPromptDebug/StoryPromptDebug.entitlements`)
   to raise the per-app limit.

@@ -149,3 +149,21 @@ Usa como máximo {{max}} palabras (ahora {{current}}).
 
 ## seedSubtitle
 Describe con pocas palabras el cuento que se va a generar ({{min}}–{{max}} palabras).
+
+## photoDescribeTitle
+Describir una foto
+
+## photoDescribeSubtitle
+Elige una foto. En este dispositivo escribimos un pie corto — primero personas, luego objetos, luego la escena. Nada se sube.
+
+## photoDescribePick
+Elegir foto
+
+## photoDescribeAction
+Describir foto
+
+## photoDescribeFailed
+No se pudo describir la foto. Inténtalo de nuevo.
+
+## photoDescribeInvalidImage
+No se pudo leer esa foto. Elige otra.

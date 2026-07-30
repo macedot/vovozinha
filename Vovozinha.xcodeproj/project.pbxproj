@@ -67,6 +67,10 @@
 		F4723BCCEEF4460BB85B5927 /* StoryPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24DA98D9E6E747DEAF1ECDCE /* StoryPlanner.swift */; };
 		F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */; };
 		FB58767D60594627944FDFA6 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF8A5A237D24074A43EBEC6 /* LibraryView.swift */; };
+		B71ABC8D010000000000000A /* PhotoDescribeDebugApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */; };
+		B71ABC8D010000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B71ABC8D0100000000000004 /* Assets.xcassets */; };
+		B71ABC8D010000000000000C /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = B71ABC8D0100000000000010 /* VovoUI */; };
+		B71ABC8D010000000000000D /* PhotoDescribeKit in Frameworks */ = {isa = PBXBuildFile; productRef = B71ABC8D010000000000000F /* PhotoDescribeKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -150,6 +154,10 @@
 		F1A2B3C4D5E6F708192A3B40 /* Resources/Prompts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Prompts; sourceTree = "<group>"; };
 		F3C6BCFD48404AE9A1FBDC9D /* ArtStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtStyle.swift; sourceTree = "<group>"; };
 		F91DE753B34843CA898A5900 /* FeatureAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureAvailability.swift; sourceTree = "<group>"; };
+		B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDescribeDebugApp.swift; sourceTree = "<group>"; };
+		B71ABC8D0100000000000002 /* PhotoDescribeDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhotoDescribeDebug.entitlements; sourceTree = "<group>"; };
+		B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDescribeDebug.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B71ABC8D0100000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,6 +183,15 @@
 			files = (
 				BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */,
 				6369BAC3FAFE01852840E6BB /* StoryPromptKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B71ABC8D0100000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B71ABC8D010000000000000C /* VovoUI in Frameworks */,
+				B71ABC8D010000000000000D /* PhotoDescribeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -215,6 +232,7 @@
 				FDEBFC7735A8F38DF94F9762 /* VovozinhaUITests */,
 				F93B217AE8ACA72BAAD43E71 /* Vovozinha */,
 				10B1C7F09004BC216396ECD7 /* StoryPromptDebug */,
+				B71ABC8D0100000000000005 /* PhotoDescribeDebug */,
 			);
 			path = Apps;
 			sourceTree = "<group>";
@@ -319,6 +337,7 @@
 				84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */,
 				39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */,
 				E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */,
+				B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */,
 				19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */,
 				D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */,
 			);
@@ -392,6 +411,16 @@
 				4AF8A5A237D24074A43EBEC6 /* LibraryView.swift */,
 			);
 			path = Library;
+			sourceTree = "<group>";
+		};
+		B71ABC8D0100000000000005 /* PhotoDescribeDebug */ = {
+			isa = PBXGroup;
+			children = (
+				B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */,
+				B71ABC8D0100000000000004 /* Assets.xcassets */,
+				B71ABC8D0100000000000002 /* PhotoDescribeDebug.entitlements */,
+			);
+			path = PhotoDescribeDebug;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -490,6 +519,27 @@
 			productReference = D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		B71ABC8D0100000000000006 /* PhotoDescribeDebug */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B71ABC8D0100000000000013 /* Build configuration list for PBXNativeTarget "PhotoDescribeDebug" */;
+			buildPhases = (
+				B71ABC8D0100000000000007 /* Sources */,
+				B71ABC8D0100000000000008 /* Frameworks */,
+				B71ABC8D0100000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhotoDescribeDebug;
+			packageProductDependencies = (
+				B71ABC8D0100000000000010 /* VovoUI */,
+				B71ABC8D010000000000000F /* PhotoDescribeKit */,
+			);
+			productName = PhotoDescribeDebug;
+			productReference = B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -513,6 +563,7 @@
 			packageReferences = (
 				6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
 				482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
+				B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */,
 			);
 			productRefGroup = BD4806846B73472E943EEFB7 /* Products */;
 			projectDirPath = "";
@@ -521,6 +572,7 @@
 				83A4B0CA54FED6CB455D2738 /* Vovozinha */,
 				7D91D0E5649D11D1FA073301 /* VovozinhaUITests */,
 				1B75E236CBD62681D68323FC /* StoryPromptDebug */,
+				B71ABC8D0100000000000006 /* PhotoDescribeDebug */,
 				DC4CA369A4514D278F03F085 /* VovozinhaLegacy */,
 				F9F259236675465EBDDE98FC /* VovozinhaTests */,
 			);
@@ -550,6 +602,14 @@
 			files = (
 				DE25D41C2A8342868E6F5D1A /* Assets.xcassets in Resources */,
 				E0F1A2B3C4D5E6F708192A3B /* Resources/Prompts in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B71ABC8D0100000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B71ABC8D010000000000000B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -640,6 +700,14 @@
 				36EF72A4B7C54FBF82B23149 /* GenerationView.swift in Sources */,
 				CC8A8DFB42DF4AC5A8B3D515 /* ReaderView.swift in Sources */,
 				087896A386CD4D2BB692A1B2 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B71ABC8D0100000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B71ABC8D010000000000000A /* PhotoDescribeDebugApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1022,6 +1090,70 @@
 			};
 			name = Release;
 		};
+		B71ABC8D0100000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/PhotoDescribeDebug/PhotoDescribeDebug.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PhotoDescribe;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick a photo to describe on this device. Photos never leave your iPhone.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.PhotoDescribeDebug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B71ABC8D0100000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/PhotoDescribeDebug/PhotoDescribeDebug.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PhotoDescribe;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick a photo to describe on this device. Photos never leave your iPhone.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.PhotoDescribeDebug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1079,6 +1211,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B71ABC8D0100000000000013 /* Build configuration list for PBXNativeTarget "PhotoDescribeDebug" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B71ABC8D0100000000000011 /* Debug */,
+				B71ABC8D0100000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -1089,6 +1230,10 @@
 		6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VovoUI;
+		};
+		B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PhotoDescribeKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -1109,6 +1254,16 @@
 			productName = StoryPromptKit;
 		};
 		FDAB148DEF7F7A680C1CFBAE /* VovoUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
+			productName = VovoUI;
+		};
+		B71ABC8D010000000000000F /* PhotoDescribeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */;
+			productName = PhotoDescribeKit;
+		};
+		B71ABC8D0100000000000010 /* VovoUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
 			productName = VovoUI;
