@@ -9,6 +9,8 @@
 | **Pack path** | `Library/Application Support/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/` (private; **not** Documents/Downloads) |
 | **CDN zip** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` |
 | **CDN checksum** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256` (fetched before zip; host download only) |
+| **Install hash** | Sibling sidecar `…/Models/Qwen3.5-4B-MLX-4bit.installed.sha256` after verified host download; compared to CDN on ready to offer a non-blocking update |
+| **Remove model** | Clears Application Support pack + install hash; returns to needs-model gate |
 | **Package zip** | `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` + `.sha256` |
 | **Gate** | Download zip / Import folder\|zip / HF fallback / halt |
 | **Output contract** | `TITLE:` / `SUMMARY:` + **exactly 10** paragraphs |
@@ -53,7 +55,7 @@ repackaging — the checksum changes even when weights do not.
 
 | Asset | Location |
 |-------|----------|
-| **Model pack** | `Application Support/Vovozinha/Models/…` (private; excluded from backup) |
+| **Model pack** | `Application Support/Vovozinha/Models/…` (private; excluded from backup). Host installs also write `….installed.sha256` beside the pack for update detection. |
 | **Story exports** | `Documents/Vovozinha/Exports/` by default (`StoryExportLocationStore`; user can pick another folder) |
 
 Legacy installs that still have the pack under `Documents/Vovozinha/Models/` are migrated

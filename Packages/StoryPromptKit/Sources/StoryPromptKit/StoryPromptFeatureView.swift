@@ -29,6 +29,9 @@ public struct StoryPromptFeatureView: View {
     @State private var modelStore: OnDeviceMLXModelStore
     @State private var modelGate: StoryModelGateState = .checking
     @State private var showFileImporter = false
+    @State private var modelUpdateAvailable = false
+    @State private var showRemoveModelConfirm = false
+    @FocusState private var isSeedFieldFocused: Bool
 
     public init(
         generator: (any StoryFromPromptGenerating)? = nil,
@@ -77,6 +80,17 @@ public struct StoryPromptFeatureView: View {
             allowsMultipleSelection: false
         ) { result in
             Task { await handleImportResult(result) }
+        }
+        .alert(
+            VovoL10n.t(.storyModelRemoveConfirmTitle, lang),
+            isPresented: $showRemoveModelConfirm
+        ) {
+            Button(VovoL10n.t(.storyModelRemoveCancel, lang), role: .cancel) {}
+            Button(VovoL10n.t(.storyModelRemoveConfirmAction, lang), role: .destructive) {
+                Task { await removeInstalledModel() }
+            }
+        } message: {
+            Text(VovoL10n.t(.storyModelRemoveConfirmBody, lang))
         }
         .onChange(of: languageStore.language) { _, _ in
             draft = nil
@@ -330,6 +344,10 @@ public struct StoryPromptFeatureView: View {
                 scrolls: true
             ) {
                 VStack(alignment: .leading, spacing: 16) {
+                    if modelUpdateAvailable {
+                        modelUpdateBanner
+                    }
+
                     TextField(
                         VovoL10n.t(.storySeedPlaceholder, lang),
                         text: $promptText,
@@ -338,6 +356,7 @@ public struct StoryPromptFeatureView: View {
                     .lineLimit(4...8)
                     .frame(minHeight: 120, alignment: .topLeading)
                     .vovoCardField()
+                    .focused($isSeedFieldFocused)
                     .accessibilityIdentifier("storySeedField")
 
                     HStack {
@@ -383,6 +402,15 @@ public struct StoryPromptFeatureView: View {
                     .disabled(!canGenerate)
                     .accessibilityIdentifier("createStoryButton")
 
+                    Button {
+                        showRemoveModelConfirm = true
+                    } label: {
+                        Text(VovoL10n.t(.storyModelRemove, lang))
+                    }
+                    .buttonStyle(VovoSecondaryButtonStyle())
+                    .disabled(isGenerating)
+                    .accessibilityIdentifier("removeModelButton")
+
                     if let draft {
                         storyResult(draft)
                             .id("storyResult")
@@ -403,6 +431,41 @@ public struct StoryPromptFeatureView: View {
         if seed.isValid { return VovoTheme.mint }
         if wordCount == 0 { return VovoTheme.cream.opacity(0.5) }
         return VovoTheme.amber
+    }
+
+    private var modelUpdateBanner: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(VovoL10n.t(.storyModelUpdateTitle, lang))
+                .font(.headline)
+                .foregroundStyle(VovoTheme.amber)
+            Text(VovoL10n.t(.storyModelUpdateBody, lang))
+                .font(.subheadline)
+                .foregroundStyle(VovoTheme.cream.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                Task { await startModelDownload() }
+            } label: {
+                Text(VovoL10n.t(.storyModelUpdateAction, lang))
+            }
+            .buttonStyle(VovoPrimaryButtonStyle(enabled: true))
+            .accessibilityIdentifier("modelUpdateAction")
+
+            Button {
+                modelUpdateAvailable = false
+            } label: {
+                Text(VovoL10n.t(.storyModelUpdateLater, lang))
+            }
+            .buttonStyle(VovoSecondaryButtonStyle())
+            .accessibilityIdentifier("modelUpdateLater")
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(VovoTheme.cardFill)
+        )
+        .accessibilityIdentifier("modelUpdateBanner")
     }
 
     @ViewBuilder
@@ -447,8 +510,10 @@ public struct StoryPromptFeatureView: View {
         modelGate = .checking
         if await modelStore.isModelPresent() {
             modelGate = .ready
+            modelUpdateAvailable = await modelStore.checkForHostUpdate()
             return
         }
+        modelUpdateAvailable = false
         modelGate = .needsModel
     }
 
@@ -459,15 +524,33 @@ public struct StoryPromptFeatureView: View {
             try await modelStore.download { snapshot in
                 modelGate = .downloading(snapshot)
             }
-            modelGate = await modelStore.isModelPresent()
-                ? .ready
-                : .failed(message: VovoL10n.t(.storyGenerateFailed, lang))
+            if await modelStore.isModelPresent() {
+                modelUpdateAvailable = false
+                modelGate = .ready
+            } else {
+                modelGate = .failed(message: VovoL10n.t(.storyGenerateFailed, lang))
+            }
         } catch {
             let msg = error.localizedDescription
             modelGate = .failed(
                 message: msg.isEmpty ? VovoL10n.t(.storyGenerateFailed, lang) : msg
             )
         }
+    }
+
+    @MainActor
+    private func removeInstalledModel() async {
+        do {
+            try await modelStore.removeModel()
+        } catch {
+            #if DEBUG
+            print("[StoryPrompt] removeModel failed: \(error)")
+            #endif
+        }
+        draft = nil
+        errorMessage = nil
+        modelUpdateAvailable = false
+        modelGate = .needsModel
     }
 
     private func openFallbackHostPage() {
@@ -484,6 +567,7 @@ public struct StoryPromptFeatureView: View {
             modelGate = .importing
             do {
                 try await modelStore.importModel(from: url)
+                modelUpdateAvailable = false
                 modelGate = await modelStore.isModelPresent()
                     ? .ready
                     : .failed(message: OnDeviceMLXModelStore.ImportError.copyFailed.localizedDescription)
@@ -511,22 +595,44 @@ public struct StoryPromptFeatureView: View {
             return
         }
 
+        isSeedFieldFocused = false
         isGenerating = true
         defer { isGenerating = false }
-        do {
-            draft = try await generator.generate(from: seed)
-        } catch let e as StorySeedPrompt.ValidationError {
-            errorMessage = validationMessage(e)
-        } catch let e as StoryPromptError {
-            switch e {
-            case .modelNotInstalled:
-                errorMessage = VovoL10n.t(.storyModelNotInstalled, lang)
-                modelGate = .needsModel
-            case .generationFailed, .invalidPrompt:
-                errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
+
+        // Transient MLX / parse failures are common; retry automatically, then let the parent tap Create again.
+        let maxAttempts = 5
+        for attempt in 1...maxAttempts {
+            do {
+                draft = try await generator.generate(from: seed)
+                return
+            } catch let e as StorySeedPrompt.ValidationError {
+                errorMessage = validationMessage(e)
+                return
+            } catch let e as StoryPromptError {
+                switch e {
+                case .modelNotInstalled:
+                    errorMessage = VovoL10n.t(.storyModelNotInstalled, lang)
+                    modelGate = .needsModel
+                    return
+                case .invalidPrompt:
+                    errorMessage = VovoL10n.t(.storyInvalidPrompt, lang)
+                    return
+                case .generationFailed:
+                    #if DEBUG
+                    print("[StoryPrompt] generate attempt \(attempt)/\(maxAttempts) failed")
+                    #endif
+                    if attempt == maxAttempts {
+                        errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
+                    }
+                }
+            } catch {
+                #if DEBUG
+                print("[StoryPrompt] generate attempt \(attempt)/\(maxAttempts) failed: \(error)")
+                #endif
+                if attempt == maxAttempts {
+                    errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
+                }
             }
-        } catch {
-            errorMessage = VovoL10n.t(.storyGenerateFailed, lang)
         }
     }
 

@@ -96,6 +96,33 @@ Verificando o modelo de história…
 ## storyModelGateFilenameHint
 Pacote: Qwen3.5-4B-MLX-4bit (zip ou pasta). Prefira Wi‑Fi.
 
+## storyModelUpdateTitle
+Atualização do modelo disponível
+
+## storyModelUpdateBody
+Há um modelo de história mais novo para baixar no Wi‑Fi. Você pode continuar com o atual ou atualizar agora (~3 GB).
+
+## storyModelUpdateAction
+Atualizar modelo
+
+## storyModelUpdateLater
+Depois
+
+## storyModelRemove
+Remover modelo
+
+## storyModelRemoveConfirmTitle
+Remover o modelo de história?
+
+## storyModelRemoveConfirmBody
+Isso apaga o modelo no aparelho (~3 GB) do app. Será preciso baixar ou importar de novo para criar histórias.
+
+## storyModelRemoveConfirmAction
+Remover
+
+## storyModelRemoveCancel
+Cancelar
+
 ## storyValidationTooShort
 Muito curto
 

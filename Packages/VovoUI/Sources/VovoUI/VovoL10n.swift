@@ -40,6 +40,15 @@ public enum VovoL10n {
         case storyModelGateDownloadETA
         case storyModelGateDownloadETAUnknown
         case storyModelGateDownloadBytes
+        case storyModelUpdateTitle
+        case storyModelUpdateBody
+        case storyModelUpdateAction
+        case storyModelUpdateLater
+        case storyModelRemove
+        case storyModelRemoveConfirmTitle
+        case storyModelRemoveConfirmBody
+        case storyModelRemoveConfirmAction
+        case storyModelRemoveCancel
         case storyValidationTooShort
         case storyValidationTooLong
     }

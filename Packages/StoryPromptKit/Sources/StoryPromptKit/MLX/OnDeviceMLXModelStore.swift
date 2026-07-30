@@ -298,6 +298,14 @@ public actor OnDeviceMLXModelStore {
         guard Self.directoryLooksLikeMLXPack(modelDirectoryURL) else {
             throw DownloadError.unzipFailed
         }
+
+        // Remember the CDN zip hash so later launches can detect a newer pack.
+        if let expectedHash {
+            try? persistInstallSHA256(expectedHash)
+        } else {
+            clearInstallSHA256()
+        }
+
         if let progress {
             await progress(
                 Self.makeDownloadSnapshot(
@@ -386,11 +394,50 @@ public actor OnDeviceMLXModelStore {
         guard Self.directoryLooksLikeMLXPack(modelDirectoryURL) else {
             throw ImportError.copyFailed
         }
+        // Import is not CDN-verified — drop any previous host install hash.
+        clearInstallSHA256()
     }
 
     public func removeModel() throws {
         if FileManager.default.fileExists(atPath: modelDirectoryURL.path) {
             try FileManager.default.removeItem(at: modelDirectoryURL)
+        }
+        clearInstallSHA256()
+    }
+
+    /// Sidecar next to the pack: `…/Models/Qwen3.5-4B-MLX-4bit.installed.sha256`.
+    /// Holds the CDN zip hex recorded after a verified host download (not inside weights).
+    public func installedSHA256SidecarURL() -> URL {
+        modelDirectoryURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("\(Self.defaultModelDirectoryName).installed.sha256")
+    }
+
+    /// Hex recorded after the last verified host download, if any.
+    public func recordedInstallSHA256() -> String? {
+        let url = installedSHA256SidecarURL()
+        guard let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .utf8)
+        else { return nil }
+        let hex = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard hex.count == 64,
+              hex.unicodeScalars.allSatisfy({ CharacterSet(charactersIn: "0123456789abcdef").contains($0) })
+        else { return nil }
+        return hex
+    }
+
+    /// Compares the recorded install hash to the CDN `.sha256` sidecar.
+    /// Returns `true` only when both exist and differ. Missing pack, missing local hash,
+    /// missing `sha256URL`, or any network/parse failure → `false` (stay silent).
+    public func checkForHostUpdate() async -> Bool {
+        guard isModelPresent() else { return false }
+        guard let recorded = recordedInstallSHA256() else { return false }
+        guard let sha256URL else { return false }
+        do {
+            let remote = try await Self.fetchRemoteSHA256(from: sha256URL, session: session)
+            return remote != recorded
+        } catch {
+            return false
         }
     }
 
@@ -456,6 +503,21 @@ public actor OnDeviceMLXModelStore {
         try mutable.setResourceValues(values)
     }
 
+    // MARK: - Install hash sidecar
+
+    private func persistInstallSHA256(_ hex: String) throws {
+        let normalized = hex.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let parent = installedSHA256SidecarURL().deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        try Data(normalized.utf8).write(to: installedSHA256SidecarURL(), options: .atomic)
+        try? Self.excludeFromBackup(installedSHA256SidecarURL())
+    }
+
+    private func clearInstallSHA256() {
+        let url = installedSHA256SidecarURL()
+        try? FileManager.default.removeItem(at: url)
+    }
+
     // MARK: - Host integrity
 
     /// Downloads and parses a shasum-style sidecar (`hex  filename` or bare hex).
@@ -466,11 +528,13 @@ public actor OnDeviceMLXModelStore {
         request.timeoutInterval = 60
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
+        if let http = response as? HTTPURLResponse {
+            guard (200..<300).contains(http.statusCode) else {
+                throw DownloadError.http(statusCode: http.statusCode)
+            }
+        } else if !url.isFileURL {
+            // Production always hits HTTPS; file URLs are allowed for unit tests.
             throw DownloadError.checksumUnavailable
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            throw DownloadError.http(statusCode: http.statusCode)
         }
         guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else {
             throw DownloadError.checksumFileInvalid
