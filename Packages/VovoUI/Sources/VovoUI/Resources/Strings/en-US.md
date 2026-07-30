@@ -96,6 +96,33 @@ Checking for story model…
 ## storyModelGateFilenameHint
 Pack: Qwen3.5-4B-MLX-4bit (zip or folder). Prefer Wi‑Fi.
 
+## storyModelUpdateTitle
+Model update available
+
+## storyModelUpdateBody
+A newer story model is ready to download over Wi‑Fi. You can keep using the one you have, or update now (~3 GB).
+
+## storyModelUpdateAction
+Update model
+
+## storyModelUpdateLater
+Later
+
+## storyModelRemove
+Remove model
+
+## storyModelRemoveConfirmTitle
+Remove story model?
+
+## storyModelRemoveConfirmBody
+This deletes the on-device model (~3 GB) from the app. You will need to download or import it again before creating stories.
+
+## storyModelRemoveConfirmAction
+Remove
+
+## storyModelRemoveCancel
+Cancel
+
 ## storyValidationTooShort
 Too short
 

@@ -96,6 +96,33 @@ Comprobando el modelo de cuento…
 ## storyModelGateFilenameHint
 Paquete: Qwen3.5-4B-MLX-4bit (zip o carpeta). Mejor con Wi‑Fi.
 
+## storyModelUpdateTitle
+Actualización del modelo disponible
+
+## storyModelUpdateBody
+Hay un modelo de cuento más nuevo para descargar por Wi‑Fi. Puedes seguir con el actual o actualizar ahora (~3 GB).
+
+## storyModelUpdateAction
+Actualizar modelo
+
+## storyModelUpdateLater
+Más tarde
+
+## storyModelRemove
+Quitar modelo
+
+## storyModelRemoveConfirmTitle
+¿Quitar el modelo de cuento?
+
+## storyModelRemoveConfirmBody
+Esto borra el modelo en el dispositivo (~3 GB) de la app. Tendrás que descargarlo o importarlo de nuevo para crear cuentos.
+
+## storyModelRemoveConfirmAction
+Quitar
+
+## storyModelRemoveCancel
+Cancelar
+
 ## storyValidationTooShort
 Demasiado corto
 

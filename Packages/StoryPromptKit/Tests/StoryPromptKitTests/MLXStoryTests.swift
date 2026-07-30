@@ -282,4 +282,115 @@ final class OnDeviceMLXModelStoreTests: XCTestCase {
         try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
         XCTAssertTrue(OnDeviceMLXModelStore.directoryLooksLikeMLXPack(pack))
     }
+
+    func testRecordedInstallSHA256AndRemoveClearsSidecar() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = OnDeviceMLXModelStore(storageRootURL: root, sha256URL: nil)
+        let pack = await store.modelDirectory()
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
+
+        let hex = String(repeating: "ab", count: 32)
+        let sidecar = await store.installedSHA256SidecarURL()
+        try Data(hex.utf8).write(to: sidecar)
+
+        let recorded = await store.recordedInstallSHA256()
+        XCTAssertEqual(recorded, hex)
+        let presentBefore = await store.isModelPresent()
+        XCTAssertTrue(presentBefore)
+
+        try await store.removeModel()
+        let presentAfter = await store.isModelPresent()
+        let recordedAfter = await store.recordedInstallSHA256()
+        XCTAssertFalse(presentAfter)
+        XCTAssertNil(recordedAfter)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sidecar.path))
+    }
+
+    func testImportClearsRecordedInstallSHA256() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = OnDeviceMLXModelStore(storageRootURL: root, sha256URL: nil)
+        let pack = await store.modelDirectory()
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
+
+        let hex = String(repeating: "cd", count: 32)
+        try Data(hex.utf8).write(to: await store.installedSHA256SidecarURL())
+        let recordedBefore = await store.recordedInstallSHA256()
+        XCTAssertEqual(recordedBefore, hex)
+
+        let source = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: source) }
+        try Data("{}".utf8).write(to: source.appendingPathComponent("config.json"))
+        try Data([0x02]).write(to: source.appendingPathComponent("model.safetensors"))
+
+        try await store.importModel(from: source)
+        let present = await store.isModelPresent()
+        let recordedAfter = await store.recordedInstallSHA256()
+        XCTAssertTrue(present)
+        XCTAssertNil(recordedAfter)
+    }
+
+    func testCheckForHostUpdateComparesRemoteSidecar() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let localHex = String(repeating: "11", count: 32)
+        let remoteHex = String(repeating: "22", count: 32)
+        let remoteFile = root.appendingPathComponent("remote.sha256")
+        try Data("\(remoteHex)  Qwen3.5-4B-MLX-4bit.zip\n".utf8).write(to: remoteFile)
+
+        let store = OnDeviceMLXModelStore(
+            storageRootURL: root,
+            sha256URL: remoteFile
+        )
+        let pack = await store.modelDirectory()
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
+        try Data(localHex.utf8).write(to: await store.installedSHA256SidecarURL())
+
+        let needsUpdate = await store.checkForHostUpdate()
+        XCTAssertTrue(needsUpdate)
+
+        try Data(remoteHex.utf8).write(to: await store.installedSHA256SidecarURL())
+        let upToDate = await store.checkForHostUpdate()
+        XCTAssertFalse(upToDate)
+    }
+
+    func testCheckForHostUpdateFalseWithoutRecordedHash() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let remoteHex = String(repeating: "33", count: 32)
+        let remoteFile = root.appendingPathComponent("remote.sha256")
+        try Data("\(remoteHex)\n".utf8).write(to: remoteFile)
+
+        let store = OnDeviceMLXModelStore(storageRootURL: root, sha256URL: remoteFile)
+        let pack = await store.modelDirectory()
+        try FileManager.default.createDirectory(at: pack, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: pack.appendingPathComponent("config.json"))
+        try Data([0x01]).write(to: pack.appendingPathComponent("model.safetensors"))
+
+        let recorded = await store.recordedInstallSHA256()
+        let needsUpdate = await store.checkForHostUpdate()
+        XCTAssertNil(recorded)
+        XCTAssertFalse(needsUpdate)
+    }
 }
