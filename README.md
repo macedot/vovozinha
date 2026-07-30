@@ -63,6 +63,7 @@ Unit tests for the kit (macOS host, no device required):
 
 ```bash
 cd Packages/StoryPromptKit && swift test
+cd Packages/PhotoDescribeKit && swift test
 ```
 
 ## App flow (multi host)
@@ -72,9 +73,12 @@ cd Packages/StoryPromptKit && swift test
 3. **Create story** — requires on-device Qwen3.5-4B MLX model pack  
 4. Scroll to read title, summary, and 10 scenes  
 
+DEBUG harness **PhotoDescribeDebug** (not in host yet): pick a photo → short on-device VLM caption (persons → objects → scene).
+
 ## Architecture (summary)
 
 - Host: `Apps/Vovozinha` + kits `Packages/StoryPromptKit`, `Packages/VovoUI`  
+- DEBUG kits: `StoryPromptDebug`, `PhotoDescribeDebug` (`Packages/PhotoDescribeKit`)  
 - Protocol: `StoryFromPromptGenerating`  
 - Default: `DeviceStoryGenerator` → **Qwen3.5-4B MLX only** (no static body)  
 - UI strings + LLM prompt files: Markdown under package `Resources/`  

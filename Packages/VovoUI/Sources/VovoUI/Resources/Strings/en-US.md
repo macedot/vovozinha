@@ -149,3 +149,21 @@ Use at most {{max}} words (now {{current}}).
 
 ## seedSubtitle
 Describe with a few words the story to be generated ({{min}}–{{max}} words).
+
+## photoDescribeTitle
+Describe a photo
+
+## photoDescribeSubtitle
+Pick a photo. On this device we write a short caption — people first, then objects, then the scene. Nothing is uploaded.
+
+## photoDescribePick
+Choose photo
+
+## photoDescribeAction
+Describe photo
+
+## photoDescribeFailed
+Could not describe the photo. Try again.
+
+## photoDescribeInvalidImage
+Could not read that photo. Choose another.

@@ -51,6 +51,14 @@ public enum VovoL10n {
         case storyModelRemoveCancel
         case storyValidationTooShort
         case storyValidationTooLong
+
+        // Photo describe feature
+        case photoDescribeTitle
+        case photoDescribeSubtitle
+        case photoDescribePick
+        case photoDescribeAction
+        case photoDescribeFailed
+        case photoDescribeInvalidImage
     }
 
     public static func t(_ key: Key, _ lang: AppLanguage) -> String {

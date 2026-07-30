@@ -7,10 +7,12 @@ Vovozinha is composed of **feature libraries** + a thin **host app**. Each featu
 ```
 Packages/
   VovoUI/                 # shared theme + screen chrome (all apps look the same)
-  StoryPromptKit/         # first feature: seed prompt → story draft
+  StoryPromptKit/         # feature: seed prompt → story draft
+  PhotoDescribeKit/       # feature: photo → short on-device caption (DEBUG)
 Apps/
   Vovozinha/              # product host — wires feature libs
   StoryPromptDebug/       # DEBUG-only harness for StoryPromptKit
+  PhotoDescribeDebug/     # DEBUG-only harness for PhotoDescribeKit
 Legacy/
   VovozinhaLegacy/        # previous full app (run scheme VovozinhaLegacy)
 ```
@@ -21,6 +23,7 @@ Legacy/
 |--------|----------------|
 | **Vovozinha** | New host app (Story Prompt feature) |
 | **StoryPromptDebug** | StoryPromptKit alone |
+| **PhotoDescribeDebug** | PhotoDescribeKit alone (VLM caption; not in host yet) |
 | **VovozinhaLegacy** | Old monolithic app (for reference / migration) |
 
 ## Feature pattern (app + lib)
@@ -40,6 +43,14 @@ Legacy/
   - `MLXStoryGenerator` — on-device LLM via **MLX** + `mlx-community/Qwen3.5-4B-MLX-4bit`. Pack under private `Application Support/Vovozinha/Models/…` (not Documents). Fewer than 10 paragraphs → generation error (never pads empty scenes). See `docs/ON_DEVICE_LLM.md`.
 - **Languages:** pt-BR / en-US / es-ES via `LanguageBar` + `LanguageStore` in **VovoUI**.
 
+## Photo Describe (DEBUG kit)
+
+- Input: one photo from Photos (on-device only; never uploaded).
+- Output: one short paragraph; priority **persons → objects → scene**.
+- **`DevicePhotoDescriber`** / **`MLXPhotoDescriber`**: same Qwen3.5-4B pack as Story Prompt, loaded via **`VLMModelFactory`** (vision weights kept). Reuses `OnDeviceMLXModelStore` from StoryPromptKit for download/import gate.
+- Harness: scheme **PhotoDescribeDebug**. Not composed into the host yet.
+- Prompts: `Packages/PhotoDescribeKit/.../Resources/Prompts/describe.<lang>.md`.
+
 ## Static text (Markdown on disk)
 
 UI strings and **LLM prompt instructions** (not story bodies) live in **Markdown**:
@@ -48,6 +59,7 @@ UI strings and **LLM prompt instructions** (not story bodies) live in **Markdown
 |---------|------|---------|
 | **VovoUI** | `Sources/VovoUI/Resources/Strings/{en-US,pt-BR,es-ES}.md` | UI strings |
 | **StoryPromptKit** | `Sources/StoryPromptKit/Resources/Prompts/story.<lang>.md` | Story LLM prompts (`TITLE:`/`SUMMARY:` + 10 paragraphs) |
+| **PhotoDescribeKit** | `Sources/PhotoDescribeKit/Resources/Prompts/describe.<lang>.md` | Photo VLM caption prompts |
 
 Edit the `.md` files and rebuild. See each folder’s `README.md`.
 
