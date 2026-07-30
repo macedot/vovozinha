@@ -190,6 +190,19 @@ final class OnDeviceMLXModelStoreTests: XCTestCase {
         }
     }
 
+    func testDefaultModelPathIsUnderApplicationSupportNotDocuments() async {
+        let store = OnDeviceMLXModelStore()
+        let dir = await store.modelDirectory()
+        let path = dir.path
+        XCTAssertTrue(
+            path.contains("Application Support") || path.contains("Application%20Support")
+                || path.contains("Library"),
+            "expected Application Support-style path, got \(path)"
+        )
+        XCTAssertFalse(path.contains("/Documents/Vovozinha/Models"), path)
+        XCTAssertEqual(dir.lastPathComponent, OnDeviceMLXModelStore.defaultModelDirectoryName)
+    }
+
     func testHostDownloadURLIsKraftekZip() {
         let url = OnDeviceMLXModelStore.defaultHostDownloadURL.absoluteString
         XCTAssertTrue(url.contains("files.kraftek.dev"))

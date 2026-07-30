@@ -14,9 +14,10 @@ enum StoryModelGateState: Equatable {
 
 /// UI surface for the Story Prompt feature (used by main app + DEBUG harness).
 ///
-/// On open, checks for the **Qwen3.5-4B MLX** model pack. If missing, offers **automatic
-/// download** from our host (`files.kraftek.dev`). If that fails, Hugging Face is a **manual
-/// browser fallback**, plus **Import** of a zip or folder from Files/Downloads.
+/// On open, checks for the **Qwen3.5-4B MLX** model pack in private Application Support.
+/// If missing, offers **automatic download** from our host (`files.kraftek.dev`). If that
+/// fails, Hugging Face is a **manual browser fallback**, plus **Import** via the system
+/// document picker (copied into app storage — not kept in Documents/Downloads).
 public struct StoryPromptFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
     @Environment(\.openURL) private var openURL
@@ -161,6 +162,9 @@ public struct StoryPromptFeatureView: View {
                             .foregroundStyle(VovoTheme.cream.opacity(0.85))
                     }
                     .tint(VovoTheme.amber)
+                    // Force refresh when bytes move (some OS versions coalesce ProgressView).
+                    .id(snapshot.bytesReceived)
+                    .animation(.linear(duration: 0.15), value: snapshot.fraction)
                     .accessibilityIdentifier("modelGateProgress")
                 } else {
                     ProgressView()
@@ -442,10 +446,6 @@ public struct StoryPromptFeatureView: View {
     private func refreshModelGate() async {
         modelGate = .checking
         if await modelStore.isModelPresent() {
-            modelGate = .ready
-            return
-        }
-        if let imported = try? await modelStore.tryImportFromDownloadsDirectory(), imported {
             modelGate = .ready
             return
         }

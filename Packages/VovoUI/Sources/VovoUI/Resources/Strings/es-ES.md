@@ -40,7 +40,7 @@ El modelo de cuento en el dispositivo no está instalado. Descárgalo en la app 
 Modelo de cuento necesario
 
 ## storyModelGateBody
-Los cuentos necesitan un modelo en el dispositivo (~3 GB). Descárgalo una vez por Wi‑Fi. Si falla la descarga automática, abre la página alternativa, guarda el zip o carpeta en Descargas e Importa.
+Los cuentos necesitan un modelo en el dispositivo (~3 GB). Descárgalo una vez por Wi‑Fi: permanece privado en la app. Si falla la descarga automática, abre la página alternativa y usa Importar desde Archivos para elegir el zip o carpeta.
 
 ## storyModelGateDownload
 Descargar modelo
@@ -88,7 +88,7 @@ Reintentar
 Creación de cuento no disponible
 
 ## storyModelGateHaltedBody
-Sin el modelo en el dispositivo no se pueden crear cuentos. Descárgalo o impórtalo desde Descargas.
+Sin el modelo en el dispositivo no se pueden crear cuentos. Descárgalo o importa un zip o carpeta con Importar desde Archivos.
 
 ## storyModelGateChecking
 Comprobando el modelo de cuento…

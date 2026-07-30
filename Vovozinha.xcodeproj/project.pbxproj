@@ -87,6 +87,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1EE77C0FFEE4D15AB1E0001 /* Vovozinha.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Vovozinha.entitlements; sourceTree = "<group>"; };
+		A1EE77C0FFEE4D15AB1E0002 /* StoryPromptDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StoryPromptDebug.entitlements; sourceTree = "<group>"; };
 		04136E595C9D423A9ECA263E /* CharacterProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterProfile.swift; sourceTree = "<group>"; };
 		0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLDiffusionIllustrator.swift; sourceTree = "<group>"; };
 		09D8A7E17C7048C98C60DBAC /* CreateStoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateStoryView.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 			children = (
 				5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */,
 				A660C7ECB00D4B777FDF9314 /* Assets.xcassets */,
+				A1EE77C0FFEE4D15AB1E0002 /* StoryPromptDebug.entitlements */,
 			);
 			path = StoryPromptDebug;
 			sourceTree = "<group>";
@@ -370,6 +373,7 @@
 			children = (
 				DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */,
 				C43888ABA14734283D029121 /* Assets.xcassets */,
+				A1EE77C0FFEE4D15AB1E0001 /* Vovozinha.entitlements */,
 			);
 			path = Vovozinha;
 			sourceTree = "<group>";
@@ -731,6 +735,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/StoryPromptDebug/StoryPromptDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FTS4YLJNG3;
@@ -761,6 +766,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FTS4YLJNG3;
@@ -825,6 +831,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FTS4YLJNG3;
@@ -925,6 +932,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Apps/StoryPromptDebug/StoryPromptDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = FTS4YLJNG3;

@@ -12,6 +12,7 @@ public protocol MLXStoryEngineSessioning: Sendable {
 // MARK: - Concrete adapter
 
 #if canImport(MLXLLM) && canImport(MLXLMCommon)
+import MLX
 import MLXLLM
 import MLXLMCommon
 #if canImport(MLXVLM)
@@ -25,8 +26,9 @@ import MLXVLM
 final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable {
     private let modelDirectory: URL
 
-    /// Story band ~150–480 words + title/summary overhead; keep well below phone memory limits.
-    static let defaultMaxTokens = 1024
+    /// Story band ~150–480 words + title/summary + format overhead.
+    /// With thinking disabled this is enough for 10 short paragraphs; leave headroom.
+    static let defaultMaxTokens = 1536
     static let defaultTemperature: Float = 0.7
     static let defaultTopP: Float = 0.95
     static let defaultTopK = 20
@@ -36,7 +38,10 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
     }
 
     func send(_ prompt: String) async throws -> String {
-        try await Task.detached(priority: .userInitiated) { [modelDirectory] in
+        // Runs after the detached task finishes and the container is dropped: return MLX's
+        // cached Metal buffers to the OS so repeated generations don't stack residency.
+        defer { MLX.Memory.clearCache() }
+        return try await Task.detached(priority: .userInitiated) { [modelDirectory] in
             let container = try await Self.loadContainer(from: modelDirectory)
             let parameters = GenerateParameters(
                 maxTokens: Self.defaultMaxTokens,
@@ -49,38 +54,46 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
             You are a careful children's bedtime story writer. Answer directly with the requested \
             story format only. Do not include chain-of-thought, analysis, or tool calls.
             """
+            // Qwen3.5 chat template defaults to open-ended <think> unless disabled —
+            // that burns maxTokens on reasoning and leaves zero story paragraphs.
             let session = ChatSession(
                 container,
                 instructions: instructions,
-                generateParameters: parameters
+                generateParameters: parameters,
+                additionalContext: ["enable_thinking": false]
             )
-            return try await session.respond(to: prompt)
+            let text = try await session.respond(to: prompt)
+            #if DEBUG
+            print(
+                "[MLXStory] raw reply chars=\(text.count) preview=\(text.prefix(240).replacingOccurrences(of: "\n", with: "⏎"))"
+            )
+            #endif
+            return text
         }.value
     }
 
     private static func loadContainer(from directory: URL) async throws -> ModelContainer {
         let tokenizerLoader = makeTokenizerLoader()
 
-        // Qwen3.5-4B ships as qwen3_5 VLM weights; VLM factory handles that model_type.
-        // Fall back to LLM factory if VLM is not linked.
-        #if canImport(MLXVLM)
+        // Text-only generation: load through the **LLM** factory. Its Qwen3.5 `sanitize`
+        // drops the `vision_tower` weights (~0.7 GB of the pack — dead memory for a text-only
+        // app) before they ever materialize. Fall back to the VLM factory only if the LLM
+        // path can't load the pack.
         do {
-            return try await VLMModelFactory.shared.loadContainer(
-                from: directory,
-                using: tokenizerLoader
-            )
-        } catch {
             return try await LLMModelFactory.shared.loadContainer(
                 from: directory,
                 using: tokenizerLoader
             )
+        } catch {
+            #if canImport(MLXVLM)
+            return try await VLMModelFactory.shared.loadContainer(
+                from: directory,
+                using: tokenizerLoader
+            )
+            #else
+            throw error
+            #endif
         }
-        #else
-        return try await LLMModelFactory.shared.loadContainer(
-            from: directory,
-            using: tokenizerLoader
-        )
-        #endif
     }
 
     private static func makeTokenizerLoader() -> any TokenizerLoader {

@@ -6,7 +6,7 @@
 |------|--------|
 | **Backend** | MLX + **mlx-community/Qwen3.5-4B-MLX-4bit** (text only) |
 | **Runtime** | Local `mlx-swift` + `mlx-swift-lm` @ 3.31.4 (see `./scripts/setup_mlx_local.sh`) |
-| **Pack path** | `Documents/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/` |
+| **Pack path** | `Library/Application Support/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/` (private; **not** Documents/Downloads) |
 | **CDN zip** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip` |
 | **CDN checksum** | `https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256` (fetched before zip; host download only) |
 | **Package zip** | `./scripts/package_qwen35_4b_mlx_zip.sh` → `build/Qwen3.5-4B-MLX-4bit.zip` + `.sha256` |
@@ -44,6 +44,21 @@
 # Do not commit the zip into git.
 ```
 
+Packaging uses **`zip -0` (store)**: model weights are already compressed, so deflate
+barely shrinks the archive and only slows device unpack. The app extracts with
+**ZIPFoundation** (libcompression). Re-upload both the zip and `.sha256` after
+repackaging — the checksum changes even when weights do not.
+
+### Storage
+
+| Asset | Location |
+|-------|----------|
+| **Model pack** | `Application Support/Vovozinha/Models/…` (private; excluded from backup) |
+| **Story exports** | `Documents/Vovozinha/Exports/` by default (`StoryExportLocationStore`; user can pick another folder) |
+
+Legacy installs that still have the pack under `Documents/Vovozinha/Models/` are migrated
+once into Application Support on first access.
+
 ### Product invariants
 
 - No cloud generation / cloud TTS  
@@ -51,3 +66,20 @@
 - Fixed 10 pages / scenes  
 - pt-BR / en-US / es-ES  
 - Physical iPhone floor (Simulator unsupported)  
+- Models never stored in user Documents or Downloads
+
+---
+
+## Memory budget (~3.8 GiB jetsam limit on 6 GB iPhones)
+
+- **Text-only load:** `MLXStoryEngineSession` loads through `LLMModelFactory` (falling back to
+  `VLMModelFactory`). The LLM `Qwen3.5` `sanitize` drops the `vision_tower` weights
+  (**~0.67 GB** of the pack) before they materialize — the app never uses vision.
+- **Entitlement:** both app targets set `com.apple.developer.kernel.increased-memory-limit`
+  (`Apps/Vovozinha/Vovozinha.entitlements`, `Apps/StoryPromptDebug/StoryPromptDebug.entitlements`)
+  to raise the per-app limit.
+- **MLX allocator:** `MLX.Memory.clearCache()` runs after every generation so cached Metal
+  buffers return to the OS (the container is loaded per generation and dropped). If peak is
+  still tight, the remaining knobs are `Memory.cacheLimit` (cap MLX's buffer hoard),
+  `GenerateParameters.kvBits` (KV cache is small here — hybrid linear/full attention), and
+  repacking the zip text-only (2.37 GB download instead of 3.03 GB).

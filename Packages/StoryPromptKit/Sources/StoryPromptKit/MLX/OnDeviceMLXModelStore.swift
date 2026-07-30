@@ -1,13 +1,17 @@
 import Foundation
 import CryptoKit
-import zlib
+import ZIPFoundation
 
 /// Owns the on-device **Qwen3.5-4B-MLX-4bit** MLX model directory.
 ///
 /// **Generation is offline.** Networking is only used to **download** a zip once from our
 /// host (`files.kraftek.dev`). If that fails, the UI can open Hugging Face as a manual
-/// fallback and the user **imports** a zip or unpacked folder. Sandbox path:
-/// `<Documents>/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`.
+/// fallback and the user **imports** a zip or folder via the system document picker
+/// (copied into private app storage — never left in user Documents/Downloads).
+///
+/// **Pack path (private):**  
+/// `Library/Application Support/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`  
+/// (not visible in the Files app “On My iPhone” Documents tree).
 ///
 /// Host downloads are integrity-checked by fetching a sidecar `.sha256` from our CDN
 /// and comparing it to the zip. Manual Import / HF browser paths are not checked
@@ -31,7 +35,7 @@ public actor OnDeviceMLXModelStore {
     /// Directory name under `Vovozinha/Models/`.
     public static let defaultModelDirectoryName = "Qwen3.5-4B-MLX-4bit"
 
-    /// Zip filename expected for Downloads auto-import.
+    /// Zip filename (CDN + document-picker Import). Not scanned from Downloads.
     public static let defaultZipFilename = "Qwen3.5-4B-MLX-4bit.zip"
 
     private let modelDirectoryURL: URL
@@ -39,6 +43,7 @@ public actor OnDeviceMLXModelStore {
     /// Host checksum file; when non-nil, `download` fetches it and verifies the zip.
     private let sha256URL: URL?
     private let session: URLSession
+    private var didAttemptLegacyMigration = false
 
     public enum DownloadError: Error, LocalizedError, Equatable {
         case http(statusCode: Int)
@@ -89,20 +94,34 @@ public actor OnDeviceMLXModelStore {
         }
     }
 
+    /// Session tuned for multi‑GB model packs (long resource timeout, no URL cache).
+    public static let defaultDownloadSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 120
+        config.timeoutIntervalForResource = 6 * 60 * 60
+        config.waitsForConnectivity = true
+        config.allowsExpensiveNetworkAccess = true
+        config.allowsConstrainedNetworkAccess = true
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
+
     /// - Parameters:
-    ///   - documentsURL: Container whose `Vovozinha/Models/` holds the model directory.
+    ///   - storageRootURL: Root under which `Vovozinha/Models/` is created. Defaults to
+    ///     **Application Support** (private). Tests inject a temp directory.
     ///   - sourceURL: Automatic download URL (defaults to kraftek host zip).
     ///   - sha256URL: Sidecar checksum URL (defaults to `*.zip.sha256` on the same host).
     ///     Pass `nil` only in tests that skip integrity checks.
     ///   - session: Injectable for tests.
     public init(
-        documentsURL: URL? = nil,
+        storageRootURL: URL? = nil,
         sourceURL: URL = OnDeviceMLXModelStore.defaultHostDownloadURL,
         sha256URL: URL? = OnDeviceMLXModelStore.defaultHostSHA256URL,
-        session: URLSession = .shared
+        session: URLSession = OnDeviceMLXModelStore.defaultDownloadSession
     ) {
-        let docs = documentsURL ?? OnDeviceMLXModelStore.defaultDocumentsURL()
-        self.modelDirectoryURL = docs
+        let root = storageRootURL ?? OnDeviceMLXModelStore.defaultApplicationSupportRootURL()
+        self.modelDirectoryURL = root
             .appendingPathComponent("Vovozinha", isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
             .appendingPathComponent(Self.defaultModelDirectoryName, isDirectory: true)
@@ -111,22 +130,40 @@ public actor OnDeviceMLXModelStore {
         self.session = session
     }
 
+    /// Back-compat for tests that still pass `documentsURL:` (any injectable root).
+    public init(
+        documentsURL: URL,
+        sourceURL: URL = OnDeviceMLXModelStore.defaultHostDownloadURL,
+        sha256URL: URL? = OnDeviceMLXModelStore.defaultHostSHA256URL,
+        session: URLSession = OnDeviceMLXModelStore.defaultDownloadSession
+    ) {
+        self.init(
+            storageRootURL: documentsURL,
+            sourceURL: sourceURL,
+            sha256URL: sha256URL,
+            session: session
+        )
+    }
+
     public func modelDirectory() -> URL { modelDirectoryURL }
 
     public func isModelPresent() -> Bool {
-        Self.directoryLooksLikeMLXPack(modelDirectoryURL)
+        migrateLegacyDocumentsModelIfNeeded()
+        return Self.directoryLooksLikeMLXPack(modelDirectoryURL)
     }
 
-    /// Downloads the model zip from our host, unpacks into the app sandbox (with progress).
+    /// Downloads the model zip from our host, unpacks into **Application Support** (with progress).
     ///
     /// - Parameter progress: Optional main-actor callback with fraction, speed, elapsed, and ETA.
     public func download(
         progress: (@MainActor @Sendable (ModelDownloadProgress) -> Void)? = nil
     ) async throws {
+        migrateLegacyDocumentsModelIfNeeded()
         try FileManager.default.createDirectory(
             at: modelDirectoryURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
+        try Self.excludeFromBackup(modelDirectoryURL.deletingLastPathComponent())
 
         var request = URLRequest(url: sourceURL)
         request.setValue("Vovozinha/1.0 (iOS; Qwen3.5 MLX model fetch)", forHTTPHeaderField: "User-Agent")
@@ -166,51 +203,37 @@ public actor OnDeviceMLXModelStore {
             await progress(ModelDownloadProgress(fraction: 0.03, phase: .downloading))
         }
 
-        let (asyncBytes, response) = try await session.bytes(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw DownloadError.http(statusCode: -1)
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            throw DownloadError.http(statusCode: http.statusCode)
-        }
-
-        let expectedLength = http.expectedContentLength
-        let bytesTotal: Int64? = expectedLength > 0 ? expectedLength : nil
+        // Dedicated session + download task. Progress is stored in a shared box and
+        // pumped with `await progress(...)` on this task — unstructured
+        // `Task { @MainActor }` from the session queue does not reliably refresh SwiftUI
+        // while this actor method is in flight.
         let tempZip = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).zip")
-        FileManager.default.createFile(atPath: tempZip.path, contents: nil)
-        let handle = try FileHandle(forWritingTo: tempZip)
-        defer { try? handle.close() }
-
-        var received: Int64 = 0
-        var buffer = Data()
-        buffer.reserveCapacity(1 << 20)
-        var lastReport = Date.distantPast
-        let reportInterval: TimeInterval = 0.25
-
-        for try await byte in asyncBytes {
-            buffer.append(byte)
-            if buffer.count >= 1 << 20 {
-                try handle.write(contentsOf: buffer)
-                received &+= Int64(buffer.count)
-                buffer.removeAll(keepingCapacity: true)
-                let now = Date()
-                if let progress, now.timeIntervalSince(lastReport) >= reportInterval {
-                    lastReport = now
-                    await progress(
-                        Self.makeDownloadSnapshot(
-                            started: started,
-                            received: received,
-                            bytesTotal: bytesTotal,
-                            phase: .downloading
-                        )
-                    )
+            .appendingPathComponent("\(UUID().uuidString)-qwen.zip")
+        let live = ModelZipDownloadLiveState(started: started)
+        let (received, bytesTotal): (Int64, Int64?)
+        do {
+            async let downloadOutcome = ModelZipDownloadController.download(
+                request: request,
+                destinationURL: tempZip,
+                live: live
+            )
+            if let progress {
+                while !live.isFinished {
+                    await progress(live.snapshot(phase: .downloading))
+                    try await Task.sleep(nanoseconds: 200_000_000) // 0.2s UI pump
                 }
+                // Final byte counts after settle (before we throw on failure).
+                await progress(live.snapshot(phase: .downloading))
             }
-        }
-        if !buffer.isEmpty {
-            try handle.write(contentsOf: buffer)
-            received &+= Int64(buffer.count)
+            let outcome = try await downloadOutcome
+            received = outcome.bytesReceived
+            bytesTotal = outcome.bytesTotal
+        } catch let e as DownloadError {
+            try? FileManager.default.removeItem(at: tempZip)
+            throw e
+        } catch {
+            try? FileManager.default.removeItem(at: tempZip)
+            throw error
         }
 
         guard received > 0 else {
@@ -265,13 +288,16 @@ public actor OnDeviceMLXModelStore {
 
         do {
             try Self.installPack(fromZip: tempZip, to: modelDirectoryURL)
+            try Self.excludeFromBackup(modelDirectoryURL)
             try? FileManager.default.removeItem(at: tempZip)
         } catch {
             try? FileManager.default.removeItem(at: tempZip)
             throw DownloadError.unzipFailed
         }
 
-        guard isModelPresent() else { throw DownloadError.unzipFailed }
+        guard Self.directoryLooksLikeMLXPack(modelDirectoryURL) else {
+            throw DownloadError.unzipFailed
+        }
         if let progress {
             await progress(
                 Self.makeDownloadSnapshot(
@@ -285,7 +311,7 @@ public actor OnDeviceMLXModelStore {
         }
     }
 
-    private static func makeDownloadSnapshot(
+    fileprivate static func makeDownloadSnapshot(
         started: Date,
         received: Int64,
         bytesTotal: Int64?,
@@ -320,7 +346,9 @@ public actor OnDeviceMLXModelStore {
         )
     }
 
-    /// Imports a user-provided **zip** or **folder** into the app model directory.
+    /// Imports a user-provided **zip** or **folder** into private Application Support.
+    /// Source may be a security-scoped URL from the document picker; the pack is **copied**
+    /// into app storage — we never keep the model in Documents or Downloads.
     /// No SHA-256 check — external / user-provided packs are not our responsibility.
     public func importModel(from sourceURL: URL) throws {
         let accessed = sourceURL.startAccessingSecurityScopedResource()
@@ -354,30 +382,78 @@ public actor OnDeviceMLXModelStore {
             }
         }
 
-        guard isModelPresent() else { throw ImportError.copyFailed }
-    }
-
-    @discardableResult
-    public func tryImportFromDownloadsDirectory() throws -> Bool {
-        for dir in Self.downloadsCandidateURLs() {
-            let zip = dir.appendingPathComponent(Self.defaultZipFilename)
-            if FileManager.default.fileExists(atPath: zip.path) {
-                try importModel(from: zip)
-                return true
-            }
-            let folder = dir.appendingPathComponent(Self.defaultModelDirectoryName, isDirectory: true)
-            if Self.directoryLooksLikeMLXPack(folder) {
-                try importModel(from: folder)
-                return true
-            }
+        try Self.excludeFromBackup(modelDirectoryURL)
+        guard Self.directoryLooksLikeMLXPack(modelDirectoryURL) else {
+            throw ImportError.copyFailed
         }
-        return false
     }
 
     public func removeModel() throws {
         if FileManager.default.fileExists(atPath: modelDirectoryURL.path) {
             try FileManager.default.removeItem(at: modelDirectoryURL)
         }
+    }
+
+    // MARK: - Paths
+
+    /// Private Application Support root (not user Documents / Downloads).
+    public static func defaultApplicationSupportRootURL() -> URL {
+        let fm = FileManager.default
+        let base =
+            fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fm.temporaryDirectory
+        // Ensure Application Support exists (iOS may not create it until first write).
+        try? fm.createDirectory(at: base, withIntermediateDirectories: true)
+        return base
+    }
+
+    /// One-time move from the old `Documents/Vovozinha/Models/…` location (user-visible).
+    private func migrateLegacyDocumentsModelIfNeeded() {
+        guard !didAttemptLegacyMigration else { return }
+        didAttemptLegacyMigration = true
+
+        if Self.directoryLooksLikeMLXPack(modelDirectoryURL) { return }
+
+        let legacy = Self.legacyDocumentsModelDirectoryURL()
+        guard Self.directoryLooksLikeMLXPack(legacy) else { return }
+
+        do {
+            try Self.replaceDirectory(at: modelDirectoryURL, withContentsOf: legacy)
+            try Self.excludeFromBackup(modelDirectoryURL)
+            try? FileManager.default.removeItem(at: legacy)
+            // Clean empty parent folders if possible.
+            let modelsParent = legacy.deletingLastPathComponent()
+            let vovoParent = modelsParent.deletingLastPathComponent()
+            try? FileManager.default.removeItem(at: modelsParent)
+            if let children = try? FileManager.default.contentsOfDirectory(atPath: vovoParent.path),
+               children.isEmpty {
+                try? FileManager.default.removeItem(at: vovoParent)
+            }
+        } catch {
+            // Leave legacy in place if move fails; next launch can retry.
+            #if DEBUG
+            print("[OnDeviceMLXModelStore] legacy model migration failed: \(error)")
+            #endif
+        }
+    }
+
+    /// Previous pack path under Documents (user-visible Files app).
+    static func legacyDocumentsModelDirectoryURL() -> URL {
+        let docs =
+            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        return docs
+            .appendingPathComponent("Vovozinha", isDirectory: true)
+            .appendingPathComponent("Models", isDirectory: true)
+            .appendingPathComponent(defaultModelDirectoryName, isDirectory: true)
+    }
+
+    static func excludeFromBackup(_ url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        var mutable = url
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try mutable.setResourceValues(values)
     }
 
     // MARK: - Host integrity
@@ -504,160 +580,226 @@ public actor OnDeviceMLXModelStore {
         try fm.copyItem(at: source, to: destination)
     }
 
+    /// Unpacks a model zip with ZIPFoundation (libcompression). Prefer CDN packs built with
+    /// `zip -0` (store): safetensors are already compressed, so deflate only wastes CPU on
+    /// device. Still accepts legacy deflate zips for manual Import.
     static func unzipItem(at zipURL: URL, to destination: URL) throws {
-        #if os(macOS)
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        process.arguments = ["-x", "-k", zipURL.path, destination.path]
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
+        do {
+            try FileManager.default.unzipItem(at: zipURL, to: destination)
+        } catch {
             throw ImportError.unzipFailed
         }
-        #else
-        try SimpleZip.extract(zipURL: zipURL, to: destination)
-        #endif
     }
 
-    private static func downloadsCandidateURLs() -> [URL] {
-        var urls: [URL] = []
-        if let d = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first {
-            urls.append(d)
-        }
-        #if os(macOS)
-        let homeDownloads = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Downloads", isDirectory: true)
-        if FileManager.default.fileExists(atPath: homeDownloads.path) {
-            urls.append(homeDownloads)
-        }
-        #endif
-        return urls
+}
+
+// MARK: - Large zip download (session delegate + polled progress)
+
+/// Thread-safe live counters for UI polling (session queue writes, download task reads).
+private final class ModelZipDownloadLiveState: @unchecked Sendable {
+    private let lock = NSLock()
+    private let started: Date
+    private var received: Int64 = 0
+    private var total: Int64?
+    private var finished = false
+
+    init(started: Date) {
+        self.started = started
     }
 
-    private static func defaultDocumentsURL() -> URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
+    var isFinished: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return finished
+    }
+
+    func update(received: Int64, total: Int64?) {
+        lock.lock()
+        self.received = max(self.received, received)
+        if let total, total > 0 {
+            self.total = total
+        }
+        lock.unlock()
+    }
+
+    func markFinished(received: Int64? = nil, total: Int64? = nil) {
+        lock.lock()
+        if let received {
+            self.received = max(self.received, received)
+        }
+        if let total, total > 0 {
+            self.total = total
+        }
+        finished = true
+        lock.unlock()
+    }
+
+    func snapshot(phase: ModelDownloadProgress.Phase) -> ModelDownloadProgress {
+        lock.lock()
+        let received = self.received
+        let total = self.total
+        lock.unlock()
+        return OnDeviceMLXModelStore.makeDownloadSnapshot(
+            started: started,
+            received: received,
+            bytesTotal: total,
+            phase: phase
+        )
     }
 }
 
-// MARK: - Minimal ZIP reader (store + deflate)
+/// One-shot multi‑GB download via `URLSessionDownloadDelegate`.
+///
+/// The session retains this object as its delegate for the lifetime of the task; we break
+/// the cycle with `finishTasksAndInvalidate()` when settled. Progress is published only via
+/// `live` (polled by the caller) — not via unstructured MainActor tasks.
+private final class ModelZipDownloadController: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    struct Outcome: Sendable {
+        var bytesReceived: Int64
+        var bytesTotal: Int64?
+    }
 
-enum SimpleZip {
-    static func extract(zipURL: URL, to destination: URL) throws {
-        let data = try Data(contentsOf: zipURL, options: [.mappedIfSafe])
-        guard data.count >= 22 else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
+    private let destinationURL: URL
+    private let live: ModelZipDownloadLiveState
+    private let continuation: CheckedContinuation<Outcome, Error>
 
-        var offset = 0
-        while offset + 30 <= data.count {
-            let sig = readUInt32(data, offset)
-            if sig == 0x02014b50 || sig == 0x06054b50 { break }
-            guard sig == 0x04034b50 else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
+    private let lock = NSLock()
+    private var settled = false
+    private var session: URLSession?
+    private var progressObservation: NSKeyValueObservation?
 
-            let method = Int(readUInt16(data, offset + 8))
-            let flags = Int(readUInt16(data, offset + 6))
-            let compSizeField = Int(readUInt32(data, offset + 18))
-            let uncompSize = Int(readUInt32(data, offset + 22))
-            let nameLen = Int(readUInt16(data, offset + 26))
-            let extraLen = Int(readUInt16(data, offset + 28))
-            let nameStart = offset + 30
-            let nameEnd = nameStart + nameLen
-            guard nameEnd + extraLen <= data.count else {
-                throw OnDeviceMLXModelStore.ImportError.unzipFailed
-            }
+    private init(
+        destinationURL: URL,
+        live: ModelZipDownloadLiveState,
+        continuation: CheckedContinuation<Outcome, Error>
+    ) {
+        self.destinationURL = destinationURL
+        self.live = live
+        self.continuation = continuation
+    }
 
-            let nameData = data.subdata(in: nameStart..<nameEnd)
-            guard let name = String(data: nameData, encoding: .utf8), !name.isEmpty else {
-                throw OnDeviceMLXModelStore.ImportError.unzipFailed
-            }
-
-            let dataStart = nameEnd + extraLen
-            let compSize = compSizeField
-
-            // Data descriptor (bit 3): sizes follow the payload; we cannot stream easily — fail.
-            if flags & 0x8 != 0 {
-                throw OnDeviceMLXModelStore.ImportError.unzipFailed
-            }
-
-            let dataEnd = dataStart + compSize
-            guard dataEnd <= data.count else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
-            let payload = data.subdata(in: dataStart..<dataEnd)
-            offset = dataEnd
-
-            if name.hasSuffix("/") { continue }
-
-            let outURL = destination.appendingPathComponent(name)
-            try FileManager.default.createDirectory(
-                at: outURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true
+    static func download(
+        request: URLRequest,
+        destinationURL: URL,
+        live: ModelZipDownloadLiveState
+    ) async throws -> Outcome {
+        try await withCheckedThrowingContinuation { cont in
+            let controller = ModelZipDownloadController(
+                destinationURL: destinationURL,
+                live: live,
+                continuation: cont
             )
-
-            let bytes: Data
-            switch method {
-            case 0:
-                bytes = payload
-            case 8:
-                bytes = try inflateDeflate(
-                    payload,
-                    expectedSize: uncompSize > 0 ? uncompSize : payload.count * 4
-                )
-            default:
-                throw OnDeviceMLXModelStore.ImportError.unzipFailed
-            }
-            try bytes.write(to: outURL, options: .atomic)
+            controller.start(request: request)
         }
     }
 
-    private static func readUInt16(_ data: Data, _ offset: Int) -> UInt16 {
-        UInt16(data[offset]) | (UInt16(data[offset + 1]) << 8)
+    private func start(request: URLRequest) {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 120
+        config.timeoutIntervalForResource = 6 * 60 * 60
+        config.waitsForConnectivity = true
+        config.allowsExpensiveNetworkAccess = true
+        config.allowsConstrainedNetworkAccess = true
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.httpMaximumConnectionsPerHost = 6
+
+        let queue = OperationQueue()
+        queue.name = "app.vovozinha.ModelZipDownload"
+        queue.maxConcurrentOperationCount = 1
+
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
+        self.session = session
+        let task = session.downloadTask(with: request)
+        // KVO backup: some OS versions are flaky about `didWriteData` frequency.
+        progressObservation = task.progress.observe(\.completedUnitCount, options: [.new]) { [live] progress, _ in
+            let completed = progress.completedUnitCount
+            let total = progress.totalUnitCount
+            live.update(
+                received: completed,
+                total: total > 0 ? total : nil
+            )
+        }
+        task.resume()
     }
 
-    private static func readUInt32(_ data: Data, _ offset: Int) -> UInt32 {
-        UInt32(data[offset])
-            | (UInt32(data[offset + 1]) << 8)
-            | (UInt32(data[offset + 2]) << 16)
-            | (UInt32(data[offset + 3]) << 24)
-    }
-
-    private static func inflateDeflate(_ compressed: Data, expectedSize: Int) throws -> Data {
-        var stream = z_stream()
-        var status = inflateInit2_(
-            &stream,
-            -MAX_WBITS,
-            ZLIB_VERSION,
-            Int32(MemoryLayout<z_stream>.size)
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        live.update(
+            received: totalBytesWritten,
+            total: totalBytesExpectedToWrite > 0 ? totalBytesExpectedToWrite : nil
         )
-        guard status == Z_OK else { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
-        defer { _ = inflateEnd(&stream) }
+    }
 
-        var output = [UInt8](repeating: 0, count: max(expectedSize, 64 * 1024))
-        var outCount = 0
-
-        try compressed.withUnsafeBytes { srcBuf in
-            guard let src = srcBuf.bindMemory(to: Bytef.self).baseAddress else {
-                throw OnDeviceMLXModelStore.ImportError.unzipFailed
-            }
-            stream.next_in = UnsafeMutablePointer(mutating: src)
-            stream.avail_in = uInt(compressed.count)
-
-            while true {
-                if outCount >= output.count {
-                    output.append(contentsOf: [UInt8](repeating: 0, count: output.count))
-                }
-                let remaining = output.count - outCount
-                try output.withUnsafeMutableBytes { dstBuf in
-                    guard let dst = dstBuf.baseAddress?.assumingMemoryBound(to: Bytef.self) else {
-                        throw OnDeviceMLXModelStore.ImportError.unzipFailed
-                    }
-                    stream.next_out = dst.advanced(by: outCount)
-                    stream.avail_out = uInt(remaining)
-                    status = zlib.inflate(&stream, Z_NO_FLUSH)
-                }
-                outCount = Int(stream.total_out)
-                if status == Z_STREAM_END { break }
-                if status != Z_OK { throw OnDeviceMLXModelStore.ImportError.unzipFailed }
-            }
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
+        if let http = downloadTask.response as? HTTPURLResponse,
+           !(200..<300).contains(http.statusCode) {
+            live.markFinished()
+            settle(.failure(OnDeviceMLXModelStore.DownloadError.http(statusCode: http.statusCode)))
+            return
         }
 
-        return Data(output.prefix(outCount))
+        do {
+            let fm = FileManager.default
+            if fm.fileExists(atPath: destinationURL.path) {
+                try fm.removeItem(at: destinationURL)
+            }
+            // Must copy/move before this method returns — system temp file is ephemeral.
+            try fm.copyItem(at: location, to: destinationURL)
+
+            let attrs = try fm.attributesOfItem(atPath: destinationURL.path)
+            let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+            guard size > 0 else {
+                live.markFinished()
+                settle(.failure(OnDeviceMLXModelStore.DownloadError.emptyFile))
+                return
+            }
+
+            let expectedFromResponse = (downloadTask.response as? HTTPURLResponse)?.expectedContentLength ?? -1
+            let total: Int64? = expectedFromResponse > 0 ? expectedFromResponse : size
+            live.markFinished(received: size, total: total)
+            settle(.success(Outcome(bytesReceived: size, bytesTotal: total)))
+        } catch {
+            live.markFinished()
+            settle(.failure(error))
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: Error?
+    ) {
+        if let error {
+            live.markFinished()
+            settle(.failure(error))
+        }
+        // Success is settled in `didFinishDownloadingTo`.
+    }
+
+    private func settle(_ result: Result<Outcome, Error>) {
+        lock.lock()
+        guard !settled else {
+            lock.unlock()
+            return
+        }
+        settled = true
+        progressObservation?.invalidate()
+        progressObservation = nil
+        let session = self.session
+        self.session = nil
+        lock.unlock()
+
+        session?.finishTasksAndInvalidate()
+        continuation.resume(with: result)
     }
 }
