@@ -1,1 +1,0 @@
-masterpiece, best quality, {{sectionPrompt}}, {{continuityLock}}, do not redesign locked character or elements, illustrate this story page exactly: {{sceneDescription}}, the hero is {{actionFocus}}, {{lighting}}
