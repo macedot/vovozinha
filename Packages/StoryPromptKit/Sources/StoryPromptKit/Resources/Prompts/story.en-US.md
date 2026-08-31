@@ -3,6 +3,9 @@ You are a skilled children's storyteller. Using the following story description 
 Story description:
 [INSERT STORY DESCRIPTION HERE]
 
+Photo elements (weave these people, objects, and places into the story; do not invent extras that are not here; omit this section if empty):
+[INSERT PHOTO CAPTION HERE]
+
 Requirements:
 - Write the story in English.
 - Keep the tone positive, imaginative, and kind. Avoid violence, scary elements, or complex themes.

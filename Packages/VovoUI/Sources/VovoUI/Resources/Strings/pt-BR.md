@@ -3,6 +3,12 @@
 ## language
 Idioma
 
+## placeholderTitle
+Vovozinha
+
+## placeholderSubtitle
+Um livro de histórias para a hora de dormir, ilustrado neste iPhone.
+
 ## storySeedTitle
 Descrição da história
 
@@ -167,3 +173,33 @@ Não foi possível descrever a foto. Tente de novo.
 
 ## photoDescribeInvalidImage
 Não foi possível ler essa foto. Escolha outra.
+
+## imagePackGateTitle
+Pacote de imagens necessário
+
+## imagePackGateBody
+As ilustrações precisam de um pacote de imagens (~2 GB). Baixe uma vez no Wi‑Fi — fica privado no app. Se o download falhar, use Importar dos Arquivos.
+
+## imagePackGateDownload
+Baixar pacote de imagens
+
+## imagePackGateFilenameHint
+Pacote: AnimeImg2Img-SD15 (zip ou pasta). Prefira Wi‑Fi.
+
+## storyAddPhoto
+Adicionar uma foto (opcional)
+
+## storyClearPhoto
+Remover foto
+
+## storyWriting
+Escrevendo a história…
+
+## storyPreparingPictures
+Preparando as imagens…
+
+## storyPipelineFailed
+Não foi possível terminar o livro. Tente de novo.
+
+## readerWaitingPicture
+Desenhando esta página…

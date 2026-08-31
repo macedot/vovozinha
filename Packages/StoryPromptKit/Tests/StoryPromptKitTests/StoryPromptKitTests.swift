@@ -75,6 +75,34 @@ final class StoryPromptKitTests: XCTestCase {
                 "unresolved placeholder in \(lang.rawValue)"
             )
             XCTAssertTrue(filled.contains(description), lang.rawValue)
+            XCTAssertFalse(filled.contains("[INSERT PHOTO CAPTION HERE]"), lang.rawValue)
+            XCTAssertFalse(filled.contains("INSERIR A LEGENDA"), lang.rawValue)
+        }
+    }
+
+    func testStoryPromptWeavesPhotoCaption() {
+        let caption = "a child in a red coat beside a blue bicycle"
+        let filled = StoryPromptTemplate.filledStoryPrompt(
+            description: "a little rabbit finds a glowing pebble under the soft moon",
+            photoCaption: caption,
+            language: .englishUS
+        )
+        XCTAssertTrue(filled.contains(caption))
+        XCTAssertTrue(filled.contains("Photo elements"))
+    }
+
+    func testIllustrationPromptIsEnglishAndHasTenSlots() {
+        for lang in AppLanguage.allCases {
+            let filled = StoryPromptTemplate.filledIllustrationPrompt(
+                title: "Lantern Garden",
+                paragraphs: (1...10).map { "Paragraph \($0)" },
+                photoCaption: "orange kitten, round eyes",
+                language: lang
+            )
+            XCTAssertTrue(filled.contains("CHARACTER:"), lang.rawValue)
+            XCTAssertTrue(filled.lowercased().contains("english"), lang.rawValue)
+            XCTAssertTrue(filled.contains("Paragraph 10"), lang.rawValue)
+            XCTAssertFalse(filled.contains("[INSERT STORY TITLE HERE]"), lang.rawValue)
         }
     }
 

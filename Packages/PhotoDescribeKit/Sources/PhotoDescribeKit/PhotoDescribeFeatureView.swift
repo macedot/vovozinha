@@ -24,7 +24,6 @@ enum PhotoModelGateState: Equatable {
 /// UI surface for Photo Describe (DEBUG harness). Same Qwen pack as Story Prompt; VLM path for captions.
 public struct PhotoDescribeFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
-    @Environment(\.openURL) private var openURL
 
     @State private var describer: any PhotoDescribing
     @State private var modelStore: OnDeviceMLXModelStore
@@ -126,13 +125,6 @@ public struct PhotoDescribeFeatureView: View {
                     showFileImporter = true
                 } label: {
                     Text(VovoL10n.t(.storyModelGateImport, lang))
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
-
-                Button {
-                    openURL(OnDeviceMLXModelStore.defaultHostFallbackPageURL)
-                } label: {
-                    Text(VovoL10n.t(.storyModelGateOpenFallback, lang))
                 }
                 .buttonStyle(VovoSecondaryButtonStyle())
 

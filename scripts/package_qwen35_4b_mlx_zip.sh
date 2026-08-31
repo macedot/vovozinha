@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Download mlx-community/Qwen3.5-4B-MLX-4bit and pack a CDN-ready zip for
-# https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip
+# https://vovo.kraftek.cloud/qwen/Qwen3.5-4B-MLX-4bit.zip
 #
 # Usage (from repo root):
 #   ./scripts/package_qwen35_4b_mlx_zip.sh
@@ -18,7 +18,7 @@ CACHE_DIR="${CACHE_DIR:-$ROOT/.cache/models/$PACK_NAME}"
 OUT_DIR="${OUT_DIR:-$ROOT/build}"
 ZIP_PATH="$OUT_DIR/${PACK_NAME}.zip"
 SHA_PATH="$OUT_DIR/${PACK_NAME}.zip.sha256"
-CDN_URL="https://files.kraftek.dev/qwen/${PACK_NAME}.zip"
+CDN_URL="https://vovo.kraftek.cloud/qwen/${PACK_NAME}.zip"
 
 mkdir -p "$(dirname "$CACHE_DIR")" "$OUT_DIR"
 

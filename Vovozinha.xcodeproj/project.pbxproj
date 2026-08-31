@@ -3,473 +3,94 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		087896A386CD4D2BB692A1B2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E700261EA524553B58F00CE /* SettingsView.swift */; };
-		0DAFA6F2D31F4468BD361CD7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 799B2BB67D104043A4C86862 /* Theme.swift */; };
-		18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */; };
-		18A7C300296040FD9C60D659 /* StoryDraftInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3FD7D26786E44A4A7EB3827 /* StoryDraftInput.swift */; };
-		19FAC51F8C56434C9FE48768 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD641CF5941447D3923EEB17 /* PDFExporter.swift */; };
-		270C9627ADF84D9AB98D848E /* AppFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A0C82DA16BD417FBAF12DDE /* AppFeature.swift */; };
-		2AFEE8E0D66DCE8D985CA3A3 /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = 303C87C3C1A9EC708F67FBF9 /* VovoUI */; };
-		2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */; };
-		34B8143D85EF49E1A52AEDD3 /* CreateStoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D8A7E17C7048C98C60DBAC /* CreateStoryView.swift */; };
-		36EF72A4B7C54FBF82B23149 /* GenerationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175E6B72894E406CB1525D48 /* GenerationView.swift */; };
-		3753E9F374D1410F8B719F36 /* FileStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E51D209E3F5401D99B93DC9 /* FileStorage.swift */; };
-		3A4B5C6D7E8F901A2B3C4D5E /* ImagePackDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */; };
-		3B9C134DD0D14EE28221888B /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78A48C1406714E20A74799E4 /* Narrator.swift */; };
-		4043ECC6901141D4ADF37BAC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B04D0A66212F4127BDEC43FF /* OnboardingView.swift */; };
-		4A78BF223D3940A59819B787 /* Illustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEA4879FFAD541C7AF661A25 /* Illustrator.swift */; };
-		5271D84FD3614C05A34FE607 /* StoryPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B441C41341F44F58AF72584 /* StoryPlan.swift */; };
-		543AB6938F4D4C2FBB06E294 /* AgeBand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749C68E29AAE47C399D3CA5A /* AgeBand.swift */; };
-		6369BAC3FAFE01852840E6BB /* StoryPromptKit in Frameworks */ = {isa = PBXBuildFile; productRef = EEF2639B58A015CAB8F318EA /* StoryPromptKit */; };
-		63B3F2662B924407BA51E5E0 /* CustomCreateStoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B194A090D25434AAEBF5DAF /* CustomCreateStoryView.swift */; };
-		6672AE99F6C54500AB096571 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF080AA2DC64649857D4351 /* L10n.swift */; };
-		71B3EC26A3FF41F88060BF8A /* LanguageBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D574452B343A586332ACB /* LanguageBar.swift */; };
-		72B555C76F9541C48F1DC5BA /* QuickCreateStoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEE46701B61C43E496FA7BB0 /* QuickCreateStoryView.swift */; };
-		753AA0D4809C4A4F8D7646D1 /* StoryGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28DD12703BF84565AD317311 /* StoryGenerationService.swift */; };
-		769F382C501487D5A4E1C7A4 /* VovozinhaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */; };
-		794A0AAD2A634A37ADBDF624 /* StoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610AC7C029504128A426BE66 /* StoryModels.swift */; };
-		7A7FA0B98EA4443DA32F9E78 /* StoryDraftPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D7BAEAD0B654724A480B78A /* StoryDraftPresentation.swift */; };
-		80A41D1672A348F0B1A3F219 /* KidsSafetyFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E657204B5C04A6598EE7B2F /* KidsSafetyFilter.swift */; };
-		88F0CFBEC6BC43239B7DF6E4 /* VovozinhaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7584C73A0345AB881B4105 /* VovozinhaTests.swift */; };
-		897700641C9F4458AF44F2E1 /* LanguageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BDFBEB940A64F1B8BE7DB38 /* LanguageStore.swift */; };
-		9051061B197D17100CBECB94 /* StoryPromptKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7E93EB8C65D822994793933E /* StoryPromptKit */; };
-		919B042A487E4A199CC772EF /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9276410FAB934170BAC771EA /* AppSettings.swift */; };
-		95B4BEC2D7C527C2DBBAD495 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A660C7ECB00D4B777FDF9314 /* Assets.xcassets */; };
-		9658E43F813A44EDA3B82C1B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CB24945B8246029FF3080D /* ContentView.swift */; };
-		988EC89BD1FA4518834C4C6A /* CharacterAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D791F7D4AA0645A9890421EE /* CharacterAnalyzer.swift */; };
-		9C1DAA28718341DFBCDCCEBA /* StorySceneTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = A453C58A80944C5282701639 /* StorySceneTags.swift */; };
-		A168BDD28CEA41CE92833D92 /* FeatureAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91DE753B34843CA898A5900 /* FeatureAvailability.swift */; };
-		A2C7C1D2F8603F6E3F3F0DF1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C43888ABA14734283D029121 /* Assets.xcassets */; };
-		AACD97F5768C8CF1DE8A8DA9 /* StoryCreationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */; };
-		B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */; };
-		B7113193C06D4D95B29FE761 /* DeviceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51ED58D03372498DBDA0B063 /* DeviceProfile.swift */; };
-		BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = FDAB148DEF7F7A680C1CFBAE /* VovoUI */; };
-		BD40CF6A26644FAE9408FCA5 /* FoundationModelsStoryPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E7C862829B42D18844C970 /* FoundationModelsStoryPlanner.swift */; };
-		C65C3B35C018CF99B3107CF5 /* StoryPromptDebugApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */; };
-		C8D9E0F1A2B3C4D5E6F70819 /* PromptCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */; };
-		C8F3B02D5E6F708192A3B4C5 /* StoryDraftRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */; };
-		CC8A8DFB42DF4AC5A8B3D515 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9EEAA634CE4BB0BA93CE53 /* ReaderView.swift */; };
-		D003FD3263A34D9D9B83D576 /* CharacterProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04136E595C9D423A9ECA263E /* CharacterProfile.swift */; };
-		D1E28E32472E441E9AAFBF06 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B456D9A56DA496FB3A7DAEA /* AppLanguage.swift */; };
-		D4E5F60718293A4B5C6D7E8F /* ScenePromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */; };
-		D83AAA5A9B2B486CA409E33F /* UnavailableLLMStoryPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */; };
-		D8E8E63B740F465B954E992A /* ArtStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C6BCFD48404AE9A1FBDC9D /* ArtStyle.swift */; };
-		DCD07E67D6CE460F9925EA00 /* VovozinhaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3126E0DCB0B4595AB044B46 /* VovozinhaApp.swift */; };
-		DE25D41C2A8342868E6F5D1A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E94FA3185A92447BAA75F805 /* Assets.xcassets */; };
-		E0F1A2B3C4D5E6F708192A3B /* Resources/Prompts in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B40 /* Resources/Prompts */; };
-		E2F5A93B7C8D9E0123B4C5D6 /* VoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */; };
-		EE9E7EA421CB41CCAEA7E765 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A7B35B7CB2940C3AAE47B17 /* FeatureFlags.swift */; };
-		F37785A6A12C49CF9E2D3EC3 /* MockServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5772F6D0F21049F7ABE45AB2 /* MockServices.swift */; };
-		F4723BCCEEF4460BB85B5927 /* StoryPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24DA98D9E6E747DEAF1ECDCE /* StoryPlanner.swift */; };
-		F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */; };
-		FB58767D60594627944FDFA6 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF8A5A237D24074A43EBEC6 /* LibraryView.swift */; };
-		B71ABC8D010000000000000A /* PhotoDescribeDebugApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */; };
-		B71ABC8D010000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B71ABC8D0100000000000004 /* Assets.xcassets */; };
-		B71ABC8D010000000000000C /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = B71ABC8D0100000000000010 /* VovoUI */; };
-		B71ABC8D010000000000000D /* PhotoDescribeKit in Frameworks */ = {isa = PBXBuildFile; productRef = B71ABC8D010000000000000F /* PhotoDescribeKit */; };
+		15AE37B1BC6AF511D38B8B95 /* VovozinhaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E596C49EE9FD35A76E8F91 /* VovozinhaApp.swift */; };
+		56F03C557510DB5DC4BBBDA4 /* VovoUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7384607EBBE485761D9B4233 /* VovoUI */; };
+		8BADBC6D514B5CCAED6744BD /* StorybookKit in Frameworks */ = {isa = PBXBuildFile; productRef = F958A7C62BAD68CD2F413CBB /* StorybookKit */; };
+		93B9EBCB2944EE8E81AB1EE0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 396D5D4A8426300F519B2EA1 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		14C7616AF67538386EAFB6D3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = EC5CFBC4C6E74023A9AF28D6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 83A4B0CA54FED6CB455D2738;
-			remoteInfo = Vovozinha;
-		};
-		DD22EE33BBCCDDEE11223344 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = EC5CFBC4C6E74023A9AF28D6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = DC4CA369A4514D278F03F085;
-			remoteInfo = VovozinhaLegacy;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
-		A1EE77C0FFEE4D15AB1E0001 /* Vovozinha.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Vovozinha.entitlements; sourceTree = "<group>"; };
-		A1EE77C0FFEE4D15AB1E0002 /* StoryPromptDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StoryPromptDebug.entitlements; sourceTree = "<group>"; };
-		04136E595C9D423A9ECA263E /* CharacterProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterProfile.swift; sourceTree = "<group>"; };
-		0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLDiffusionIllustrator.swift; sourceTree = "<group>"; };
-		09D8A7E17C7048C98C60DBAC /* CreateStoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateStoryView.swift; sourceTree = "<group>"; };
-		0A4D574452B343A586332ACB /* LanguageBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageBar.swift; sourceTree = "<group>"; };
-		175E6B72894E406CB1525D48 /* GenerationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationView.swift; sourceTree = "<group>"; };
-		19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VovozinhaLegacy.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipExtractor.swift; sourceTree = "<group>"; };
-		1B194A090D25434AAEBF5DAF /* CustomCreateStoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCreateStoryView.swift; sourceTree = "<group>"; };
-		1B441C41341F44F58AF72584 /* StoryPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPlan.swift; sourceTree = "<group>"; };
-		24DA98D9E6E747DEAF1ECDCE /* StoryPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPlanner.swift; sourceTree = "<group>"; };
-		28DD12703BF84565AD317311 /* StoryGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryGenerationService.swift; sourceTree = "<group>"; };
-		293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePackDownloader.swift; sourceTree = "<group>"; };
-		2D7BAEAD0B654724A480B78A /* StoryDraftPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryDraftPresentation.swift; sourceTree = "<group>"; };
-		33CB24945B8246029FF3080D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VovozinhaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3A0C82DA16BD417FBAF12DDE /* AppFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeature.swift; sourceTree = "<group>"; };
-		3E51D209E3F5401D99B93DC9 /* FileStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStorage.swift; sourceTree = "<group>"; };
-		4AF8A5A237D24074A43EBEC6 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
-		4E9EEAA634CE4BB0BA93CE53 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
-		51ED58D03372498DBDA0B063 /* DeviceProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfile.swift; sourceTree = "<group>"; };
-		5772F6D0F21049F7ABE45AB2 /* MockServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockServices.swift; sourceTree = "<group>"; };
-		5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryPromptDebugApp.swift; sourceTree = "<group>"; };
-		5BDFBEB940A64F1B8BE7DB38 /* LanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageStore.swift; sourceTree = "<group>"; };
-		610AC7C029504128A426BE66 /* StoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryModels.swift; sourceTree = "<group>"; };
-		65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnavailableLLMStoryPlanner.swift; sourceTree = "<group>"; };
-		6E700261EA524553B58F00CE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		72E7C862829B42D18844C970 /* FoundationModelsStoryPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModelsStoryPlanner.swift; sourceTree = "<group>"; };
-		749C68E29AAE47C399D3CA5A /* AgeBand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgeBand.swift; sourceTree = "<group>"; };
-		78A48C1406714E20A74799E4 /* Narrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrator.swift; sourceTree = "<group>"; };
-		799B2BB67D104043A4C86862 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vovozinha.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8E657204B5C04A6598EE7B2F /* KidsSafetyFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsSafetyFilter.swift; sourceTree = "<group>"; };
-		9276410FAB934170BAC771EA /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		9A7B35B7CB2940C3AAE47B17 /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
-		9B456D9A56DA496FB3A7DAEA /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
-		9F7584C73A0345AB881B4105 /* VovozinhaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaTests.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralKidsIllustrator.swift; sourceTree = "<group>"; };
-		A453C58A80944C5282701639 /* StorySceneTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorySceneTags.swift; sourceTree = "<group>"; };
-		A660C7ECB00D4B777FDF9314 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AEE46701B61C43E496FA7BB0 /* QuickCreateStoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCreateStoryView.swift; sourceTree = "<group>"; };
-		B04D0A66212F4127BDEC43FF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		B3126E0DCB0B4595AB044B46 /* VovozinhaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaApp.swift; sourceTree = "<group>"; };
-		B3FD7D26786E44A4A7EB3827 /* StoryDraftInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryDraftInput.swift; sourceTree = "<group>"; };
-		B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryDraftRepair.swift; sourceTree = "<group>"; };
-		BD641CF5941447D3923EEB17 /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
-		BEF080AA2DC64649857D4351 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
-		C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePromptBuilder.swift; sourceTree = "<group>"; };
-		C43888ABA14734283D029121 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCatalog.swift; sourceTree = "<group>"; };
-		D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VovozinhaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D791F7D4AA0645A9890421EE /* CharacterAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAnalyzer.swift; sourceTree = "<group>"; };
-		D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCatalog.swift; sourceTree = "<group>"; };
-		DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaApp.swift; sourceTree = "<group>"; };
-		DEA4879FFAD541C7AF661A25 /* Illustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Illustrator.swift; sourceTree = "<group>"; };
-		E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryCreationUITests.swift; sourceTree = "<group>"; };
-		E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePackStore.swift; sourceTree = "<group>"; };
-		E94FA3185A92447BAA75F805 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StoryPromptDebug.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F1A2B3C4D5E6F708192A3B40 /* Resources/Prompts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Prompts; sourceTree = "<group>"; };
-		F3C6BCFD48404AE9A1FBDC9D /* ArtStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtStyle.swift; sourceTree = "<group>"; };
-		F91DE753B34843CA898A5900 /* FeatureAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureAvailability.swift; sourceTree = "<group>"; };
-		B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDescribeDebugApp.swift; sourceTree = "<group>"; };
-		B71ABC8D0100000000000002 /* PhotoDescribeDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PhotoDescribeDebug.entitlements; sourceTree = "<group>"; };
-		B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDescribeDebug.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B71ABC8D0100000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		396D5D4A8426300F519B2EA1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		675DDD631D3E85381A748AF7 /* StoryPromptKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StoryPromptKit; path = Packages/StoryPromptKit; sourceTree = SOURCE_ROOT; };
+		A51E6CE3889F3CE86CC4C134 /* VovoUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = VovoUI; path = Packages/VovoUI; sourceTree = SOURCE_ROOT; };
+		CBA0BC7939BE7E0E370DF3E4 /* StorybookKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StorybookKit; path = Packages/StorybookKit; sourceTree = SOURCE_ROOT; };
+		D3E596C49EE9FD35A76E8F91 /* VovozinhaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaApp.swift; sourceTree = "<group>"; };
+		F27FC19B37FD0AC6B37B09A7 /* Vovozinha.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vovozinha.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB8B9DAA756D624FF8322687 /* ImageGenKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ImageGenKit; path = Packages/ImageGenKit; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A0D77672A86145FBAC9353C0 /* Frameworks */ = {
+		6BFA023A89781172DA37882B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BB8FE134F2D21AB6F45E508B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2AFEE8E0D66DCE8D985CA3A3 /* VovoUI in Frameworks */,
-				9051061B197D17100CBECB94 /* StoryPromptKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		EFA4819A3AD9EA72747E9A20 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BBD3D9DD4A153E20D1712B9E /* VovoUI in Frameworks */,
-				6369BAC3FAFE01852840E6BB /* StoryPromptKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B71ABC8D0100000000000008 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B71ABC8D010000000000000C /* VovoUI in Frameworks */,
-				B71ABC8D010000000000000D /* PhotoDescribeKit in Frameworks */,
+				56F03C557510DB5DC4BBBDA4 /* VovoUI in Frameworks */,
+				8BADBC6D514B5CCAED6744BD /* StorybookKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		05D105B37E30414492828719 /* CreateStory */ = {
+		1032F3B49729E4F2CB83D558 /* Apps */ = {
 			isa = PBXGroup;
 			children = (
-				09D8A7E17C7048C98C60DBAC /* CreateStoryView.swift */,
-				1B194A090D25434AAEBF5DAF /* CustomCreateStoryView.swift */,
-				AEE46701B61C43E496FA7BB0 /* QuickCreateStoryView.swift */,
-			);
-			path = CreateStory;
-			sourceTree = "<group>";
-		};
-		0AD937D28E4042B9BB297D97 /* VovozinhaTests */ = {
-			isa = PBXGroup;
-			children = (
-				9F7584C73A0345AB881B4105 /* VovozinhaTests.swift */,
-			);
-			path = VovozinhaTests;
-			sourceTree = "<group>";
-		};
-		10B1C7F09004BC216396ECD7 /* StoryPromptDebug */ = {
-			isa = PBXGroup;
-			children = (
-				5AA3775D16FF885F6D883F33 /* StoryPromptDebugApp.swift */,
-				A660C7ECB00D4B777FDF9314 /* Assets.xcassets */,
-				A1EE77C0FFEE4D15AB1E0002 /* StoryPromptDebug.entitlements */,
-			);
-			path = StoryPromptDebug;
-			sourceTree = "<group>";
-		};
-		2BEA07FD7BC7BBE6EE625993 /* Apps */ = {
-			isa = PBXGroup;
-			children = (
-				FDEBFC7735A8F38DF94F9762 /* VovozinhaUITests */,
-				F93B217AE8ACA72BAAD43E71 /* Vovozinha */,
-				10B1C7F09004BC216396ECD7 /* StoryPromptDebug */,
-				B71ABC8D0100000000000005 /* PhotoDescribeDebug */,
+				2D4FE290B9E4346D37CAD0E9 /* Vovozinha */,
 			);
 			path = Apps;
 			sourceTree = "<group>";
 		};
-		3DDADD4FD3D74DC5B0766A74 /* Features */ = {
+		19974DEEB27A7896457CADDC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				ED29D567296E4881BB4A6399 /* Onboarding */,
-				05D105B37E30414492828719 /* CreateStory */,
-				D834DEBDDB1E4E8593302030 /* Generation */,
-				77CBF80861D14D21855325F3 /* Reader */,
-				FF7958DBD1E6403EBA7EF3CE /* Library */,
-				EB0EDC0A3D664D1D9B784976 /* Settings */,
-			);
-			path = Features;
-			sourceTree = "<group>";
-		};
-		409B277257EB40C6BB209CD1 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				51ED58D03372498DBDA0B063 /* DeviceProfile.swift */,
-				F91DE753B34843CA898A5900 /* FeatureAvailability.swift */,
-				3A0C82DA16BD417FBAF12DDE /* AppFeature.swift */,
-				D791F7D4AA0645A9890421EE /* CharacterAnalyzer.swift */,
-				24DA98D9E6E747DEAF1ECDCE /* StoryPlanner.swift */,
-				DEA4879FFAD541C7AF661A25 /* Illustrator.swift */,
-				78A48C1406714E20A74799E4 /* Narrator.swift */,
-				BD641CF5941447D3923EEB17 /* PDFExporter.swift */,
-				8E657204B5C04A6598EE7B2F /* KidsSafetyFilter.swift */,
-				28DD12703BF84565AD317311 /* StoryGenerationService.swift */,
-				5772F6D0F21049F7ABE45AB2 /* MockServices.swift */,
-				A453C58A80944C5282701639 /* StorySceneTags.swift */,
-				293A4B5C6D7E8F901A2B3C4D /* ImagePackDownloader.swift */,
-				1A2B3C4D5E6F708192A3B4C5 /* ZipExtractor.swift */,
-				0718293A4B5C6D7E8F901A2B /* CoreMLDiffusionIllustrator.swift */,
-				E5F60718293A4B5C6D7E8F90 /* ImagePackStore.swift */,
-				C3D4E5F60718293A4B5C6D7E /* ScenePromptBuilder.swift */,
-				D9E0F1A2B3C4D5E6F708192A /* PromptCatalog.swift */,
-				A1B2C3D4E5F60718293A4B5C /* ProceduralKidsIllustrator.swift */,
-				D1E4F82A6B7C8D9012A3B4C5 /* VoiceCatalog.swift */,
-				B7E2A91C4D5E6F708192A3B4 /* StoryDraftRepair.swift */,
-				65A7F91347004009BBB57FEC /* UnavailableLLMStoryPlanner.swift */,
-				72E7C862829B42D18844C970 /* FoundationModelsStoryPlanner.swift */,
-				9A7B35B7CB2940C3AAE47B17 /* FeatureFlags.swift */,
-				0A4D574452B343A586332ACB /* LanguageBar.swift */,
-				BEF080AA2DC64649857D4351 /* L10n.swift */,
-				5BDFBEB940A64F1B8BE7DB38 /* LanguageStore.swift */,
-				9B456D9A56DA496FB3A7DAEA /* AppLanguage.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		6BA9FD3C23FF44959A556486 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				749C68E29AAE47C399D3CA5A /* AgeBand.swift */,
-				F3C6BCFD48404AE9A1FBDC9D /* ArtStyle.swift */,
-				04136E595C9D423A9ECA263E /* CharacterProfile.swift */,
-				B3FD7D26786E44A4A7EB3827 /* StoryDraftInput.swift */,
-				2D7BAEAD0B654724A480B78A /* StoryDraftPresentation.swift */,
-				1B441C41341F44F58AF72584 /* StoryPlan.swift */,
-				610AC7C029504128A426BE66 /* StoryModels.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		77CBF80861D14D21855325F3 /* Reader */ = {
-			isa = PBXGroup;
-			children = (
-				4E9EEAA634CE4BB0BA93CE53 /* ReaderView.swift */,
-			);
-			path = Reader;
-			sourceTree = "<group>";
-		};
-		845B03F833F34524B2568957 = {
-			isa = PBXGroup;
-			children = (
-				9123C8C2BF524259B53A7BCE /* Legacy/VovozinhaLegacy */,
-				0AD937D28E4042B9BB297D97 /* VovozinhaTests */,
-				2BEA07FD7BC7BBE6EE625993 /* Apps */,
-				BD4806846B73472E943EEFB7 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		9123C8C2BF524259B53A7BCE /* Legacy/VovozinhaLegacy */ = {
-			isa = PBXGroup;
-			children = (
-				B3126E0DCB0B4595AB044B46 /* VovozinhaApp.swift */,
-				33CB24945B8246029FF3080D /* ContentView.swift */,
-				799B2BB67D104043A4C86862 /* Theme.swift */,
-				D4E7EE6D33904F6FBE7F71BD /* Domain */,
-				3DDADD4FD3D74DC5B0766A74 /* Features */,
-				E94FA3185A92447BAA75F805 /* Assets.xcassets */,
-				F1A2B3C4D5E6F708192A3B40 /* Resources/Prompts */,
-			);
-			path = Legacy/VovozinhaLegacy;
-			sourceTree = "<group>";
-		};
-		BD4806846B73472E943EEFB7 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */,
-				39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */,
-				E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */,
-				B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */,
-				19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */,
-				D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */,
+				F27FC19B37FD0AC6B37B09A7 /* Vovozinha.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		D4E7EE6D33904F6FBE7F71BD /* Domain */ = {
+		2D4FE290B9E4346D37CAD0E9 /* Vovozinha */ = {
 			isa = PBXGroup;
 			children = (
-				6BA9FD3C23FF44959A556486 /* Models */,
-				409B277257EB40C6BB209CD1 /* Services */,
-				EFF7E8CA604944FD985885D1 /* Persistence */,
-			);
-			path = Domain;
-			sourceTree = "<group>";
-		};
-		D834DEBDDB1E4E8593302030 /* Generation */ = {
-			isa = PBXGroup;
-			children = (
-				175E6B72894E406CB1525D48 /* GenerationView.swift */,
-			);
-			path = Generation;
-			sourceTree = "<group>";
-		};
-		EB0EDC0A3D664D1D9B784976 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				6E700261EA524553B58F00CE /* SettingsView.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
-		ED29D567296E4881BB4A6399 /* Onboarding */ = {
-			isa = PBXGroup;
-			children = (
-				B04D0A66212F4127BDEC43FF /* OnboardingView.swift */,
-			);
-			path = Onboarding;
-			sourceTree = "<group>";
-		};
-		EFF7E8CA604944FD985885D1 /* Persistence */ = {
-			isa = PBXGroup;
-			children = (
-				3E51D209E3F5401D99B93DC9 /* FileStorage.swift */,
-				9276410FAB934170BAC771EA /* AppSettings.swift */,
-			);
-			path = Persistence;
-			sourceTree = "<group>";
-		};
-		F93B217AE8ACA72BAAD43E71 /* Vovozinha */ = {
-			isa = PBXGroup;
-			children = (
-				DCF93943FA712665A2DD54E0 /* VovozinhaApp.swift */,
-				C43888ABA14734283D029121 /* Assets.xcassets */,
-				A1EE77C0FFEE4D15AB1E0001 /* Vovozinha.entitlements */,
+				396D5D4A8426300F519B2EA1 /* Assets.xcassets */,
+				D3E596C49EE9FD35A76E8F91 /* VovozinhaApp.swift */,
 			);
 			path = Vovozinha;
 			sourceTree = "<group>";
 		};
-		FDEBFC7735A8F38DF94F9762 /* VovozinhaUITests */ = {
+		729D73858EFEAD0ECA8AFD8B /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				E3220C5527D4944EFBB41282 /* StoryCreationUITests.swift */,
+				FB8B9DAA756D624FF8322687 /* ImageGenKit */,
+				CBA0BC7939BE7E0E370DF3E4 /* StorybookKit */,
+				675DDD631D3E85381A748AF7 /* StoryPromptKit */,
+				A51E6CE3889F3CE86CC4C134 /* VovoUI */,
 			);
-			path = VovozinhaUITests;
+			path = Packages;
 			sourceTree = "<group>";
 		};
-		FF7958DBD1E6403EBA7EF3CE /* Library */ = {
+		BD1FD6431E23B3582A8F709D = {
 			isa = PBXGroup;
 			children = (
-				4AF8A5A237D24074A43EBEC6 /* LibraryView.swift */,
+				1032F3B49729E4F2CB83D558 /* Apps */,
+				729D73858EFEAD0ECA8AFD8B /* Packages */,
+				19974DEEB27A7896457CADDC /* Products */,
 			);
-			path = Library;
-			sourceTree = "<group>";
-		};
-		B71ABC8D0100000000000005 /* PhotoDescribeDebug */ = {
-			isa = PBXGroup;
-			children = (
-				B71ABC8D0100000000000001 /* PhotoDescribeDebugApp.swift */,
-				B71ABC8D0100000000000004 /* Assets.xcassets */,
-				B71ABC8D0100000000000002 /* PhotoDescribeDebug.entitlements */,
-			);
-			path = PhotoDescribeDebug;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1B75E236CBD62681D68323FC /* StoryPromptDebug */ = {
+		3897A72DB20BA44E68176062 /* Vovozinha */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 53F2A8D7E041FE2465B3EFF2 /* Build configuration list for PBXNativeTarget "StoryPromptDebug" */;
+			buildConfigurationList = 2AEE0F33C9450CA366A9893F /* Build configuration list for PBXNativeTarget "Vovozinha" */;
 			buildPhases = (
-				63DFDCBEC60C164A0D24B7D6 /* Sources */,
-				BB8FE134F2D21AB6F45E508B /* Frameworks */,
-				839CDD972BFA6748065AC286 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = StoryPromptDebug;
-			packageProductDependencies = (
-				303C87C3C1A9EC708F67FBF9 /* VovoUI */,
-				7E93EB8C65D822994793933E /* StoryPromptKit */,
-			);
-			productName = StoryPromptDebug;
-			productReference = E958EE34DD852B8F5590D40C /* StoryPromptDebug.app */;
-			productType = "com.apple.product-type.application";
-		};
-		7D91D0E5649D11D1FA073301 /* VovozinhaUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D43C2370C4F0823F4FE4FC36 /* Build configuration list for PBXNativeTarget "VovozinhaUITests" */;
-			buildPhases = (
-				01E39D300EA2845F769B030E /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				0EF0A11AAB7ACDF689950562 /* PBXTargetDependency */,
-			);
-			name = VovozinhaUITests;
-			productName = VovozinhaUITests;
-			productReference = 39756EC972907A193A2AC82C /* VovozinhaUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
-		83A4B0CA54FED6CB455D2738 /* Vovozinha */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F5D0C59A307F94BE156766BE /* Build configuration list for PBXNativeTarget "Vovozinha" */;
-			buildPhases = (
-				84284362CFC0237CF340BEDA /* Sources */,
-				EFA4819A3AD9EA72747E9A20 /* Frameworks */,
-				52231C83BF9D5099A3A2C25F /* Resources */,
+				0FBBBA7767F429C8227952A0 /* Sources */,
+				98820A77AE77C4C54CA9DF79 /* Resources */,
+				6BFA023A89781172DA37882B /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -477,287 +98,150 @@
 			);
 			name = Vovozinha;
 			packageProductDependencies = (
-				FDAB148DEF7F7A680C1CFBAE /* VovoUI */,
-				EEF2639B58A015CAB8F318EA /* StoryPromptKit */,
+				7384607EBBE485761D9B4233 /* VovoUI */,
+				F958A7C62BAD68CD2F413CBB /* StorybookKit */,
 			);
 			productName = Vovozinha;
-			productReference = 84A6C7BF3529FCDA3C0FFF6F /* Vovozinha.app */;
-			productType = "com.apple.product-type.application";
-		};
-		DC4CA369A4514D278F03F085 /* VovozinhaLegacy */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "VovozinhaLegacy" */;
-			buildPhases = (
-				D4D2D2A8C40C42D2AF548BA0 /* Sources */,
-				A0D77672A86145FBAC9353C0 /* Frameworks */,
-				A83A299E44684BEE93CE93AF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = VovozinhaLegacy;
-			packageProductDependencies = (
-			);
-			productName = VovozinhaLegacy;
-			productReference = 19424526AEE446CF853F9CD1 /* VovozinhaLegacy.app */;
-			productType = "com.apple.product-type.application";
-		};
-		F9F259236675465EBDDE98FC /* VovozinhaTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = DB81B17288374C9C9815FA98 /* Build configuration list for PBXNativeTarget "VovozinhaTests" */;
-			buildPhases = (
-				9B4B28A8B65A41D7A6BBFC75 /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				EE11FF22AABBCCDD00112233 /* PBXTargetDependency */,
-			);
-			name = VovozinhaTests;
-			productName = VovozinhaTests;
-			productReference = D2B63AA1586143989EB31E5A /* VovozinhaTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		B71ABC8D0100000000000006 /* PhotoDescribeDebug */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B71ABC8D0100000000000013 /* Build configuration list for PBXNativeTarget "PhotoDescribeDebug" */;
-			buildPhases = (
-				B71ABC8D0100000000000007 /* Sources */,
-				B71ABC8D0100000000000008 /* Frameworks */,
-				B71ABC8D0100000000000009 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = PhotoDescribeDebug;
-			packageProductDependencies = (
-				B71ABC8D0100000000000010 /* VovoUI */,
-				B71ABC8D010000000000000F /* PhotoDescribeKit */,
-			);
-			productName = PhotoDescribeDebug;
-			productReference = B71ABC8D0100000000000003 /* PhotoDescribeDebug.app */;
+			productReference = F27FC19B37FD0AC6B37B09A7 /* Vovozinha.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		EC5CFBC4C6E74023A9AF28D6 /* Project object */ = {
+		93D47B002720DBA6D1491AF8 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 2700;
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3897A72DB20BA44E68176062 = {
+						DevelopmentTeam = FTS4YLJNG3;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
-			buildConfigurationList = F83E9E2F248D4CF8BDF1E7E3 /* Build configuration list for PBXProject "Vovozinha" */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = "pt-BR";
+			buildConfigurationList = 5A2F0533DA6CB770063B29CC /* Build configuration list for PBXProject "Vovozinha" */;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				"pt-BR",
-				en,
 				Base,
+				en,
 			);
-			mainGroup = 845B03F833F34524B2568957;
+			mainGroup = BD1FD6431E23B3582A8F709D;
+			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
-				482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
-				B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */,
+				2B6877E08F3B1B74A6D51707 /* XCLocalSwiftPackageReference "Packages/ImageGenKit" */,
+				3FA56A837A1CBBD562719EC0 /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
+				C9F0CCEA3DC9FE940255E906 /* XCLocalSwiftPackageReference "Packages/StorybookKit" */,
+				3E568F3618716272B53D9DE3 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
 			);
-			productRefGroup = BD4806846B73472E943EEFB7 /* Products */;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 19974DEEB27A7896457CADDC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				83A4B0CA54FED6CB455D2738 /* Vovozinha */,
-				7D91D0E5649D11D1FA073301 /* VovozinhaUITests */,
-				1B75E236CBD62681D68323FC /* StoryPromptDebug */,
-				B71ABC8D0100000000000006 /* PhotoDescribeDebug */,
-				DC4CA369A4514D278F03F085 /* VovozinhaLegacy */,
-				F9F259236675465EBDDE98FC /* VovozinhaTests */,
+				3897A72DB20BA44E68176062 /* Vovozinha */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		52231C83BF9D5099A3A2C25F /* Resources */ = {
+		98820A77AE77C4C54CA9DF79 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A2C7C1D2F8603F6E3F3F0DF1 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		839CDD972BFA6748065AC286 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				95B4BEC2D7C527C2DBBAD495 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A83A299E44684BEE93CE93AF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				DE25D41C2A8342868E6F5D1A /* Assets.xcassets in Resources */,
-				E0F1A2B3C4D5E6F708192A3B /* Resources/Prompts in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B71ABC8D0100000000000009 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B71ABC8D010000000000000B /* Assets.xcassets in Resources */,
+				93B9EBCB2944EE8E81AB1EE0 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		01E39D300EA2845F769B030E /* Sources */ = {
+		0FBBBA7767F429C8227952A0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AACD97F5768C8CF1DE8A8DA9 /* StoryCreationUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		63DFDCBEC60C164A0D24B7D6 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C65C3B35C018CF99B3107CF5 /* StoryPromptDebugApp.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84284362CFC0237CF340BEDA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				769F382C501487D5A4E1C7A4 /* VovozinhaApp.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9B4B28A8B65A41D7A6BBFC75 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				88F0CFBEC6BC43239B7DF6E4 /* VovozinhaTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D4D2D2A8C40C42D2AF548BA0 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				DCD07E67D6CE460F9925EA00 /* VovozinhaApp.swift in Sources */,
-				9658E43F813A44EDA3B82C1B /* ContentView.swift in Sources */,
-				0DAFA6F2D31F4468BD361CD7 /* Theme.swift in Sources */,
-				543AB6938F4D4C2FBB06E294 /* AgeBand.swift in Sources */,
-				D8E8E63B740F465B954E992A /* ArtStyle.swift in Sources */,
-				D003FD3263A34D9D9B83D576 /* CharacterProfile.swift in Sources */,
-				18A7C300296040FD9C60D659 /* StoryDraftInput.swift in Sources */,
-				9C1DAA28718341DFBCDCCEBA /* StorySceneTags.swift in Sources */,
-				3A4B5C6D7E8F901A2B3C4D5E /* ImagePackDownloader.swift in Sources */,
-				2B3C4D5E6F708192A3B4C5D6 /* ZipExtractor.swift in Sources */,
-				18293A4B5C6D7E8F901A2B3C /* CoreMLDiffusionIllustrator.swift in Sources */,
-				F60718293A4B5C6D7E8F901A /* ImagePackStore.swift in Sources */,
-				D4E5F60718293A4B5C6D7E8F /* ScenePromptBuilder.swift in Sources */,
-				C8D9E0F1A2B3C4D5E6F70819 /* PromptCatalog.swift in Sources */,
-				B2C3D4E5F60718293A4B5C6D /* ProceduralKidsIllustrator.swift in Sources */,
-				E2F5A93B7C8D9E0123B4C5D6 /* VoiceCatalog.swift in Sources */,
-				C8F3B02D5E6F708192A3B4C5 /* StoryDraftRepair.swift in Sources */,
-				D83AAA5A9B2B486CA409E33F /* UnavailableLLMStoryPlanner.swift in Sources */,
-				BD40CF6A26644FAE9408FCA5 /* FoundationModelsStoryPlanner.swift in Sources */,
-				EE9E7EA421CB41CCAEA7E765 /* FeatureFlags.swift in Sources */,
-				71B3EC26A3FF41F88060BF8A /* LanguageBar.swift in Sources */,
-				6672AE99F6C54500AB096571 /* L10n.swift in Sources */,
-				897700641C9F4458AF44F2E1 /* LanguageStore.swift in Sources */,
-				D1E28E32472E441E9AAFBF06 /* AppLanguage.swift in Sources */,
-				7A7FA0B98EA4443DA32F9E78 /* StoryDraftPresentation.swift in Sources */,
-				5271D84FD3614C05A34FE607 /* StoryPlan.swift in Sources */,
-				794A0AAD2A634A37ADBDF624 /* StoryModels.swift in Sources */,
-				B7113193C06D4D95B29FE761 /* DeviceProfile.swift in Sources */,
-				A168BDD28CEA41CE92833D92 /* FeatureAvailability.swift in Sources */,
-				270C9627ADF84D9AB98D848E /* AppFeature.swift in Sources */,
-				988EC89BD1FA4518834C4C6A /* CharacterAnalyzer.swift in Sources */,
-				F4723BCCEEF4460BB85B5927 /* StoryPlanner.swift in Sources */,
-				4A78BF223D3940A59819B787 /* Illustrator.swift in Sources */,
-				3B9C134DD0D14EE28221888B /* Narrator.swift in Sources */,
-				19FAC51F8C56434C9FE48768 /* PDFExporter.swift in Sources */,
-				80A41D1672A348F0B1A3F219 /* KidsSafetyFilter.swift in Sources */,
-				753AA0D4809C4A4F8D7646D1 /* StoryGenerationService.swift in Sources */,
-				F37785A6A12C49CF9E2D3EC3 /* MockServices.swift in Sources */,
-				3753E9F374D1410F8B719F36 /* FileStorage.swift in Sources */,
-				919B042A487E4A199CC772EF /* AppSettings.swift in Sources */,
-				4043ECC6901141D4ADF37BAC /* OnboardingView.swift in Sources */,
-				FB58767D60594627944FDFA6 /* LibraryView.swift in Sources */,
-				34B8143D85EF49E1A52AEDD3 /* CreateStoryView.swift in Sources */,
-				63B3F2662B924407BA51E5E0 /* CustomCreateStoryView.swift in Sources */,
-				72B555C76F9541C48F1DC5BA /* QuickCreateStoryView.swift in Sources */,
-				36EF72A4B7C54FBF82B23149 /* GenerationView.swift in Sources */,
-				CC8A8DFB42DF4AC5A8B3D515 /* ReaderView.swift in Sources */,
-				087896A386CD4D2BB692A1B2 /* SettingsView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B71ABC8D0100000000000007 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B71ABC8D010000000000000A /* PhotoDescribeDebugApp.swift in Sources */,
+				15AE37B1BC6AF511D38B8B95 /* VovozinhaApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		0EF0A11AAB7ACDF689950562 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 83A4B0CA54FED6CB455D2738 /* Vovozinha */;
-			targetProxy = 14C7616AF67538386EAFB6D3 /* PBXContainerItemProxy */;
-		};
-		EE11FF22AABBCCDD00112233 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = DC4CA369A4514D278F03F085 /* VovozinhaLegacy */;
-			targetProxy = DD22EE33BBCCDDEE11223344 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin XCBuildConfiguration section */
-		1BE120C1E1D3405A8F18E1AA /* Debug */ = {
+		2C061CA44DA1D74B3C6D1186 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_NAME = Vovozinha;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vovozinha.app/Vovozinha";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9A00D0D2DDE8C1B9EF64E88A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
+				PRODUCT_NAME = Vovozinha;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		25A3BDE55FA14D32824D29C8 /* Debug */ = {
+		A4EC26EBD52DBDE3ED622B46 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -765,510 +249,158 @@
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		DC49C076B71F6DB81A9A5BE1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FTS4YLJNG3;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
 					"$(inherited)",
+					"DEBUG=1",
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			};
-			name = Debug;
-		};
-		2A7DE9E1339A9323561D7972 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/StoryPromptDebug/StoryPromptDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = StoryPrompt;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		442A7BE31735A7423BA250A8 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		631FB30010C5480088D9E684 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Usamos a câmera para fotografar um brinquedo ou pessoa e transformar em personagem da história infantil. A foto fica só no seu iPhone.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Escolha uma foto de brinquedo ou pessoa para o personagem da história. As fotos não saem do dispositivo.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
-		};
-		7BE33C2AE95BF936DBB6E3D8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/Vovozinha/Vovozinha.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.Vovozinha;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		8874F62C79CF620C33A42DBD /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = Vovozinha;
-			};
-			name = Release;
-		};
-		9E259CEF314B42689980E868 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vovozinha.app/Vovozinha";
-			};
-			name = Release;
-		};
-		B2DC7CCCA2BB4348B4A409C9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Usamos a câmera para fotografar um brinquedo ou pessoa e transformar em personagem da história infantil. A foto fica só no seu iPhone.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Escolha uma foto de brinquedo ou pessoa para o personagem da história. As fotos não saem do dispositivo.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		D15BC8CE39D24A363A24DAD3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/StoryPromptDebug/StoryPromptDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = StoryPrompt;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.StoryPromptDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		E0F19C17CA14EBB9385D780A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.VovozinhaUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = Vovozinha;
-			};
-			name = Debug;
-		};
-		F39C7BB33F0D4ABE8DE3FE4F /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		B71ABC8D0100000000000011 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/PhotoDescribeDebug/PhotoDescribeDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = PhotoDescribe;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick a photo to describe on this device. Photos never leave your iPhone.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.PhotoDescribeDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		B71ABC8D0100000000000012 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Apps/PhotoDescribeDebug/PhotoDescribeDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FTS4YLJNG3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = PhotoDescribe;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick a photo to describe on this device. Photos never leave your iPhone.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.vovozinha.PhotoDescribeDebug;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		15C7BCCA0B48464499818978 /* Build configuration list for PBXNativeTarget "VovozinhaLegacy" */ = {
+		2AEE0F33C9450CA366A9893F /* Build configuration list for PBXNativeTarget "Vovozinha" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				631FB30010C5480088D9E684 /* Debug */,
-				B2DC7CCCA2BB4348B4A409C9 /* Release */,
+				9A00D0D2DDE8C1B9EF64E88A /* Debug */,
+				2C061CA44DA1D74B3C6D1186 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
-		53F2A8D7E041FE2465B3EFF2 /* Build configuration list for PBXNativeTarget "StoryPromptDebug" */ = {
+		5A2F0533DA6CB770063B29CC /* Build configuration list for PBXProject "Vovozinha" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D15BC8CE39D24A363A24DAD3 /* Debug */,
-				2A7DE9E1339A9323561D7972 /* Release */,
+				DC49C076B71F6DB81A9A5BE1 /* Debug */,
+				A4EC26EBD52DBDE3ED622B46 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D43C2370C4F0823F4FE4FC36 /* Build configuration list for PBXNativeTarget "VovozinhaUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E0F19C17CA14EBB9385D780A /* Debug */,
-				8874F62C79CF620C33A42DBD /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		DB81B17288374C9C9815FA98 /* Build configuration list for PBXNativeTarget "VovozinhaTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1BE120C1E1D3405A8F18E1AA /* Debug */,
-				9E259CEF314B42689980E868 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F5D0C59A307F94BE156766BE /* Build configuration list for PBXNativeTarget "Vovozinha" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7BE33C2AE95BF936DBB6E3D8 /* Debug */,
-				442A7BE31735A7423BA250A8 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F83E9E2F248D4CF8BDF1E7E3 /* Build configuration list for PBXProject "Vovozinha" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				25A3BDE55FA14D32824D29C8 /* Debug */,
-				F39C7BB33F0D4ABE8DE3FE4F /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B71ABC8D0100000000000013 /* Build configuration list for PBXNativeTarget "PhotoDescribeDebug" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B71ABC8D0100000000000011 /* Debug */,
-				B71ABC8D0100000000000012 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */ = {
+		2B6877E08F3B1B74A6D51707 /* XCLocalSwiftPackageReference "Packages/ImageGenKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/StoryPromptKit;
+			relativePath = Packages/ImageGenKit;
 		};
-		6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */ = {
+		3E568F3618716272B53D9DE3 /* XCLocalSwiftPackageReference "Packages/VovoUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VovoUI;
 		};
-		B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */ = {
+		3FA56A837A1CBBD562719EC0 /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/PhotoDescribeKit;
+			relativePath = Packages/StoryPromptKit;
+		};
+		C9F0CCEA3DC9FE940255E906 /* XCLocalSwiftPackageReference "Packages/StorybookKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/StorybookKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		303C87C3C1A9EC708F67FBF9 /* VovoUI */ = {
+		7384607EBBE485761D9B4233 /* VovoUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
 			productName = VovoUI;
 		};
-		7E93EB8C65D822994793933E /* StoryPromptKit */ = {
+		F958A7C62BAD68CD2F413CBB /* StorybookKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */;
-			productName = StoryPromptKit;
-		};
-		EEF2639B58A015CAB8F318EA /* StoryPromptKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 482BF1C5B7E9E3249604126D /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */;
-			productName = StoryPromptKit;
-		};
-		FDAB148DEF7F7A680C1CFBAE /* VovoUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
-			productName = VovoUI;
-		};
-		B71ABC8D010000000000000F /* PhotoDescribeKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B71ABC8D010000000000000E /* XCLocalSwiftPackageReference "Packages/PhotoDescribeKit" */;
-			productName = PhotoDescribeKit;
-		};
-		B71ABC8D0100000000000010 /* VovoUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6944CB811276111CF8862500 /* XCLocalSwiftPackageReference "Packages/VovoUI" */;
-			productName = VovoUI;
+			productName = StorybookKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = EC5CFBC4C6E74023A9AF28D6 /* Project object */;
+	rootObject = 93D47B002720DBA6D1491AF8 /* Project object */;
 }

@@ -15,12 +15,11 @@ enum StoryModelGateState: Equatable {
 /// UI surface for the Story Prompt feature (used by main app + DEBUG harness).
 ///
 /// On open, checks for the **Qwen3.5-4B MLX** model pack in private Application Support.
-/// If missing, offers **automatic download** from our host (`files.kraftek.dev`). If that
-/// fails, Hugging Face is a **manual browser fallback**, plus **Import** via the system
-/// document picker (copied into app storage — not kept in Documents/Downloads).
+/// If missing, offers **automatic download** from `vovo.kraftek.cloud`, plus **Import**
+/// via the system document picker (copied into app storage — not kept in
+/// Documents/Downloads). There is no Hugging Face fallback.
 public struct StoryPromptFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
-    @Environment(\.openURL) private var openURL
     @State private var promptText = ""
     @State private var isGenerating = false
     @State private var draft: StoryDraft?
@@ -140,14 +139,6 @@ public struct StoryPromptFeatureView: View {
                 }
                 .buttonStyle(VovoSecondaryButtonStyle())
                 .accessibilityIdentifier("modelGateImport")
-
-                Button {
-                    openFallbackHostPage()
-                } label: {
-                    Text(VovoL10n.t(.storyModelGateOpenFallback, lang))
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
-                .accessibilityIdentifier("modelGateOpenFallback")
 
                 Button {
                     modelGate = .halted
@@ -274,14 +265,6 @@ public struct StoryPromptFeatureView: View {
                 .accessibilityIdentifier("modelGateRetry")
 
                 Button {
-                    openFallbackHostPage()
-                } label: {
-                    Text(VovoL10n.t(.storyModelGateOpenFallback, lang))
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
-                .accessibilityIdentifier("modelGateOpenFallback")
-
-                Button {
                     showFileImporter = true
                 } label: {
                     Text(VovoL10n.t(.storyModelGateImport, lang))
@@ -317,13 +300,6 @@ public struct StoryPromptFeatureView: View {
                     showFileImporter = true
                 } label: {
                     Text(VovoL10n.t(.storyModelGateImport, lang))
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
-
-                Button {
-                    openFallbackHostPage()
-                } label: {
-                    Text(VovoL10n.t(.storyModelGateOpenFallback, lang))
                 }
                 .buttonStyle(VovoSecondaryButtonStyle())
             }
@@ -551,10 +527,6 @@ public struct StoryPromptFeatureView: View {
         errorMessage = nil
         modelUpdateAvailable = false
         modelGate = .needsModel
-    }
-
-    private func openFallbackHostPage() {
-        openURL(OnDeviceMLXModelStore.defaultHostFallbackPageURL)
     }
 
     @MainActor

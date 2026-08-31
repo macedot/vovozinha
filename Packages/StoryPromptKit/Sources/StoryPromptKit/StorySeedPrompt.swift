@@ -9,10 +9,17 @@ public struct StorySeedPrompt: Equatable, Sendable {
     public var text: String
     /// Language for generation (UI language when the parent taps Create).
     public var language: AppLanguage
+    /// Optional photo-caption context woven into the story body.
+    public var imageContext: String?
 
-    public init(text: String = "", language: AppLanguage = .englishUS) {
+    public init(
+        text: String = "",
+        language: AppLanguage = .englishUS,
+        imageContext: String? = nil
+    ) {
         self.text = text
         self.language = language
+        self.imageContext = imageContext
     }
 
     public var trimmed: String {

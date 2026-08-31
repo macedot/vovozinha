@@ -8,6 +8,10 @@ public enum VovoL10n {
     public enum Key: String, Sendable {
         case language
 
+        // Phase-0 host placeholder (replaced by Create in Phase 4)
+        case placeholderTitle
+        case placeholderSubtitle
+
         // Story prompt feature
         case storySeedTitle
         case storySeedSubtitle
@@ -59,6 +63,17 @@ public enum VovoL10n {
         case photoDescribeAction
         case photoDescribeFailed
         case photoDescribeInvalidImage
+
+        case imagePackGateTitle
+        case imagePackGateBody
+        case imagePackGateDownload
+        case imagePackGateFilenameHint
+        case storyAddPhoto
+        case storyClearPhoto
+        case storyWriting
+        case storyPreparingPictures
+        case storyPipelineFailed
+        case readerWaitingPicture
     }
 
     public static func t(_ key: Key, _ lang: AppLanguage) -> String {
