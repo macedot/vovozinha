@@ -1,6 +1,8 @@
 # Xcode
 DerivedData/
 build/
+*.ipa
+*.xcarchive
 *.xcuserstate
 xcuserdata/
 *.moved-aside
@@ -24,5 +26,15 @@ xcuserdata/
 /Models/
 **/MLModels/
 
-# Local caches / model downloads
+# Local caches / model downloads / packaged model zips
 .cache/
+build/*.zip
+build/*.zip.sha256
+**/tmpshots/
+
+# SwiftPM local builds
+**/.build/
+**/Packages/*/.build/
+
+# Local agent / IDE scratch
+.zcode/

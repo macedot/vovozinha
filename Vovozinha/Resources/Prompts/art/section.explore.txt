@@ -1,1 +1,0 @@
-SECTION explore: wide enough to show place + hero, wonder and discovery, soft movement

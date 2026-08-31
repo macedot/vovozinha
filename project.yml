@@ -1,0 +1,64 @@
+name: Vovozinha
+options:
+  bundleIdPrefix: app.vovozinha
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: FTS4YLJNG3
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+packages:
+  VovoUI:
+    path: Packages/VovoUI
+  StoryPromptKit:
+    path: Packages/StoryPromptKit
+  ImageGenKit:
+    path: Packages/ImageGenKit
+  StorybookKit:
+    path: Packages/StorybookKit
+targets:
+  Vovozinha:
+    type: application
+    platform: iOS
+    sources:
+      - path: Apps/Vovozinha
+        excludes:
+          - "**/*.entitlements"
+    dependencies:
+      - package: VovoUI
+      - package: StorybookKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.vovozinha.Vovozinha
+        PRODUCT_NAME: Vovozinha
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Vovozinha
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone."
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: Apps/Vovozinha/Vovozinha.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: FTS4YLJNG3
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+schemes:
+  Vovozinha:
+    build:
+      targets:
+        Vovozinha: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

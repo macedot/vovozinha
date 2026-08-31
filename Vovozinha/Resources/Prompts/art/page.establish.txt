@@ -1,1 +1,0 @@
-PAGE 1 NEW SCENE, establish the hero clearly: {{pageScene}}. Hero action: {{action}}. {{propsLine}} {{section}}. {{lighting}}. {{worldHint}} {{continuity}}. masterpiece, best quality, {{styleBit}}, single clear kids storybook illustration
