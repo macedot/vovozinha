@@ -19,7 +19,6 @@ MLX_LM_REF="${MLX_LM_REF:-3.31.4}"
 echo "==> mlx-swift (Prism @ prism, no CudaBuild) → $MLX_SWIFT"
 if [[ -d "$MLX_SWIFT/.git" ]]; then
   git -C "$MLX_SWIFT" fetch origin 2>/dev/null || true
-  # Prefer prism branch if present; else leave as-is
   if git -C "$MLX_SWIFT" rev-parse --verify origin/prism >/dev/null 2>&1; then
     git -C "$MLX_SWIFT" checkout prism 2>/dev/null || true
     git -C "$MLX_SWIFT" pull --ff-only origin prism 2>/dev/null || true
@@ -53,13 +52,10 @@ if n == 0:
 new = new.replace('.package(path: "../mlx-swift"))', '.package(path: "../mlx-swift")')
 path.write_text(new)
 print("patched mlx-swift-lm Package.swift (n=%d)" % n)
-# ensure no maskFill on 3.31.4
-import subprocess
-count = subprocess.check_output(["grep", "-r", "maskFill", "Libraries"], cwd=path.parent, text=True).count("maskFill") if False else 0
 PY
 
 echo ""
 echo "Done."
 echo "  $MLX_SWIFT"
 echo "  $MLX_LM"
-echo "Open Xcode → reset package caches if needed. MetalToolchain: xcodebuild -downloadComponent MetalToolchain"
+echo "MetalToolchain: xcodebuild -downloadComponent MetalToolchain"

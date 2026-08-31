@@ -49,10 +49,12 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
                 topP: Self.defaultTopP,
                 topK: Self.defaultTopK
             )
-            // Prefer direct, non-thinking replies for bedtime latency.
+            // Generic on purpose: this session also writes illustration scene lists.
+            // A "story format only" instruction made the second LLM pass emit TITLE/SUMMARY
+            // instead of CHARACTER: + 10 numbered lines, which aborted the whole book.
             let instructions = """
-            You are a careful children's bedtime story writer. Answer directly with the requested \
-            story format only. Do not include chain-of-thought, analysis, or tool calls.
+            You follow the user's instructions exactly and output only the requested format. \
+            Do not include chain-of-thought, analysis, or tool calls.
             """
             // Qwen3.5 chat template defaults to open-ended <think> unless disabled —
             // that burns maxTokens on reasoning and leaves zero story paragraphs.

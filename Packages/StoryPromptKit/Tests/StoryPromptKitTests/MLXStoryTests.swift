@@ -205,18 +205,16 @@ final class OnDeviceMLXModelStoreTests: XCTestCase {
 
     func testHostDownloadURLIsKraftekZip() {
         let url = OnDeviceMLXModelStore.defaultHostDownloadURL.absoluteString
-        XCTAssertTrue(url.contains("files.kraftek.dev"))
+        XCTAssertTrue(url.contains("vovo.kraftek.cloud"))
+        XCTAssertFalse(url.contains("files.kraftek.dev"))
+        XCTAssertFalse(url.contains("huggingface.co"))
         XCTAssertTrue(url.contains("Qwen3.5-4B-MLX-4bit.zip"))
         XCTAssertEqual(OnDeviceMLXModelStore.defaultModelDirectoryName, "Qwen3.5-4B-MLX-4bit")
-        XCTAssertTrue(
-            OnDeviceMLXModelStore.defaultHostFallbackPageURL.absoluteString
-                .contains("mlx-community/Qwen3.5-4B-MLX-4bit")
-        )
         XCTAssertTrue(
             OnDeviceMLXModelStore.defaultHostSHA256URL.absoluteString.hasSuffix(".zip.sha256")
         )
         XCTAssertTrue(
-            OnDeviceMLXModelStore.defaultHostSHA256URL.absoluteString.contains("files.kraftek.dev")
+            OnDeviceMLXModelStore.defaultHostSHA256URL.absoluteString.contains("vovo.kraftek.cloud")
         )
     }
 

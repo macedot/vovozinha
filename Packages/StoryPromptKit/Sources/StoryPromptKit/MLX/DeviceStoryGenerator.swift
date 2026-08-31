@@ -42,6 +42,14 @@ public struct DeviceStoryGenerator: StoryFromPromptGenerating {
         let modelDir = await modelStore.modelDirectory()
         let session = try sessionProvider(modelDir)
         let generator = try MLXStoryGenerator(modelDirectory: modelDir, session: session)
-        return try await generator.generate(from: prompt)
+        var lastError: Error = StoryPromptError.generationFailed
+        for _ in 0..<2 {
+            do {
+                return try await generator.generate(from: prompt)
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError
     }
 }

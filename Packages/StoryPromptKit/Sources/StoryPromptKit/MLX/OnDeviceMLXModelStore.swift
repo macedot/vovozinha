@@ -4,32 +4,26 @@ import ZIPFoundation
 
 /// Owns the on-device **Qwen3.5-4B-MLX-4bit** MLX model directory.
 ///
-/// **Generation is offline.** Networking is only used to **download** a zip once from our
-/// host (`files.kraftek.dev`). If that fails, the UI can open Hugging Face as a manual
-/// fallback and the user **imports** a zip or folder via the system document picker
-/// (copied into private app storage — never left in user Documents/Downloads).
+/// **Generation is offline.** Networking is only used to **download** a zip once from
+/// `vovo.kraftek.cloud`. If that fails, the user **imports** a zip or folder via the
+/// system document picker (copied into private app storage — never left in user
+/// Documents/Downloads). There is no Hugging Face / third-party download path.
 ///
 /// **Pack path (private):**  
 /// `Library/Application Support/Vovozinha/Models/Qwen3.5-4B-MLX-4bit/`  
 /// (not visible in the Files app “On My iPhone” Documents tree).
 ///
 /// Host downloads are integrity-checked by fetching a sidecar `.sha256` from our CDN
-/// and comparing it to the zip. Manual Import / HF browser paths are not checked
-/// (external sources are not our responsibility).
+/// and comparing it to the zip. Manual Import is the explicit no-checksum fallback.
 public actor OnDeviceMLXModelStore {
     /// Automatic in-app download (zip of MLX weights + tokenizer).
     public static let defaultHostDownloadURL = URL(string:
-        "https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip"
+        "https://vovo.kraftek.cloud/qwen/Qwen3.5-4B-MLX-4bit.zip"
     )!
 
     /// Sidecar checksum for the host zip (`*.zip.sha256`, shasum-style text).
     public static let defaultHostSHA256URL = URL(string:
-        "https://files.kraftek.dev/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256"
-    )!
-
-    /// Manual browser fallback when automatic download fails.
-    public static let defaultHostFallbackPageURL = URL(string:
-        "https://huggingface.co/mlx-community/Qwen3.5-4B-MLX-4bit"
+        "https://vovo.kraftek.cloud/qwen/Qwen3.5-4B-MLX-4bit.zip.sha256"
     )!
 
     /// Directory name under `Vovozinha/Models/`.
@@ -56,13 +50,13 @@ public actor OnDeviceMLXModelStore {
         public var errorDescription: String? {
             switch self {
             case .http(let code):
-                return "Model download failed (HTTP \(code)). Try again on Wi‑Fi, or open the backup download page."
+                return "Model download failed (HTTP \(code)). Try again on Wi‑Fi, or Import from Files."
             case .emptyFile:
                 return "Model download finished but the file is empty."
             case .unzipFailed:
                 return "Could not unpack the model archive. Try Import from Files."
             case .checksumMismatch:
-                return "Model download failed integrity check. Try again on Wi‑Fi, or open the backup download page."
+                return "Model download failed integrity check. Try again on Wi‑Fi, or Import from Files."
             case .checksumFileInvalid:
                 return "Could not read the download checksum from the server. Try again later."
             case .checksumUnavailable:
@@ -101,7 +95,7 @@ public actor OnDeviceMLXModelStore {
         config.timeoutIntervalForResource = 6 * 60 * 60
         config.waitsForConnectivity = true
         config.allowsExpensiveNetworkAccess = true
-        config.allowsConstrainedNetworkAccess = true
+        config.allowsConstrainedNetworkAccess = false
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSession(configuration: config)
@@ -763,7 +757,7 @@ private final class ModelZipDownloadController: NSObject, URLSessionDownloadDele
         config.timeoutIntervalForResource = 6 * 60 * 60
         config.waitsForConnectivity = true
         config.allowsExpensiveNetworkAccess = true
-        config.allowsConstrainedNetworkAccess = true
+        config.allowsConstrainedNetworkAccess = false
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.httpMaximumConnectionsPerHost = 6
