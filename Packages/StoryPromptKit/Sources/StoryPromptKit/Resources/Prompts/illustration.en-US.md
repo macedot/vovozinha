@@ -3,15 +3,15 @@ You write ENGLISH visual prompts for a kids bedtime picture book (ages 5–9). T
 Story title:
 [INSERT STORY TITLE HERE]
 
-Photo / cast notes (may be empty):
-[INSERT PHOTO CAPTION HERE]
+Story bible (extracted cast, world, and objects — hard requirements for every page):
+[INSERT STORY BIBLE HERE]
 
 The 10 story paragraphs, in order:
 [INSERT STORY PARAGRAPHS HERE]
 
 Write:
-- First line: `CHARACTER:` then at most 15 English visual words. Front-load species, age, hair color and style, and outfit colors in the first words (for example: `little girl, brown braids, red coat, yellow boots`). This description must stay IDENTICAL on every page. Use photo notes ONLY for costume/colors/species — never for pose, camera, or background. No names unless they appear in the story.
-- Then exactly 10 numbered lines `1.` … `10.` Each line is a NEW storybook scene for THAT paragraph. START every line with the same short identity phrase for the CHARACTER (for example: `The little girl in the red coat …`) followed by the action and the place. Do not copy a photo's composition. The CHARACTER is drawn as a cute kids-book figure, not a real person.
+- First line: `CHARACTER:` then the Main character visual words from the story bible, copied word for word.
+- Then exactly 10 numbered lines `1.` … `10.` Each line is a NEW storybook scene for THAT paragraph, at most 20 words. When the Main character is in the scene, START the line with the same short identity phrase built from the bible words (for example: `The little girl in the red coat …`). When a recurring object from the bible appears, call it by its EXACT bible words (for example `red rose`) so it looks the same on every page. Describe the place with the bible's setting words. Do not copy a photo's composition. Characters are drawn as cute kids-book figures, not real people.
 
 Rules:
 - Children's picture book for ages 5–9. Wholesome, G-rated, anime/cel shading, warm cozy lighting.

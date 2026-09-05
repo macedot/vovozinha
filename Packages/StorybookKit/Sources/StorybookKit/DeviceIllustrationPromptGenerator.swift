@@ -36,12 +36,12 @@ public struct DeviceIllustrationPromptGenerator: IllustrationPromptGenerating {
     public func generate(
         draftTitle: String,
         paragraphs: [String],
-        caption: String?
+        elementsBlock: String
     ) async throws -> IllustrationPlan {
         let filled = StoryPromptTemplate.filledIllustrationPrompt(
             title: draftTitle,
             paragraphs: paragraphs,
-            photoCaption: caption,
+            elementsBlock: elementsBlock,
             language: language
         )
         // Chat session is shared with story writing. Repeat the list format here so

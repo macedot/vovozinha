@@ -6,6 +6,7 @@ import VovoUI
 
 public struct SeedPipeline: Sendable {
     public var storyGenerator: any StoryFromPromptGenerating
+    public var bibleGenerator: (any StoryBibleGenerating)?
     public var illustrationPrompts: any IllustrationPromptGenerating
     public var imageGenerator: any ImageGenerating
     public var photoDescriber: (any PhotoDescribing)?
@@ -22,7 +23,8 @@ public struct SeedPipeline: Sendable {
         memory: any MemorySequencing,
         store: StoryFileStore,
         stylePrefix: String = ImageGenTemplate.positive(for: .englishUS),
-        negativePrompt: String = ImageGenTemplate.defaultNegativePrompt
+        negativePrompt: String = ImageGenTemplate.defaultNegativePrompt,
+        bibleGenerator: (any StoryBibleGenerating)? = nil
     ) {
         self.storyGenerator = storyGenerator
         self.illustrationPrompts = illustrationPrompts
@@ -32,6 +34,7 @@ public struct SeedPipeline: Sendable {
         self.store = store
         self.stylePrefix = stylePrefix
         self.negativePrompt = negativePrompt
+        self.bibleGenerator = bibleGenerator
     }
 
     public func run(
@@ -76,16 +79,34 @@ public struct SeedPipeline: Sendable {
         }
 
         continuation.yield(.phaseChanged(.caption))
-        var captionText: String?
+        var photoTags: String?
         if let photo, let describer = photoDescriber {
             let caption = try await describer.describe(photo, language: seed.language)
-            captionText = caption.text
+            photoTags = caption.text
+        }
+
+        // Story bible: fuse the description with the photo tags into the global
+        // cast/world/props every later pass must obey. Extraction failing never
+        // blocks the book — later passes fall back to raw tags or imagined cast.
+        try Task.checkCancellation()
+        continuation.yield(.phaseChanged(.bible))
+        var bible: StoryBible?
+        if let bibleGenerator {
+            do {
+                bible = try await bibleGenerator.generate(description: seed.trimmed, photoTags: photoTags)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                #if DEBUG
+                print("[SeedPipeline] bible extraction failed (\(error)); falling back to raw tags")
+                #endif
+            }
         }
 
         try Task.checkCancellation()
         continuation.yield(.phaseChanged(.story))
         var seeded = seed
-        seeded.imageContext = captionText
+        seeded.imageContext = bible?.renderedBlock ?? photoTags
         let draft = try await storyGenerator.generate(from: seeded)
         guard draft.paragraphs.count == 10 else {
             throw StoryPromptError.generationFailed
@@ -110,7 +131,8 @@ public struct SeedPipeline: Sendable {
             summary: draft.summary,
             language: seed.language.rawValue,
             seedPrompt: seed.trimmed,
-            characterDescriptor: characterLock(from: captionText),
+            characterDescriptor: bible?.characterLock ?? characterLock(from: photoTags),
+            bible: bible,
             baseSeed: StoryIdentity.baseSeed(storyID: storyID),
             phase: .story,
             pages: pages
@@ -129,15 +151,17 @@ public struct SeedPipeline: Sendable {
 
         try Task.checkCancellation()
         continuation.yield(.phaseChanged(.illustrationPrompts))
-        var characterDescriptor = characterLock(from: captionText)
+        // The bible lock wins when present — it must stay byte-identical on every
+        // page even if the illustration pass paraphrases its CHARACTER line.
+        var characterDescriptor = bible?.characterLock ?? characterLock(from: photoTags)
         do {
             let plan = try await illustrationPrompts.generate(
                 draftTitle: draft.title,
                 paragraphs: draft.paragraphs,
-                caption: captionText
+                elementsBlock: bible?.renderedBlock ?? (photoTags ?? "")
             )
             if plan.prompts.count == pages.count {
-                characterDescriptor = plan.characterDescriptor
+                characterDescriptor = bible?.characterLock ?? plan.characterDescriptor
                 for i in pages.indices {
                     pages[i].illustrationPrompt = plan.prompts[i]
                 }
@@ -168,45 +192,44 @@ public struct SeedPipeline: Sendable {
         tick()
 
         continuation.yield(.phaseChanged(.pages))
-        // Cover first (page 1), then 2...10. Pages img2img from the reference so
-        // the cast stays recognizable; txt2img fallback when no reference exists.
+        // Chain for temporal coherence: the cover (page 1) img2img's from the
+        // reference (photo cartoonified, or txt2img character sheet), then every
+        // next page img2img's from the PREVIOUS page's illustration, so elements
+        // like page 1's rose survive into page 2's pixels. txt2img fallback when
+        // no base image exists. A page whose render failed leaves the chain base
+        // at the newest earlier page — the next page chains from there.
         let order = [1] + Array(2...10)
+        var chainBase: Data? = referenceData
         for index in order {
             try Task.checkCancellation()
             let fileName = store.pageFileName(index: index)
             if store.pngExists(id: storyID, fileName: fileName) {
                 pages[index - 1].imageFileName = fileName
+                chainBase = try? Data(
+                    contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
+                )
                 continuation.yield(.illustrationReady(index: index, fileName: fileName))
                 tick()
                 continue
             }
             let page = pages[index - 1]
             let prompt = clipPrompt(scene: page.illustrationPrompt, lock: characterDescriptor)
-            let input: ImageGenInput
-            let config: ImageGenConfig
-            if let referenceData {
-                input = ImageGenInput(imageData: referenceData)
-                config = ImageGenConfig(
-                    strength: Self.pageStrength,
-                    seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
-                    mode: .imageToImage,
-                    prompt: prompt,
-                    negativePrompt: negativePrompt
-                )
-            } else {
-                input = ImageGenInput(imageData: Data())
-                config = ImageGenConfig(
-                    strength: Self.pageStrength,
-                    seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
-                    mode: .textToImage,
-                    prompt: prompt,
-                    negativePrompt: negativePrompt
-                )
-            }
+            let input = ImageGenInput(imageData: chainBase ?? Data())
+            let config = ImageGenConfig(
+                strength: Self.chainStrength,
+                seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
+                mode: chainBase == nil ? .textToImage : .imageToImage,
+                prompt: prompt,
+                negativePrompt: negativePrompt
+            )
             do {
                 let result = try await imageGenerator.generate(input, config: config)
                 _ = try store.writePNG(result.cgImage, id: storyID, fileName: fileName)
                 pages[index - 1].imageFileName = fileName
+                // Chain from the persisted PNG, not an in-memory copy.
+                chainBase = try? Data(
+                    contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
+                )
                 continuation.yield(.illustrationReady(index: index, fileName: fileName))
             } catch is CancellationError {
                 throw CancellationError()
@@ -231,9 +254,11 @@ public struct SeedPipeline: Sendable {
     /// sheds photoreal residue (kids-safe, no real faces) while keeping the photo's
     /// cast elements (§12.21).
     static let referenceStrength: Float = 0.75
-    /// img2img strength for page passes: low enough to keep the cast recognizable,
-    /// high enough for scene composition to follow the page prompt (§12.4).
-    static let pageStrength: Float = 0.5
+    /// img2img strength for page passes: page 1 re-renders the reference sheet;
+    /// pages 2–10 chain from the previous page. High enough that each scene
+    /// follows its own page prompt, low enough to carry elements (cast, props)
+    /// from the previous illustration into the next (temporal coherence).
+    static let chainStrength: Float = 0.6
 
     /// Returns the reference PNG bytes, rendering them once if missing. `nil` when
     /// rendering failed — callers fall back to txt2img pages. Cancellation throws.

@@ -1,4 +1,5 @@
 import Foundation
+import StoryPromptKit
 
 public struct StoryPage: Equatable, Sendable, Identifiable, Codable {
     public var index: Int
@@ -29,6 +30,9 @@ public struct Storybook: Equatable, Sendable, Identifiable, Codable {
     public var language: String
     public var seedPrompt: String
     public var characterDescriptor: String
+    /// Extracted cast/world/props the story and every illustration must obey.
+    /// nil for books made before the bible pass (or when extraction failed).
+    public var bible: StoryBible?
     public var baseSeed: UInt32
     public var phase: PipelinePhase
     public var pages: [StoryPage]
@@ -41,6 +45,7 @@ public struct Storybook: Equatable, Sendable, Identifiable, Codable {
         language: String,
         seedPrompt: String,
         characterDescriptor: String,
+        bible: StoryBible? = nil,
         baseSeed: UInt32,
         phase: PipelinePhase,
         pages: [StoryPage],
@@ -52,6 +57,7 @@ public struct Storybook: Equatable, Sendable, Identifiable, Codable {
         self.language = language
         self.seedPrompt = seedPrompt
         self.characterDescriptor = characterDescriptor
+        self.bible = bible
         self.baseSeed = baseSeed
         self.phase = phase
         self.pages = pages
@@ -61,6 +67,7 @@ public struct Storybook: Equatable, Sendable, Identifiable, Codable {
 
 public enum PipelinePhase: String, Equatable, Sendable, Codable {
     case caption
+    case bible
     case story
     case illustrationPrompts
     case reference

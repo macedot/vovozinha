@@ -109,5 +109,7 @@ public enum IllustrationPromptParser {
 }
 
 public protocol IllustrationPromptGenerating: Sendable {
-    func generate(draftTitle: String, paragraphs: [String], caption: String?) async throws -> IllustrationPlan
+    /// `elementsBlock` is the story-bible block (or fallback photo tags) injected
+    /// as hard requirements into the per-page scene prompts.
+    func generate(draftTitle: String, paragraphs: [String], elementsBlock: String) async throws -> IllustrationPlan
 }

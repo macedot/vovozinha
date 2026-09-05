@@ -85,7 +85,7 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
     // MARK: - Prompt building
 
     static func buildPrompt(seed: String, caption: String? = nil, language: AppLanguage) -> String {
-        StoryPromptTemplate.filledStoryPrompt(description: seed, photoCaption: caption, language: language)
+        StoryPromptTemplate.filledStoryPrompt(description: seed, storyElements: caption, language: language)
     }
 
     /// Drop Qwen-style thinking wrappers if the model emits them despite `enable_thinking: false`.

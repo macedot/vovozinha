@@ -147,23 +147,28 @@ Host stays thin: navigation, SwiftData persistence, settings. All logic lives in
 SeedPipeline.run(seed, photo?, language) -> AsyncStream<PipelineEvent>
 
   [gate]  both packs installed? (else surface gate UI states)
-  [1]     photo? -> PhotoDescribing.describe(photo) -> PhotoCaption
-          (caption feeds BOTH tracks: text coherence + the cartoonify reference prompt)
-  [2]     StoryFromPromptGenerating.generate(seed, imageContext: caption?)
+  [1]     photo? -> PhotoDescribing.describe(photo) -> PhotoCaption (English element tags)
+  [1.5]   Bible extraction (2026-09-05): Qwen fuses seed + photo tags ->
+          StoryBible { characterLock, supporting, setting, props } (persisted).
+          No photo -> the cast/world is imagined from the description alone.
+          Extraction failing falls back to raw tags / caption-derived lock.
+          The bible MATCHES description names to photo people: "Alice is a happy
+          kid" + a dark-haired girl in the photo => Alice IS that girl.
+  [2]     StoryFromPromptGenerating.generate(seed, imageContext: bible?.renderedBlock)
           -> StoryDraft { title, summary, 10 paragraphs }   (MLX)
-          Caption elements are woven into the story so text and images stay coherent.
-  [3]     IllustrationPromptGenerator.generate(draft, caption?)
-          -> [String] (10 short prompts, numbered-line parse; lenient)
-          -> pages enumerated into StoryPage { index, text, illustrationPrompt, image: nil }
-          All 10 prompts embed the SAME locked character-descriptor string (derived
-          once from the caption) so the cast is described identically on every page.
+          The story MUST use the bible's cast, setting, and props.
+  [3]     IllustrationPromptGenerator.generate(draft, elementsBlock: bible block)
+          -> [String] (10 short prompts, numbered-line parse; strict + one retry)
+          All 10 prompts carry the bible lock verbatim and name recurring props
+          with their exact bible words ("red rose") for cross-page identity.
   [---]   MLX released here (after [3], never before) — see MemorySequencer
   [4]     photo? -> ImageGenerating.generate(referencePrompt, img2img(ORIGINAL photo),
-          seed: baseSeed) -> CartoonReference (ONE render, persisted per story)
+          seed: baseSeed) -> reference.png (ONE render, persisted per story)
           The original photo's elements, cartoonified into the locked kids style.
-          This reference — not the raw photo — anchors every page that follows.
-  [5]     for page in pages (strict order, one render at a time):
-            ImageGenerating.generate(prompt, config)   // img2img(CartoonReference) | txt2img
+  [5]     for page in pages (strict order 1..10, one render at a time):
+            page 1: img2img(reference.png) @ chainStrength   | txt2img if no reference
+            page N: img2img(page N-1 PNG)  @ chainStrength   // temporal chain
+            A failed page leaves the next one chaining from the newest good page.
             -> yield .illustrationReady(page)
   [6]     yield .finished(storybook)
 ```
@@ -184,17 +189,22 @@ The strict page-order, one-at-a-time render loop is also what keeps memory flat.
   (per-process randomized; see §12.3); page seed = `baseSeed + page.index`.
 - Style prefix from `img2img.<lang>.md ## positive` + locked negative scaffold,
   identical on every render.
-- **Text coherence:** the photo caption's elements are woven into the story body
-  (step [2]); the IllustrationPromptGenerator derives ONE locked
-  character-descriptor string from the caption and embeds it verbatim in all 10
-  illustration prompts (step [3]).
-- **Image coherence:** the ORIGINAL photo is cartoonified exactly once (step [4])
-  into a per-story `CartoonReference` (persisted alongside the book); every page
-  render uses that reference as its img2img base, so the cast/elements stay
-  visually the same from page 1 to 10.
-- Strength default 0.6 for the reference pass; page passes likely lower
-  (0.45–0.55) so scene prompts can diverge from the base — tuned in the Phase 3
-  spike (§12.4).
+- **Global info (StoryBible):** extracted once (step [1.5]) from the description
+  + optional photo tags; persisted in `story.json`; hard requirements for the
+  story and every illustration.
+- **Text coherence:** the bible block is woven into the story body (step [2]);
+  the IllustrationPromptGenerator copies the bible lock verbatim into all 10
+  illustration prompts and names recurring props with their exact bible words
+  (step [3]).
+- **Image coherence (chained illustrations):** the ORIGINAL photo is cartoonified
+  exactly once (step [4]) into a per-story `reference.png`; page 1 re-renders that
+  reference, and every next page img2img's from the PREVIOUS page's PNG, so the
+  cast — and scene elements like the page-1 rose — carry forward visually
+  (update 2026-09-05: the chain replaces the reference-as-base-for-all-pages
+  recipe; see invariant 9 and §12.4).
+- Reference pass @ 0.75; chained page passes @ `chainStrength` 0.6
+  (`SeedPipeline.chainStrength`, tunable) — high enough for each scene to follow
+  its own prompt, low enough to carry cast/props from the previous page.
 
 ### 4.4 Persisted model (host, SwiftData)
 
@@ -394,13 +404,18 @@ Scripts/test.sh                                      # XCUITest on device
 8. **Users are parents/caregivers (18+):** age gate required; copy in the user's
    language.
 9. **Temporal & element coherence (text + image) — EXTREMELY IMPORTANT:**
-   when a photo is provided, the ORIGINAL image is used exactly once to extract
-   its elements and "cartoonify" them into a per-story reference (§4.3 step [4]);
-   that reference — never the raw photo — is the img2img base for all 10 pages.
-   Text side: caption elements are woven into the story and one locked
-   character-descriptor string is reused verbatim in every illustration prompt.
-   A book whose cast changes appearance between pages is a defect, not a style
-   choice.
+   every book gets a StoryBible extracted once from the description (+ optional
+   photo tags): the hero's locked visual identity, supporting cast, setting, and
+   recurring prop descriptors. The bible is a hard requirement — the story weaves
+   it in, and every illustration prompt carries its lock verbatim and names props
+   with its exact words ("red rose" on every page the rose appears). When a photo
+   is provided, the ORIGINAL image is used exactly once to extract its elements
+   and "cartoonify" them into a per-story reference (§4.3 step [4]); that
+   reference seeds page 1 only — pages 2–10 then chain img2img from the PREVIOUS
+   page's illustration (update 2026-09-05, per Thiago: the chain is the v1
+   design, superseding reference-as-base-for-all-pages; the §12.27 "fallback
+   recipe" note is obsolete). A book whose cast changes appearance between pages,
+   or whose recurring props change look, is a defect, not a style choice.
 
 ---
 
@@ -467,6 +482,12 @@ landmines found on a second pass.
    reference's composition while keeping the cast), and how much scene composition
    may drift before characters stop being recognizable. §10 render-time risk covers
    hiding latency, not this quality trade-off.
+   → **Update (2026-09-05, per Thiago, implemented):** the recipe changed — pages
+   now form a temporal CHAIN. Page 1 img2img from `reference.png`; pages 2–10
+   img2img from the previous page's PNG at `chainStrength` 0.6
+   (`SeedPipeline.chainStrength`, tunable). Prompt-side bible locks (§12.12)
+   mitigate cumulative drift; a failed page chains the next one from the newest
+   good page; resume replays the same rule from disk.
 5. **MLX release ordering (§4.3) — incorporated.** Step [3] (IllustrationPromptGenerator)
    is also an LLM pass, so MLX must be released only *after* [3] completes.
    §4.3 now states this explicitly (`[---] MLX released here (after [3], never
@@ -559,6 +580,9 @@ landmines found on a second pass.
     img2img @ 0.5 from `reference.png` (txt2img fallback if the reference
     fails). CLIP budget enforced in `clipPrompt` (§12.12) + targeted repair
     retry for the illustration pass.
+    → **Update (2026-09-05):** pages 2–10 now chain from the previous page's
+    PNG at `chainStrength` 0.6 instead of re-using `reference.png` as base
+    (invariant 9, §12.4 update).
 
 18. **11 renders, not 10; cover-first vs page-order conflict.** Photo path =
     1 reference + 10 pages (11 if §12.17 is adopted for no-photo too). §10
@@ -643,3 +667,6 @@ landmines found on a second pass.
     img2img unless the Phase 3 spike shows the cartoon-reference isn't
     enough for cast recognizability. Previous-page chaining is the fallback
     recipe, not the v1 design.
+    → **Update (2026-09-05, per Thiago):** reversed — previous-page chaining
+    IS the v1 design now (invariant 9); the reference anchors page 1 only.
+    `StoryArtMemory` stays unported; the chain + bible prompt locks replace it.

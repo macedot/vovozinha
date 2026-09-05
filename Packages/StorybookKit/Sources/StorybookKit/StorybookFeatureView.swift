@@ -276,7 +276,7 @@ public struct StorybookFeatureView: View {
 
     private var runningLabel: String {
         switch phase {
-        case .caption, .story:
+        case .caption, .bible, .story:
             return VovoL10n.t(.storyWriting, lang)
         case .illustrationPrompts, .reference, .pages:
             return VovoL10n.t(.storyPreparingPictures, lang)
@@ -613,7 +613,11 @@ public struct StorybookFeatureView: View {
             imageGenerator: DeviceImageGenerator(packStore: imageStore),
             photoDescriber: DevicePhotoDescriber(modelStore: storyStore),
             memory: MemorySequencer(),
-            store: StoryFileStore(rootURL: documentsURL)
+            store: StoryFileStore(rootURL: documentsURL),
+            bibleGenerator: DeviceStoryBibleGenerator(
+                completer: DeviceCompleterAdapter(DevicePromptCompleter(modelStore: storyStore)),
+                language: lang
+            )
         )
         let seedPrompt = seed
         pipelineTask = Task {

@@ -107,7 +107,7 @@ final class StorybookKitTests: XCTestCase {
         let plan = try await generator.generate(
             draftTitle: "Lantern Garden",
             paragraphs: (1...10).map { "Paragraph \($0)." },
-            caption: nil
+            elementsBlock: ""
         )
 
         XCTAssertEqual(plan.characterDescriptor, "little girl, red coat, brown hair")
@@ -131,7 +131,7 @@ final class StorybookKitTests: XCTestCase {
             _ = try await generator.generate(
                 draftTitle: "Lantern Garden",
                 paragraphs: (1...10).map { "Paragraph \($0)." },
-                caption: nil
+                elementsBlock: ""
             )
             XCTFail("expected missingLines([9, 10])")
         } catch let error as IllustrationPromptError {
@@ -183,13 +183,15 @@ final class StorybookKitTests: XCTestCase {
         XCTAssertTrue(store.pngExists(id: storyID, fileName: store.pageFileName(index: 10)))
     }
 
-    func testPhotoFeedsReferenceAndPagesInheritIt() async throws {
+    func testPhotoFeedsReferenceThenPagesChainFromEachOther() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let image = try XCTUnwrap(Self.makeCGImage())
-        let images = CountingImageGenerator(image: image)
+        // Varied output: every render writes a distinct PNG, so "page N's input ==
+        // page N-1's PNG" is a real assertion, not an artifact of equal bytes.
+        let images = CountingImageGenerator(image: image, varied: true)
         let pipeline = SeedPipeline(
             storyGenerator: MockStoryGenerator(),
             illustrationPrompts: MockIllustrationPrompts(),
@@ -207,32 +209,41 @@ final class StorybookKitTests: XCTestCase {
         let storyID = UUID()
         for await _ in pipeline.run(seed: seed, photo: photo, storyID: storyID) {}
 
-        // 1 photo→reference img2img + 10 pages img2img from that reference.
+        // 1 photo→reference img2img + 10 chained page img2img renders.
         XCTAssertEqual(images.calls, 11)
         XCTAssertEqual(images.modes.first, .imageToImage)
         XCTAssertTrue(images.modes.dropFirst().allSatisfy { $0 == .imageToImage })
         // The photo bytes reach the generator exactly once — the reference pass.
         XCTAssertEqual(images.inputs.filter { $0 == photoBytes }.count, 1)
-        // Every page inherits the stored reference PNG, not the raw photo.
+
         let store = StoryFileStore(rootURL: root)
+        let directory = store.storyDirectory(id: storyID)
         let referenceData = try Data(
-            contentsOf: store.storyDirectory(id: storyID)
-                .appendingPathComponent(StoryFileStore.referenceFileName)
+            contentsOf: directory.appendingPathComponent(StoryFileStore.referenceFileName)
         )
-        XCTAssertTrue(images.inputs.dropFirst().allSatisfy { $0 == referenceData })
+        // Page 1 chains from the stored reference PNG…
+        XCTAssertEqual(images.inputs[1], referenceData)
+        // …and every next page chains from the PREVIOUS page's PNG, never the
+        // raw photo and never the reference again.
+        for pageIndex in 2...10 {
+            let previous = try Data(
+                contentsOf: directory.appendingPathComponent(store.pageFileName(index: pageIndex - 1))
+            )
+            XCTAssertEqual(images.inputs[pageIndex], previous, "page \(pageIndex) chain base")
+        }
         XCTAssertNotEqual(referenceData, photoBytes)
-        // Reference pass runs hot; page passes stay gentle.
+        // Reference pass runs hot; chained page passes stay at the chain strength.
         XCTAssertEqual(images.strengths.first, SeedPipeline.referenceStrength)
-        XCTAssertTrue(images.strengths.dropFirst().allSatisfy { $0 == SeedPipeline.pageStrength })
+        XCTAssertTrue(images.strengths.dropFirst().allSatisfy { $0 == SeedPipeline.chainStrength })
     }
 
-    func testNoPhotoTxt2imgReferenceThenImg2imgPages() async throws {
+    func testNoPhotoTxt2imgReferenceThenChainedPages() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let image = try XCTUnwrap(Self.makeCGImage())
-        let images = CountingImageGenerator(image: image)
+        let images = CountingImageGenerator(image: image, varied: true)
         let pipeline = makePipeline(storeRoot: root, images: images)
         let seed = StorySeedPrompt(
             text: "a brave kitten finds a lantern in the garden path tonight",
@@ -241,35 +252,44 @@ final class StorybookKitTests: XCTestCase {
         let storyID = UUID()
         for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
 
-        // 1 txt2img character sheet + 10 pages img2img from it.
+        // 1 txt2img character sheet + 10 chained pages.
         XCTAssertEqual(images.calls, 11)
         XCTAssertEqual(images.modes.first, .textToImage)
         XCTAssertTrue(images.modes.dropFirst().allSatisfy { $0 == .imageToImage })
         XCTAssertEqual(images.inputs.first?.isEmpty, true)
         let store = StoryFileStore(rootURL: root)
+        let directory = store.storyDirectory(id: storyID)
         let referenceData = try Data(
-            contentsOf: store.storyDirectory(id: storyID)
-                .appendingPathComponent(StoryFileStore.referenceFileName)
+            contentsOf: directory.appendingPathComponent(StoryFileStore.referenceFileName)
         )
-        XCTAssertTrue(images.inputs.dropFirst().allSatisfy { $0 == referenceData })
+        XCTAssertEqual(images.inputs[1], referenceData)
+        for pageIndex in 2...10 {
+            let previous = try Data(
+                contentsOf: directory.appendingPathComponent(store.pageFileName(index: pageIndex - 1))
+            )
+            XCTAssertEqual(images.inputs[pageIndex], previous, "page \(pageIndex) chain base")
+        }
     }
 
-    func testResumeSkipsExistingPageFiles() async throws {
+    func testResumeSkipsExistingPageFilesAndChainsFromLastGoodPage() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let storyID = UUID()
         let store = StoryFileStore(rootURL: root)
-        let image = try XCTUnwrap(Self.makeCGImage())
-        _ = try store.writePNG(image, id: storyID, fileName: StoryFileStore.referenceFileName)
-        _ = try store.writePNG(image, id: storyID, fileName: store.pageFileName(index: 1))
-        let referenceData = try Data(
+        // Reference (orange) and page 1 (blue) differ, so chaining from page 1 —
+        // not from the reference — is observable.
+        let referenceImage = try XCTUnwrap(Self.makeCGImage())
+        let pageOneImage = try XCTUnwrap(Self.solidImage(red: 0.2, green: 0.4, blue: 0.9))
+        _ = try store.writePNG(referenceImage, id: storyID, fileName: StoryFileStore.referenceFileName)
+        _ = try store.writePNG(pageOneImage, id: storyID, fileName: store.pageFileName(index: 1))
+        let pageOneData = try Data(
             contentsOf: store.storyDirectory(id: storyID)
-                .appendingPathComponent(StoryFileStore.referenceFileName)
+                .appendingPathComponent(store.pageFileName(index: 1))
         )
 
-        let images = CountingImageGenerator(image: image)
+        let images = CountingImageGenerator(image: referenceImage, varied: true)
         let pipeline = makePipeline(storeRoot: root, images: images)
         let seed = StorySeedPrompt(
             text: "a brave kitten finds a lantern in the garden path tonight",
@@ -278,10 +298,64 @@ final class StorybookKitTests: XCTestCase {
         for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
 
         // Reference and page 1 already on disk → 9 remaining page renders, all
-        // img2img from the stored reference.
+        // img2img, and page 2 chains from the existing page-1 PNG.
         XCTAssertEqual(images.calls, 9)
         XCTAssertTrue(images.modes.allSatisfy { $0 == .imageToImage })
-        XCTAssertTrue(images.inputs.allSatisfy { $0 == referenceData })
+        XCTAssertEqual(images.inputs.first, pageOneData)
+    }
+
+    func testFailedPageChainsFromLastGoodPage() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let storyID = UUID()
+        let pageTwoSeed = StoryIdentity.pageSeed(storyID: storyID, pageIndex: 2)
+        let image = try XCTUnwrap(Self.makeCGImage())
+        let images = CountingImageGenerator(image: image, varied: true, failSeeds: [pageTwoSeed])
+        let pipeline = makePipeline(storeRoot: root, images: images)
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
+
+        let store = StoryFileStore(rootURL: root)
+        let directory = store.storyDirectory(id: storyID)
+        // Page 2 failed; every other page exists.
+        XCTAssertFalse(store.pngExists(id: storyID, fileName: store.pageFileName(index: 2)))
+        for index in [1] + Array(3...10) {
+            XCTAssertTrue(store.pngExists(id: storyID, fileName: store.pageFileName(index: index)))
+        }
+        XCTAssertEqual(images.calls, 11) // reference + 10 attempts (page 2 threw)
+
+        // Page 3 chained from page 1 — the newest GOOD page — not from the
+        // reference and not from the failed page.
+        let pageOneData = try Data(
+            contentsOf: directory.appendingPathComponent(store.pageFileName(index: 1))
+        )
+        XCTAssertEqual(images.inputs[2], pageOneData) // page 2 attempt
+        XCTAssertEqual(images.inputs[3], pageOneData) // page 3 chain base
+    }
+
+    func testPhaseOrderIncludesBibleBetweenCaptionAndStory() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let pipeline = makePipeline(storeRoot: root)
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        var phases: [PipelinePhase] = []
+        for await event in pipeline.run(seed: seed, photo: nil, storyID: UUID()) {
+            if case .phaseChanged(let phase) = event { phases.append(phase) }
+        }
+        XCTAssertEqual(
+            phases,
+            [.caption, .bible, .story, .illustrationPrompts, .reference, .pages, .finished]
+        )
     }
 
     func testStoryTextsAreEmittedEvenIfIllustrationPromptsFail() async throws {
@@ -482,9 +556,158 @@ final class StorybookKitTests: XCTestCase {
         XCTAssertTrue(saved.pages.allSatisfy { $0.imageFileName != nil })
     }
 
+    func testBibleFeedsStoryAndIllustrationPassesAndIsPersisted() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let bible = StoryBible(
+            characterLock: "little girl, dark braids, red coat",
+            supporting: "",
+            setting: "cozy garden",
+            props: ["red rose"]
+        )
+        let bibleGenerator = RecordingBibleGenerator(bible: bible)
+        let storyGenerator = MockStoryGenerator()
+        let illustrationPrompts = MockIllustrationPrompts()
+        let image = try XCTUnwrap(Self.makeCGImage())
+        let images = CountingImageGenerator(image: image)
+        let pipeline = SeedPipeline(
+            storyGenerator: storyGenerator,
+            illustrationPrompts: illustrationPrompts,
+            imageGenerator: images,
+            photoDescriber: MockPhotoDescriber(),
+            memory: NoopMemory(),
+            store: StoryFileStore(rootURL: root),
+            bibleGenerator: bibleGenerator
+        )
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        let storyID = UUID()
+        for await _ in pipeline.run(
+            seed: seed,
+            photo: PhotoDescribeInput(imageData: Data(repeating: 7, count: 64)),
+            storyID: storyID
+        ) {}
+
+        // Extraction receives the description and the photo tags.
+        XCTAssertEqual(bibleGenerator.descriptions, [seed.trimmed])
+        XCTAssertEqual(bibleGenerator.receivedPhotoTags, ["child, brown hair, red coat, blue bicycle"])
+        // The story is written from the bible block, not the raw tags.
+        XCTAssertEqual(storyGenerator.receivedImageContexts, [bible.renderedBlock])
+        // The illustration pass gets the bible block as hard requirements.
+        XCTAssertEqual(illustrationPrompts.receivedElementsBlocks, [bible.renderedBlock])
+        // The saved book persists the bible and the byte-stable lock.
+        let saved = try XCTUnwrap(StoryFileStore(rootURL: root).loadStorybook(id: storyID))
+        XCTAssertEqual(saved.bible, bible)
+        XCTAssertEqual(saved.characterDescriptor, bible.characterLock)
+    }
+
+    func testBibleFailureFallsBackToRawTags() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let bibleGenerator = RecordingBibleGenerator(bible: nil)
+        let storyGenerator = MockStoryGenerator()
+        let illustrationPrompts = MockIllustrationPrompts()
+        let image = try XCTUnwrap(Self.makeCGImage())
+        let images = CountingImageGenerator(image: image)
+        let pipeline = SeedPipeline(
+            storyGenerator: storyGenerator,
+            illustrationPrompts: illustrationPrompts,
+            imageGenerator: images,
+            photoDescriber: MockPhotoDescriber(),
+            memory: NoopMemory(),
+            store: StoryFileStore(rootURL: root),
+            bibleGenerator: bibleGenerator
+        )
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        let storyID = UUID()
+        for await _ in pipeline.run(
+            seed: seed,
+            photo: PhotoDescribeInput(imageData: Data(repeating: 7, count: 64)),
+            storyID: storyID
+        ) {}
+
+        // The failed extraction degrades to today's raw-tag behavior.
+        XCTAssertEqual(storyGenerator.receivedImageContexts, ["child, brown hair, red coat, blue bicycle"])
+        XCTAssertEqual(illustrationPrompts.receivedElementsBlocks, ["child, brown hair, red coat, blue bicycle"])
+        let saved = try XCTUnwrap(StoryFileStore(rootURL: root).loadStorybook(id: storyID))
+        XCTAssertNil(saved.bible)
+        XCTAssertEqual(saved.characterDescriptor, "orange kitten, round eyes")
+        XCTAssertEqual(saved.phase, .finished)
+    }
+
+    func testLegacyStoryJSONWithoutBibleDecodes() throws {
+        var book = Storybook(
+            id: UUID(),
+            title: "Lantern Garden",
+            summary: "A kitten finds a lantern.",
+            language: "en-US",
+            seedPrompt: "a brave kitten finds a lantern",
+            characterDescriptor: "orange kitten, round eyes",
+            bible: StoryBible(characterLock: "orange kitten, round eyes"),
+            baseSeed: 7,
+            phase: .pages,
+            pages: []
+        )
+        let data = try JSONEncoder().encode(book)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        object.removeValue(forKey: "bible") // a book written before the bible pass
+        let legacy = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(Storybook.self, from: legacy)
+        XCTAssertNil(decoded.bible)
+        book.bible = nil
+        XCTAssertEqual(decoded, book)
+    }
+
+    func testBibleGeneratorRepairsMissingLockOnly() async throws {
+        let completer = ScriptedCompleter(replies: [
+            "SETTING: a quiet attic at night",
+            "CHARACTER: brave bunny, white fur, blue scarf",
+        ])
+        let generator = DeviceStoryBibleGenerator(completer: completer)
+        let bible = try await generator.generate(
+            description: "a brave bunny finds a lantern",
+            photoTags: nil
+        )
+        XCTAssertEqual(bible.characterLock, "brave bunny, white fur, blue scarf")
+        XCTAssertEqual(bible.setting, "a quiet attic at night")
+        XCTAssertEqual(completer.prompts.count, 2)
+        XCTAssertTrue(completer.prompts[1].contains("CHARACTER:"))
+    }
+
+    func testBibleGeneratorThrowsWhenLockStillMissing() async {
+        let completer = ScriptedCompleter(replies: [
+            "SETTING: a quiet attic at night",
+            "PROPS: red rose",
+        ])
+        let generator = DeviceStoryBibleGenerator(completer: completer)
+        do {
+            _ = try await generator.generate(
+                description: "a brave bunny finds a lantern",
+                photoTags: nil
+            )
+            XCTFail("expected missingCharacterLock")
+        } catch let error as StoryBibleError {
+            XCTAssertEqual(error, .missingCharacterLock)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
     private func makePipeline(
         storeRoot: URL = FileManager.default.temporaryDirectory,
-        images: CountingImageGenerator? = nil
+        images: CountingImageGenerator? = nil,
+        bibleGenerator: (any StoryBibleGenerating)? = nil
     ) -> SeedPipeline {
         let image = images ?? CountingImageGenerator(image: Self.makeCGImage()!)
         return SeedPipeline(
@@ -493,26 +716,32 @@ final class StorybookKitTests: XCTestCase {
             imageGenerator: image,
             photoDescriber: nil,
             memory: NoopMemory(),
-            store: StoryFileStore(rootURL: storeRoot)
+            store: StoryFileStore(rootURL: storeRoot),
+            bibleGenerator: bibleGenerator
         )
     }
 
     private static func makeCGImage() -> CGImage? {
+        solidImage(red: 1, green: 0.6, blue: 0.2)
+    }
+
+    private static func solidImage(red: CGFloat, green: CGFloat, blue: CGFloat) -> CGImage? {
         let cs = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         guard let ctx = CGContext(
             data: nil, width: 8, height: 8,
             bitsPerComponent: 8, bytesPerRow: 0, space: cs,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
-        ctx.setFillColor(red: 1, green: 0.6, blue: 0.2, alpha: 1)
+        ctx.setFillColor(red: red, green: green, blue: blue, alpha: 1)
         ctx.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
         return ctx.makeImage()
     }
 }
 
-private struct MockStoryGenerator: StoryFromPromptGenerating {
+private final class MockStoryGenerator: StoryFromPromptGenerating, @unchecked Sendable {
+    private(set) var receivedImageContexts: [String?] = []
     func generate(from prompt: StorySeedPrompt) async throws -> StoryDraft {
-        try prompt.validate()
+        receivedImageContexts.append(prompt.imageContext)
         return StoryDraft(
             title: "Lantern Garden",
             summary: "A kitten finds a lantern.",
@@ -523,9 +752,11 @@ private struct MockStoryGenerator: StoryFromPromptGenerating {
     }
 }
 
-private struct MockIllustrationPrompts: IllustrationPromptGenerating {
-    func generate(draftTitle: String, paragraphs: [String], caption: String?) async throws -> IllustrationPlan {
-        IllustrationPlan(
+private final class MockIllustrationPrompts: IllustrationPromptGenerating, @unchecked Sendable {
+    private(set) var receivedElementsBlocks: [String] = []
+    func generate(draftTitle: String, paragraphs: [String], elementsBlock: String) async throws -> IllustrationPlan {
+        receivedElementsBlocks.append(elementsBlock)
+        return IllustrationPlan(
             characterDescriptor: "orange kitten, round eyes",
             prompts: (1...10).map { "page \($0) garden lantern scene" }
         )
@@ -533,7 +764,7 @@ private struct MockIllustrationPrompts: IllustrationPromptGenerating {
 }
 
 private struct FailingIllustrationPrompts: IllustrationPromptGenerating {
-    func generate(draftTitle: String, paragraphs: [String], caption: String?) async throws -> IllustrationPlan {
+    func generate(draftTitle: String, paragraphs: [String], elementsBlock: String) async throws -> IllustrationPlan {
         throw IllustrationPromptError.missingCharacterDescriptor
     }
 }
@@ -558,19 +789,43 @@ private struct ThrowingImageGenerator: ImageGenerating {
 
 final class CountingImageGenerator: ImageGenerating, @unchecked Sendable {
     let image: CGImage
+    private let varied: Bool
+    private let failSeeds: Set<UInt32>
     private(set) var calls = 0
     private(set) var modes: [ImageGenMode] = []
     private(set) var inputs: [Data] = []
     private(set) var strengths: [Float] = []
     private(set) var receivedNonEmptyImage = false
-    init(image: CGImage) { self.image = image }
+    init(image: CGImage, varied: Bool = false, failSeeds: Set<UInt32> = []) {
+        self.image = image
+        self.varied = varied
+        self.failSeeds = failSeeds
+    }
     func generate(_ input: ImageGenInput, config: ImageGenConfig) async throws -> ImageGenResult {
         calls += 1
         modes.append(config.mode)
         inputs.append(input.imageData)
         strengths.append(config.strength)
         if !input.isEmpty { receivedNonEmptyImage = true }
-        return ImageGenResult(cgImage: image, seed: config.seed ?? 0, elapsedSeconds: 0, bucket: .square)
+        if let seed = config.seed, failSeeds.contains(seed) {
+            throw ImageGenError.generationFailed
+        }
+        let output = varied
+            ? try XCTUnwrap(Self.solidImage(red: CGFloat(calls) / 12, green: 0.5, blue: 0.5))
+            : image
+        return ImageGenResult(cgImage: output, seed: config.seed ?? 0, elapsedSeconds: 0, bucket: .square)
+    }
+
+    static func solidImage(red: CGFloat, green: CGFloat, blue: CGFloat) -> CGImage? {
+        let cs = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: 8, height: 8,
+            bitsPerComponent: 8, bytesPerRow: 0, space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        ctx.setFillColor(red: red, green: green, blue: blue, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
+        return ctx.makeImage()
     }
 }
 
@@ -581,5 +836,18 @@ private final class ScriptedCompleter: IllustrationPromptCompleting, @unchecked 
     func complete(_ prompt: String) async throws -> String {
         prompts.append(prompt)
         return replies[min(prompts.count - 1, replies.count - 1)]
+    }
+}
+
+private final class RecordingBibleGenerator: StoryBibleGenerating, @unchecked Sendable {
+    let bible: StoryBible?
+    private(set) var descriptions: [String] = []
+    private(set) var receivedPhotoTags: [String?] = []
+    init(bible: StoryBible?) { self.bible = bible }
+    func generate(description: String, photoTags: String?) async throws -> StoryBible {
+        descriptions.append(description)
+        receivedPhotoTags.append(photoTags)
+        guard let bible else { throw StoryBibleError.missingCharacterLock }
+        return bible
     }
 }

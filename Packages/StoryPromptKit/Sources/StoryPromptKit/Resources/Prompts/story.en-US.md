@@ -3,8 +3,8 @@ You are a skilled children's storyteller. Using the following story description 
 Story description:
 [INSERT STORY DESCRIPTION HERE]
 
-Photo elements (weave these people, objects, and places into the story; do not invent extras that are not here; omit this section if empty):
-[INSERT PHOTO CAPTION HERE]
+Story elements (the extracted cast and world. Every named character MUST look and behave exactly as described here; weave the setting and objects into the story; do not invent extra people or objects that are not here; omit this section if empty):
+[INSERT STORY ELEMENTS HERE]
 
 Requirements:
 - Write the story in English.
