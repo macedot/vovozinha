@@ -301,13 +301,7 @@ public struct StorybookFeatureView: View {
                         subtitle: summary,
                         scrolls: true
                     ) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            pageImage(page)
-                            Text(page.text)
-                                .font(.body)
-                                .foregroundStyle(VovoTheme.cream)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        pageArt(page)
                     }
                 }
             }
@@ -430,29 +424,80 @@ public struct StorybookFeatureView: View {
         }
     }
 
+    /// Picture-book page: the illustration carries the page text on itself, and
+    /// page 1 doubles as the cover with the story title over the art.
     @ViewBuilder
-    private func pageImage(_ page: StoryPage) -> some View {
+    private func pageArt(_ page: StoryPage) -> some View {
         if let name = page.imageFileName,
            let img = loadStoryPNG(id: storyID, fileName: name) {
             img
                 .resizable()
                 .scaledToFit()
+                .overlay(alignment: .top) {
+                    if page.index == 1 {
+                        coverBanner
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    pageCaption(page.text)
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(VovoTheme.cardFill)
-                    .frame(height: 220)
-                VStack(spacing: 8) {
-                    if isRunning {
-                        ProgressView().tint(VovoTheme.amber)
+            VStack(alignment: .leading, spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(VovoTheme.cardFill)
+                        .frame(height: 220)
+                    VStack(spacing: 8) {
+                        if isRunning {
+                            ProgressView().tint(VovoTheme.amber)
+                        }
+                        Text(VovoL10n.t(.readerWaitingPicture, lang))
+                            .font(.caption)
+                            .foregroundStyle(VovoTheme.cream.opacity(0.7))
                     }
-                    Text(VovoL10n.t(.readerWaitingPicture, lang))
-                        .font(.caption)
-                        .foregroundStyle(VovoTheme.cream.opacity(0.7))
                 }
+                Text(page.text)
+                    .font(.body)
+                    .foregroundStyle(VovoTheme.cream)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private var coverBanner: some View {
+        Text(title.isEmpty ? VovoL10n.t(.storyScene, lang) : title)
+            .font(.title2.weight(.bold))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(VovoTheme.cream)
+            .shadow(color: .black.opacity(0.6), radius: 4)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 14)
+            .padding(.bottom, 22)
+            .padding(.horizontal, 12)
+            .background(
+                LinearGradient(
+                    colors: [.black.opacity(0.55), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+
+    private func pageCaption(_ text: String) -> some View {
+        Text(text)
+            .font(.body)
+            .foregroundStyle(VovoTheme.cream)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.65)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
     }
 
     @MainActor
