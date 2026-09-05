@@ -301,7 +301,13 @@ public struct StorybookFeatureView: View {
                         subtitle: summary,
                         scrolls: true
                     ) {
-                        pageArt(page)
+                        VStack(alignment: .leading, spacing: 16) {
+                            pageArt(page)
+                            Text(page.text)
+                                .font(.body)
+                                .foregroundStyle(VovoTheme.cream)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             }
@@ -424,8 +430,9 @@ public struct StorybookFeatureView: View {
         }
     }
 
-    /// Picture-book page: the illustration carries the page text on itself, and
-    /// page 1 doubles as the cover with the story title over the art.
+    /// Page artwork; page 1 doubles as the cover with the story title over the
+    /// art. The page text itself renders BELOW the image (reader body), never
+    /// on top of the artwork.
     @ViewBuilder
     private func pageArt(_ page: StoryPage) -> some View {
         if let name = page.imageFileName,
@@ -438,29 +445,20 @@ public struct StorybookFeatureView: View {
                         coverBanner
                     }
                 }
-                .overlay(alignment: .bottom) {
-                    pageCaption(page.text)
-                }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         } else {
-            VStack(alignment: .leading, spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(VovoTheme.cardFill)
-                        .frame(height: 220)
-                    VStack(spacing: 8) {
-                        if isRunning {
-                            ProgressView().tint(VovoTheme.amber)
-                        }
-                        Text(VovoL10n.t(.readerWaitingPicture, lang))
-                            .font(.caption)
-                            .foregroundStyle(VovoTheme.cream.opacity(0.7))
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(VovoTheme.cardFill)
+                    .frame(height: 220)
+                VStack(spacing: 8) {
+                    if isRunning {
+                        ProgressView().tint(VovoTheme.amber)
                     }
+                    Text(VovoL10n.t(.readerWaitingPicture, lang))
+                        .font(.caption)
+                        .foregroundStyle(VovoTheme.cream.opacity(0.7))
                 }
-                Text(page.text)
-                    .font(.body)
-                    .foregroundStyle(VovoTheme.cream)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -478,22 +476,6 @@ public struct StorybookFeatureView: View {
             .background(
                 LinearGradient(
                     colors: [.black.opacity(0.55), .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-    }
-
-    private func pageCaption(_ text: String) -> some View {
-        Text(text)
-            .font(.body)
-            .foregroundStyle(VovoTheme.cream)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.65)],
                     startPoint: .top,
                     endPoint: .bottom
                 )

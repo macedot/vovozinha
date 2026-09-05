@@ -202,9 +202,10 @@ The strict page-order, one-at-a-time render loop is also what keeps memory flat.
   cast — and scene elements like the page-1 rose — carry forward visually
   (update 2026-09-05: the chain replaces the reference-as-base-for-all-pages
   recipe; see invariant 9 and §12.4).
-- Reference pass @ 0.75; chained page passes @ `chainStrength` 0.6
-  (`SeedPipeline.chainStrength`, tunable) — high enough for each scene to follow
-  its own prompt, low enough to carry cast/props from the previous page.
+- Reference pass @ 0.75; chained page passes @ `chainStrength` 0.72
+  (`SeedPipeline.chainStrength`, tunable) — the CURRENT page's prompt must drive
+  the scene; lower values made all pages near-identical, while cast, palette,
+  and props still carry over from the previous page.
 
 ### 4.4 Persisted model (host, SwiftData)
 
@@ -484,8 +485,9 @@ landmines found on a second pass.
    hiding latency, not this quality trade-off.
    → **Update (2026-09-05, per Thiago, implemented):** the recipe changed — pages
    now form a temporal CHAIN. Page 1 img2img from `reference.png`; pages 2–10
-   img2img from the previous page's PNG at `chainStrength` 0.6
-   (`SeedPipeline.chainStrength`, tunable). Prompt-side bible locks (§12.12)
+   img2img from the previous page's PNG at `chainStrength` 0.72
+   (`SeedPipeline.chainStrength`, tunable; raised from 0.6 after on-device
+   testing showed near-identical pages). Prompt-side bible locks (§12.12)
    mitigate cumulative drift; a failed page chains the next one from the newest
    good page; resume replays the same rule from disk.
 5. **MLX release ordering (§4.3) — incorporated.** Step [3] (IllustrationPromptGenerator)
@@ -581,7 +583,8 @@ landmines found on a second pass.
     fails). CLIP budget enforced in `clipPrompt` (§12.12) + targeted repair
     retry for the illustration pass.
     → **Update (2026-09-05):** pages 2–10 now chain from the previous page's
-    PNG at `chainStrength` 0.6 instead of re-using `reference.png` as base
+    PNG at `chainStrength` 0.72 (raised from 0.6 — 0.6 made pages near-identical)
+    instead of re-using `reference.png` as base
     (invariant 9, §12.4 update).
 
 18. **11 renders, not 10; cover-first vs page-order conflict.** Photo path =

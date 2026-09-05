@@ -255,10 +255,10 @@ public struct SeedPipeline: Sendable {
     /// cast elements (§12.21).
     static let referenceStrength: Float = 0.75
     /// img2img strength for page passes: page 1 re-renders the reference sheet;
-    /// pages 2–10 chain from the previous page. High enough that each scene
-    /// follows its own page prompt, low enough to carry elements (cast, props)
-    /// from the previous illustration into the next (temporal coherence).
-    static let chainStrength: Float = 0.6
+    /// pages 2–10 chain from the previous page. High — the CURRENT page's prompt
+    /// must drive the scene, while low-frequency traits (cast, palette, props)
+    /// still carry over from the previous illustration (temporal coherence).
+    static let chainStrength: Float = 0.72
 
     /// Returns the reference PNG bytes, rendering them once if missing. `nil` when
     /// rendering failed — callers fall back to txt2img pages. Cancellation throws.
