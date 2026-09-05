@@ -202,10 +202,11 @@ The strict page-order, one-at-a-time render loop is also what keeps memory flat.
   cast — and scene elements like the page-1 rose — carry forward visually
   (update 2026-09-05: the chain replaces the reference-as-base-for-all-pages
   recipe; see invariant 9 and §12.4).
-- Reference pass @ 0.75; chained page passes @ `chainStrength` 0.72
-  (`SeedPipeline.chainStrength`, tunable) — the CURRENT page's prompt must drive
-  the scene; lower values made all pages near-identical, while cast, palette,
-  and props still carry over from the previous page.
+- Reference pass @ 0.68 (lower than the old 0.75 so the photo person's face and
+  hair survive the cartoonify); chained page passes @ `chainStrength` 0.78 with
+  CFG `pageGuidance` 7.5 — the CURRENT page's prompt must drive the scene; lower
+  strengths made all pages near-identical or detached from their text, while
+  cast, palette, and props still carry over from the previous page.
 
 ### 4.4 Persisted model (host, SwiftData)
 
@@ -485,11 +486,12 @@ landmines found on a second pass.
    hiding latency, not this quality trade-off.
    → **Update (2026-09-05, per Thiago, implemented):** the recipe changed — pages
    now form a temporal CHAIN. Page 1 img2img from `reference.png`; pages 2–10
-   img2img from the previous page's PNG at `chainStrength` 0.72
-   (`SeedPipeline.chainStrength`, tunable; raised from 0.6 after on-device
-   testing showed near-identical pages). Prompt-side bible locks (§12.12)
-   mitigate cumulative drift; a failed page chains the next one from the newest
-   good page; resume replays the same rule from disk.
+   img2img from the previous page's PNG at `chainStrength` 0.78 with CFG 7.5
+   (`SeedPipeline.chainStrength` / `pageGuidance`, tunable; 0.6 read as
+   near-identical pages on device, 0.72 read as detached from the page text).
+   Prompt-side bible locks (§12.12) mitigate cumulative drift; a failed page
+   chains the next one from the newest good page; resume replays the same rule
+   from disk.
 5. **MLX release ordering (§4.3) — incorporated.** Step [3] (IllustrationPromptGenerator)
    is also an LLM pass, so MLX must be released only *after* [3] completes.
    §4.3 now states this explicitly (`[---] MLX released here (after [3], never
@@ -583,9 +585,9 @@ landmines found on a second pass.
     fails). CLIP budget enforced in `clipPrompt` (§12.12) + targeted repair
     retry for the illustration pass.
     → **Update (2026-09-05):** pages 2–10 now chain from the previous page's
-    PNG at `chainStrength` 0.72 (raised from 0.6 — 0.6 made pages near-identical)
-    instead of re-using `reference.png` as base
-    (invariant 9, §12.4 update).
+    PNG at `chainStrength` 0.78 (raised from 0.6 — low strengths made pages
+    near-identical or detached from their text) instead of re-using
+    `reference.png` as base (invariant 9, §12.4 update).
 
 18. **11 renders, not 10; cover-first vs page-order conflict.** Photo path =
     1 reference + 10 pages (11 if §12.17 is adopted for no-photo too). §10
@@ -619,7 +621,12 @@ landmines found on a second pass.
     Strength 0.6 against a *real photo* often leaves photoreal residue —
     that fights invariant 6 (kids-safe, no real faces) **and** can leak a
     child's likeness. Reference pass likely needs **higher** strength
-    (0.7–0.85) than page passes (0.45–0.55). Also: multi-person / pet-only
+    (0.7–0.85) than page passes (0.45–0.55).
+    → **Update (2026-09-05, per Thiago):** on device the complaint was the
+    opposite — the cast did not resemble the photo. `referenceStrength` is now
+    **0.68** (keep the person's structure; the locked negative + anime style
+    shed the photoreal residue) and the reference prompt asks for a single
+    full-body figure on a plain background (grid sheets diluted identity). Also: multi-person / pet-only
     photos make "the" character-descriptor singular; define whether the lock
     describes the group or the most prominent subject. And EXIF orientation:
     `ImageGenInput.makeCGImage()` uses `UIImage.cgImage`, which **ignores**

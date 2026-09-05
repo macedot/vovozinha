@@ -214,9 +214,13 @@ public struct SeedPipeline: Sendable {
             }
             let page = pages[index - 1]
             let prompt = clipPrompt(scene: page.illustrationPrompt, lock: characterDescriptor)
+            #if DEBUG
+            print("[SeedPipeline] page \(index) prompt: \(prompt)")
+            #endif
             let input = ImageGenInput(imageData: chainBase ?? Data())
             let config = ImageGenConfig(
                 strength: Self.chainStrength,
+                guidanceScale: Self.pageGuidance,
                 seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
                 mode: chainBase == nil ? .textToImage : .imageToImage,
                 prompt: prompt,
@@ -250,15 +254,19 @@ public struct SeedPipeline: Sendable {
 
     // MARK: - Reference pass (cast coherence)
 
-    /// img2img strength for the photo → cartoon-reference pass. High on purpose:
-    /// sheds photoreal residue (kids-safe, no real faces) while keeping the photo's
-    /// cast elements (§12.21).
-    static let referenceStrength: Float = 0.75
+    /// img2img strength for the photo → cartoon-reference pass. Just under the
+    /// old 0.75: keeps more of the real person's face/hair structure so the cast
+    /// resembles the photo, while the locked negative + anime style scaffold shed
+    /// photoreal residue (kids-safe, §12.21).
+    static let referenceStrength: Float = 0.68
     /// img2img strength for page passes: page 1 re-renders the reference sheet;
     /// pages 2–10 chain from the previous page. High — the CURRENT page's prompt
     /// must drive the scene, while low-frequency traits (cast, palette, props)
     /// still carry over from the previous illustration (temporal coherence).
-    static let chainStrength: Float = 0.72
+    static let chainStrength: Float = 0.78
+    /// CFG for page renders: above the 6.0 default so the page prompt pulls
+    /// harder than the chained base image (text adherence on SD 1.5).
+    static let pageGuidance: Float = 7.5
 
     /// Returns the reference PNG bytes, rendering them once if missing. `nil` when
     /// rendering failed — callers fall back to txt2img pages. Cancellation throws.
@@ -274,7 +282,9 @@ public struct SeedPipeline: Sendable {
             )
         }
         let prompt = clipPrompt(
-            scene: "character reference sheet, full body, standing, front view",
+            // One figure, plain background — "character reference sheet" invites
+            // multi-view grids that dilute the person's identity.
+            scene: "single character design, one full body figure, standing, front view, plain background",
             lock: lock
         )
         let seed = StoryIdentity.baseSeed(storyID: storyID)
