@@ -10,6 +10,18 @@ public struct IllustrationPlan: Equatable, Sendable {
     }
 }
 
+/// Whatever a raw reply contained: the CHARACTER/CAST line plus any numbered
+/// lines found. Feeds the repair-retry merge; validation stays strict.
+public struct IllustrationPartial: Equatable, Sendable {
+    public var descriptor: String
+    public var lines: [Int: String]
+
+    public init(descriptor: String = "", lines: [Int: String] = [:]) {
+        self.descriptor = descriptor
+        self.lines = lines
+    }
+}
+
 public enum IllustrationPromptError: Error, Equatable, Sendable {
     case missingLines([Int])
     case missingCharacterDescriptor
@@ -21,40 +33,43 @@ public enum IllustrationPromptParser {
     public static let requiredCount = 10
 
     public static func parse(_ raw: String) throws -> IllustrationPlan {
+        try validate(parsePartial(raw))
+    }
+
+    /// Strict validation of scanned content: descriptor required, all 10 lines required.
+    public static func validate(_ partial: IllustrationPartial) throws -> IllustrationPlan {
+        guard !partial.descriptor.isEmpty else { throw IllustrationPromptError.missingCharacterDescriptor }
+        let missing = (1...requiredCount).filter { (partial.lines[$0] ?? "").isEmpty }
+        if !missing.isEmpty { throw IllustrationPromptError.missingLines(missing) }
+        return IllustrationPlan(
+            characterDescriptor: partial.descriptor,
+            prompts: (1...requiredCount).map { partial.lines[$0]! }
+        )
+    }
+
+    /// Scan a raw reply for the CHARACTER/CAST line and numbered lines — without
+    /// failing. Used to build targeted repair prompts and to merge repairs.
+    public static func parsePartial(_ raw: String) -> IllustrationPartial {
         let text = stripCodeFences(raw).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw IllustrationPromptError.emptyReply }
+        guard !text.isEmpty else { return IllustrationPartial() }
 
-        var descriptor = ""
-        var byIndex: [Int: String] = [:]
-
+        var partial = IllustrationPartial()
         for line in text.split(whereSeparator: \.isNewline) {
             let trimmed = normalizeLine(String(line))
             if trimmed.isEmpty { continue }
             let upper = trimmed.uppercased()
             if upper.hasPrefix("CHARACTER:") || upper.hasPrefix("CAST:") {
                 let prefix = upper.hasPrefix("CAST:") ? "CAST:" : "CHARACTER:"
-                descriptor = String(trimmed.dropFirst(prefix.count))
+                let found = String(trimmed.dropFirst(prefix.count))
                     .trimmingCharacters(in: .whitespaces)
+                if partial.descriptor.isEmpty { partial.descriptor = found }
                 continue
             }
-            if let (index, body) = numberedLine(trimmed) {
-                byIndex[index] = body
+            if let (index, body) = numberedLine(trimmed), (partial.lines[index] ?? "").isEmpty {
+                partial.lines[index] = body
             }
         }
-
-        guard !descriptor.isEmpty else { throw IllustrationPromptError.missingCharacterDescriptor }
-
-        var missing: [Int] = []
-        var prompts: [String] = []
-        for i in 1...requiredCount {
-            if let p = byIndex[i], !p.isEmpty {
-                prompts.append(p)
-            } else {
-                missing.append(i)
-            }
-        }
-        if !missing.isEmpty { throw IllustrationPromptError.missingLines(missing) }
-        return IllustrationPlan(characterDescriptor: descriptor, prompts: prompts)
+        return partial
     }
 
     private static func numberedLine(_ line: String) -> (Int, String)? {

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StoryPage: Equatable, Sendable, Identifiable {
+public struct StoryPage: Equatable, Sendable, Identifiable, Codable {
     public var index: Int
     public var text: String
     public var illustrationPrompt: String
@@ -22,7 +22,7 @@ public struct StoryPage: Equatable, Sendable, Identifiable {
     }
 }
 
-public struct Storybook: Equatable, Sendable, Identifiable {
+public struct Storybook: Equatable, Sendable, Identifiable, Codable {
     public var id: UUID
     public var title: String
     public var summary: String
@@ -59,7 +59,7 @@ public struct Storybook: Equatable, Sendable, Identifiable {
     }
 }
 
-public enum PipelinePhase: String, Equatable, Sendable {
+public enum PipelinePhase: String, Equatable, Sendable, Codable {
     case caption
     case story
     case illustrationPrompts

@@ -25,6 +25,12 @@ private enum ImporterTarget {
     case imagePack
 }
 
+private enum Screen {
+    case create
+    case history
+    case reader
+}
+
 /// Product create + reader: seed, optional photo, 10 illustrated pages.
 public struct StorybookFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
@@ -46,6 +52,11 @@ public struct StorybookFeatureView: View {
     @State private var storyID = UUID()
     @State private var pipelineTask: Task<Void, Never>?
     @State private var phase: PipelinePhase = .story
+    @State private var screen: Screen = .create
+    /// Where the Back chevron in the reader returns to: `.create` after a fresh
+    /// generation, `.history` when the book was opened from Story History.
+    @State private var readerOrigin: Screen = .create
+    @State private var historyBooks: [Storybook] = []
     @FocusState private var seedFocused: Bool
 
     public init() {}
@@ -86,10 +97,10 @@ public struct StorybookFeatureView: View {
             case .failed(let message):
                 failedGate(message)
             case .ready:
-                if pages.isEmpty {
-                    createFlow
-                } else {
-                    reader
+                switch screen {
+                case .create: createFlow
+                case .history: historyScreen
+                case .reader: reader
                 }
             }
         }
@@ -250,6 +261,15 @@ public struct StorybookFeatureView: View {
                 .buttonStyle(VovoPrimaryButtonStyle(enabled: canCreate))
                 .disabled(!canCreate)
                 .accessibilityIdentifier("createStoryButton")
+
+                Button {
+                    loadHistory()
+                    screen = .history
+                } label: {
+                    Text(VovoL10n.t(.storyHistoryButton, lang)).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(VovoSecondaryButtonStyle())
+                .accessibilityIdentifier("storyHistoryButton")
             }
         }
     }
@@ -295,6 +315,118 @@ public struct StorybookFeatureView: View {
             .tabViewStyle(.page(indexDisplayMode: .always))
             #endif
             .accessibilityIdentifier("storyResult")
+            #if os(iOS)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    navBackButton(destination: readerOrigin, identifier: "readerBackButton")
+                }
+            }
+            #endif
+            readerActionBar
+        }
+    }
+
+    private var readerActionBar: some View {
+        Button {
+            startNewStory()
+        } label: {
+            Text(VovoL10n.t(.readerNewStory, lang))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(VovoPrimaryButtonStyle(enabled: true))
+        .accessibilityIdentifier("newStoryButton")
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
+
+    private var historyScreen: some View {
+        VovoScreen(
+            title: VovoL10n.t(.storyHistoryTitle, lang),
+            scrolls: true
+        ) {
+            if historyBooks.isEmpty {
+                Text(VovoL10n.t(.storyHistoryEmpty, lang))
+                    .font(.body)
+                    .foregroundStyle(VovoTheme.cream.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 48)
+                    .accessibilityIdentifier("storyHistoryEmpty")
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(historyBooks) { book in
+                        historyRow(book)
+                    }
+                }
+                .accessibilityIdentifier("storyHistoryList")
+            }
+        }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                navBackButton(destination: .create, identifier: "storyHistoryBackButton")
+            }
+        }
+        #endif
+    }
+
+    private func historyRow(_ book: Storybook) -> some View {
+        HStack(spacing: 12) {
+            historyThumbnail(book)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(book.title.isEmpty ? VovoL10n.t(.storyScene, lang) : book.title)
+                    .font(.headline)
+                    .foregroundStyle(VovoTheme.cream)
+                    .lineLimit(2)
+                Text(book.createdAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(VovoTheme.cream.opacity(0.7))
+                Text(VovoL10n.historyPages(
+                    illustrated: book.pages.filter { $0.imageFileName != nil }.count,
+                    total: max(book.pages.count, 1),
+                    lang: lang
+                ))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(VovoTheme.mint)
+            }
+            Spacer()
+            Button {
+                deleteBook(book)
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(VovoTheme.softPink)
+            }
+            .accessibilityIdentifier("storyHistoryDelete_\(book.id.uuidString)")
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(VovoTheme.cardFill)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { openBook(book) }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("storyHistoryItem_\(book.id.uuidString)")
+    }
+
+    @ViewBuilder
+    private func historyThumbnail(_ book: Storybook) -> some View {
+        if let fileName = book.pages.compactMap(\.imageFileName).first,
+           let image = loadStoryPNG(id: book.id, fileName: fileName) {
+            image
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(VovoTheme.cream.opacity(0.12))
+                Image(systemName: "book.fill")
+                    .foregroundStyle(VovoTheme.cream.opacity(0.6))
+            }
+            .frame(width: 56, height: 56)
         }
     }
 
@@ -389,8 +521,79 @@ public struct StorybookFeatureView: View {
         photoData = try? await item.loadTransferable(type: Data.self)
     }
 
+    // MARK: - Navigation (create / history / reader)
+
+    private var documentsURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+    }
+
+    /// Navigation-bar back chevron shared by History and Reader.
+    private func navBackButton(destination: Screen, identifier: String) -> some View {
+        Button {
+            goBack(to: destination)
+        } label: {
+            Label(VovoL10n.t(.readerBack, lang), systemImage: "chevron.left")
+        }
+        .accessibilityIdentifier(identifier)
+    }
+
+    /// Returns to Create keeping the current draft so it can be tweaked.
+    /// A running pipeline keeps drawing; the book is already saved on disk.
+    @MainActor
+    private func goBack(to destination: Screen) {
+        screen = destination
+    }
+
+    /// Starts over: cancels any running pipeline and clears the draft.
+    @MainActor
+    private func startNewStory() {
+        pipelineTask?.cancel()
+        promptText = ""
+        photoData = nil
+        pickerItem = nil
+        pages = []
+        title = ""
+        summary = ""
+        errorMessage = nil
+        phase = .story
+        isRunning = false
+        setIdleTimer(false)
+        readerOrigin = .create
+        screen = .create
+    }
+
+    private func loadHistory() {
+        historyBooks = StoryFileStore(rootURL: documentsURL).loadAllStorybooks()
+    }
+
+    @MainActor
+    private func openBook(_ book: Storybook) {
+        pipelineTask?.cancel()
+        isRunning = false
+        setIdleTimer(false)
+        errorMessage = nil
+        storyID = book.id
+        title = book.title
+        summary = book.summary
+        pages = book.pages
+        readerOrigin = .history
+        screen = .reader
+    }
+
+    private func deleteBook(_ book: Storybook) {
+        if isRunning && book.id == storyID {
+            pipelineTask?.cancel()
+            isRunning = false
+            setIdleTimer(false)
+        }
+        try? StoryFileStore(rootURL: documentsURL).deleteStory(id: book.id)
+        loadHistory()
+    }
+
     @MainActor
     private func startPipeline() async {
+        pipelineTask?.cancel()
         errorMessage = nil
         isRunning = true
         phase = .story
@@ -401,18 +604,16 @@ public struct StorybookFeatureView: View {
         title = ""
         summary = ""
         let photo: PhotoDescribeInput? = photoData.map { PhotoDescribeInput(imageData: $0) }
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
         let pipeline = SeedPipeline(
             storyGenerator: DeviceStoryGenerator(modelStore: storyStore),
             illustrationPrompts: DeviceIllustrationPromptGenerator(
-                completer: DevicePromptCompleter(modelStore: storyStore),
+                completer: DeviceCompleterAdapter(DevicePromptCompleter(modelStore: storyStore)),
                 language: lang
             ),
             imageGenerator: DeviceImageGenerator(packStore: imageStore),
             photoDescriber: DevicePhotoDescriber(modelStore: storyStore),
             memory: MemorySequencer(),
-            store: StoryFileStore(rootURL: docs)
+            store: StoryFileStore(rootURL: documentsURL)
         )
         let seedPrompt = seed
         pipelineTask = Task {
@@ -435,6 +636,8 @@ public struct StorybookFeatureView: View {
             pages = readyPages
             title = readyTitle
             summary = readySummary
+            readerOrigin = .create
+            screen = .reader
         case .illustrationReady(let index, let fileName):
             if let i = pages.firstIndex(where: { $0.index == index }) {
                 pages[i].imageFileName = fileName
@@ -470,9 +673,7 @@ public struct StorybookFeatureView: View {
     }
 
     private func loadStoryPNG(id: UUID, fileName: String) -> Image? {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let url = StoryFileStore(rootURL: docs).storyDirectory(id: id).appendingPathComponent(fileName)
+        let url = StoryFileStore(rootURL: documentsURL).storyDirectory(id: id).appendingPathComponent(fileName)
         guard let data = try? Data(contentsOf: url) else { return nil }
         return uiImage(from: data)
     }

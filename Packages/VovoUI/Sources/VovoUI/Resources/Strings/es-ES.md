@@ -203,3 +203,21 @@ No se pudo terminar el cuento. Inténtalo de nuevo.
 
 ## readerWaitingPicture
 Dibujando esta página…
+
+## storyHistoryTitle
+Historial de Cuentos
+
+## storyHistoryButton
+Historial de Cuentos
+
+## storyHistoryEmpty
+Aún no hay cuentos. Cada cuento que crees se guarda aquí automáticamente.
+
+## storyHistoryPages
+Ilustraciones {{count}}/{{total}}
+
+## readerBack
+Volver
+
+## readerNewStory
+Nuevo Cuento

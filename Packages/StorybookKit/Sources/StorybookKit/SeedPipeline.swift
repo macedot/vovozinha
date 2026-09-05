@@ -68,7 +68,7 @@ public struct SeedPipeline: Sendable {
         continuation: AsyncStream<PipelineEvent>.Continuation
     ) async throws {
         try Task.checkCancellation()
-        let totalSteps = 10
+        let totalSteps = 11 // 1 reference + 10 pages
         var step = 0
         func tick() {
             step += 1
@@ -102,6 +102,31 @@ public struct SeedPipeline: Sendable {
             summary: draft.summary
         ))
 
+        // The book is saved (texts only) the moment it exists, then re-saved on
+        // every milestone so an interrupted run never loses what was generated.
+        var book = Storybook(
+            id: storyID,
+            title: draft.title,
+            summary: draft.summary,
+            language: seed.language.rawValue,
+            seedPrompt: seed.trimmed,
+            characterDescriptor: characterLock(from: captionText),
+            baseSeed: StoryIdentity.baseSeed(storyID: storyID),
+            phase: .story,
+            pages: pages
+        )
+        func persist(_ phase: PipelinePhase) {
+            book.phase = phase
+            do {
+                try store.saveStorybook(book)
+            } catch {
+                #if DEBUG
+                print("[SeedPipeline] story.json save failed: \(error)")
+                #endif
+            }
+        }
+        persist(.story)
+
         try Task.checkCancellation()
         continuation.yield(.phaseChanged(.illustrationPrompts))
         var characterDescriptor = characterLock(from: captionText)
@@ -122,14 +147,29 @@ public struct SeedPipeline: Sendable {
             print("[SeedPipeline] illustration prompts failed (\(error)); using paragraph scenes")
             #endif
         }
-        tick()
+        book.characterDescriptor = characterDescriptor
+        book.pages = pages
+        persist(.illustrationPrompts)
 
         try Task.checkCancellation()
         await memory.releaseMLX()
         try await memory.prepareCoreML()
 
+        // One image every page inherits its cast from: the photo cartoonified at
+        // high strength when a photo was provided, else a txt2img character sheet
+        // at the story's base seed (invariant 9). A broken reference never kills
+        // the book — pages then fall back to txt2img.
+        continuation.yield(.phaseChanged(.reference))
+        let referenceData = try await ensureReference(
+            storyID: storyID,
+            photo: photo,
+            lock: characterDescriptor
+        )
+        tick()
+
         continuation.yield(.phaseChanged(.pages))
-        // Cover first (page 1), then 2...10. txt2img only — photo is never an img2img base.
+        // Cover first (page 1), then 2...10. Pages img2img from the reference so
+        // the cast stays recognizable; txt2img fallback when no reference exists.
         let order = [1] + Array(2...10)
         for index in order {
             try Task.checkCancellation()
@@ -142,17 +182,29 @@ public struct SeedPipeline: Sendable {
             }
             let page = pages[index - 1]
             let prompt = clipPrompt(scene: page.illustrationPrompt, lock: characterDescriptor)
-            let config = ImageGenConfig(
-                seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
-                mode: .textToImage,
-                prompt: prompt,
-                negativePrompt: negativePrompt
-            )
-            do {
-                let result = try await imageGenerator.generate(
-                    ImageGenInput(imageData: Data()),
-                    config: config
+            let input: ImageGenInput
+            let config: ImageGenConfig
+            if let referenceData {
+                input = ImageGenInput(imageData: referenceData)
+                config = ImageGenConfig(
+                    strength: Self.pageStrength,
+                    seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
+                    mode: .imageToImage,
+                    prompt: prompt,
+                    negativePrompt: negativePrompt
                 )
+            } else {
+                input = ImageGenInput(imageData: Data())
+                config = ImageGenConfig(
+                    strength: Self.pageStrength,
+                    seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
+                    mode: .textToImage,
+                    prompt: prompt,
+                    negativePrompt: negativePrompt
+                )
+            }
+            do {
+                let result = try await imageGenerator.generate(input, config: config)
                 _ = try store.writePNG(result.cgImage, id: storyID, fileName: fileName)
                 pages[index - 1].imageFileName = fileName
                 continuation.yield(.illustrationReady(index: index, fileName: fileName))
@@ -163,19 +215,134 @@ public struct SeedPipeline: Sendable {
                 print("[SeedPipeline] page \(index) render failed: \(error)")
                 #endif
             }
+            book.pages = pages
+            persist(.pages)
             tick()
         }
 
         await memory.releaseCoreML()
+        persist(.finished)
         continuation.yield(.phaseChanged(.finished))
     }
 
-    /// CLIP 77-token budget: unique scene first, then short lock, then style.
+    // MARK: - Reference pass (cast coherence)
+
+    /// img2img strength for the photo → cartoon-reference pass. High on purpose:
+    /// sheds photoreal residue (kids-safe, no real faces) while keeping the photo's
+    /// cast elements (§12.21).
+    static let referenceStrength: Float = 0.75
+    /// img2img strength for page passes: low enough to keep the cast recognizable,
+    /// high enough for scene composition to follow the page prompt (§12.4).
+    static let pageStrength: Float = 0.5
+
+    /// Returns the reference PNG bytes, rendering them once if missing. `nil` when
+    /// rendering failed — callers fall back to txt2img pages. Cancellation throws.
+    private func ensureReference(
+        storyID: UUID,
+        photo: PhotoDescribeInput?,
+        lock: String
+    ) async throws -> Data? {
+        let fileName = StoryFileStore.referenceFileName
+        if store.pngExists(id: storyID, fileName: fileName) {
+            return try? Data(
+                contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
+            )
+        }
+        let prompt = clipPrompt(
+            scene: "character reference sheet, full body, standing, front view",
+            lock: lock
+        )
+        let seed = StoryIdentity.baseSeed(storyID: storyID)
+        if let photo, !photo.isEmpty {
+            let config = ImageGenConfig(
+                strength: Self.referenceStrength,
+                seed: seed,
+                mode: .imageToImage,
+                prompt: prompt,
+                negativePrompt: negativePrompt
+            )
+            do {
+                let result = try await imageGenerator.generate(
+                    ImageGenInput(imageData: photo.imageData),
+                    config: config
+                )
+                _ = try store.writePNG(result.cgImage, id: storyID, fileName: fileName)
+                return try? Data(
+                    contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                #if DEBUG
+                print("[SeedPipeline] photo reference failed (\(error)); txt2img fallback")
+                #endif
+            }
+        }
+        let config = ImageGenConfig(
+            strength: Self.referenceStrength,
+            seed: seed,
+            mode: .textToImage,
+            prompt: prompt,
+            negativePrompt: negativePrompt
+        )
+        do {
+            let result = try await imageGenerator.generate(
+                ImageGenInput(imageData: Data()),
+                config: config
+            )
+            _ = try store.writePNG(result.cgImage, id: storyID, fileName: fileName)
+            return try? Data(
+                contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
+            )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            #if DEBUG
+            print("[SeedPipeline] reference render failed: \(error)")
+            #endif
+            return nil
+        }
+    }
+
+    /// CLIP 77-token budget, enforced hard: nothing may truncate, so the lock and
+    /// the style core stay byte-identical on every page. Assembly order — unique
+    /// scene, short identity lock, compressed style core. Overflow eats the scene
+    /// first, then the lock; the style core is never cut.
     func clipPrompt(scene: String, lock: String) -> String {
-        let lockBit = lock.split(separator: " ").prefix(20).joined(separator: " ")
-        return [scene, lockBit, stylePrefix]
+        let styleCore = Self.words(in: stylePrefix, limit: Self.styleWordLimit)
+        var lockBit = Self.words(in: lock, limit: Self.lockWordLimit)
+        var sceneBit = Self.words(in: scene, limit: Self.sceneWordLimit)
+        while Self.wordCount([sceneBit, lockBit, styleCore]) > Self.totalWordBudget {
+            if sceneBit.split(separator: " ").count > Self.minSceneWords {
+                sceneBit = Self.words(in: sceneBit, limit: sceneBit.split(separator: " ").count - 1)
+            } else if lockBit.split(separator: " ").count > Self.minLockWords {
+                lockBit = Self.words(in: lockBit, limit: lockBit.split(separator: " ").count - 1)
+            } else {
+                break
+            }
+        }
+        return [sceneBit, lockBit, styleCore]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
+    }
+
+    // MARK: - Prompt budget
+
+    /// ~50 words ≈ ≤68 CLIP tokens — safety margin under the 75-token cut.
+    static let totalWordBudget = 50
+    static let styleWordLimit = 15
+    static let lockWordLimit = 15
+    static let sceneWordLimit = 20
+    static let minSceneWords = 6
+    static let minLockWords = 4
+
+    static func words(in text: String, limit: Int) -> String {
+        guard limit > 0 else { return "" }
+        return text.split(whereSeparator: \.isWhitespace).prefix(limit).joined(separator: " ")
+    }
+
+    static func wordCount(_ parts: [String]) -> Int {
+        parts.reduce(0) { $0 + $1.split(separator: " ").count }
     }
 
     /// Scene fallback when the illustration LLM pass fails — the paragraph itself, not invented copy.

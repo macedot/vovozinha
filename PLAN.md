@@ -554,6 +554,11 @@ landmines found on a second pass.
     `reference.png`, then img2img every page from that. Unifies both paths
     and gives the no-photo book a cast. Validate in the Phase 3 spike
     alongside §12.4.
+    → **Implemented (2026-09-02):** `SeedPipeline.ensureReference` — photo →
+    img2img reference @ 0.75, no-photo → txt2img sheet @ `baseSeed`; every page
+    img2img @ 0.5 from `reference.png` (txt2img fallback if the reference
+    fails). CLIP budget enforced in `clipPrompt` (§12.12) + targeted repair
+    retry for the illustration pass.
 
 18. **11 renders, not 10; cover-first vs page-order conflict.** Photo path =
     1 reference + 10 pages (11 if §12.17 is adopted for no-photo too). §10

@@ -203,3 +203,21 @@ Could not finish the storybook. Try again.
 
 ## readerWaitingPicture
 Drawing this page…
+
+## storyHistoryTitle
+Story History
+
+## storyHistoryButton
+Story History
+
+## storyHistoryEmpty
+No stories yet. Every story you create is saved here automatically.
+
+## storyHistoryPages
+Illustrations {{count}}/{{total}}
+
+## readerBack
+Back
+
+## readerNewStory
+New Story
