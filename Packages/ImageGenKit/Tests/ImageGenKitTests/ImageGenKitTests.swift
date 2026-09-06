@@ -12,7 +12,10 @@ final class ImageGenKitTests: XCTestCase {
         for lang in [AppLanguage.englishUS, .portugueseBrazil, .spanishSpain] {
             let p = ImageGenTemplate.positive(for: lang)
             XCTAssertFalse(p.isEmpty, "empty positive for \(lang)")
-            XCTAssertTrue(p.lowercased().contains("anime"), "expected anime style in \(lang): \(p.prefix(60))")
+            XCTAssertTrue(p.lowercased().contains("toddler"), "expected child-look style in \(lang): \(p.prefix(60))")
+            // "anime" summons the mature-anime look on the tuned SD 1.5 pack.
+            let words = p.lowercased().split(whereSeparator: \.isWhitespace)
+            XCTAssertFalse(words.contains("anime"), "positive must not summon adult anime in \(lang)")
         }
     }
 
@@ -21,6 +24,12 @@ final class ImageGenKitTests: XCTestCase {
         for term in ["photorealistic", "nsfw", "violence", "scary"] {
             XCTAssertTrue(n.lowercased().contains(term), "negative missing \(term): \(n.prefix(80))")
         }
+        // Adult-anime style negatives ride at the FRONT: the negative truncates
+        // at 77 CLIP tokens, so tail additions never reach the encoder.
+        XCTAssertTrue(
+            n.lowercased().hasPrefix("adult anime"),
+            "adult-anime negatives must lead the negative prompt: \(n.prefix(80))"
+        )
     }
 
     // MARK: - Input

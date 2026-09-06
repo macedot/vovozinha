@@ -293,9 +293,10 @@ public struct SeedPipeline: Sendable {
     /// while the new moment still leads the frame.
     static let carryStrength: Float = 0.7
     /// img2img strength when the page opens a NEW scene: anchored on the
-    /// plain-background reference for identity only — the paragraph's moment
-    /// drives the whole frame.
-    static let freshStrength: Float = 0.8
+    /// plain-background reference for identity — 0.75 so the cartoonified cast
+    /// stays recognizable across fresh scenes (plain background contributes no
+    /// composition), while the paragraph's moment drives the frame.
+    static let freshStrength: Float = 0.75
     /// CFG for page renders: above the 6.0 default so the page prompt pulls
     /// harder than the chained base image (text adherence on SD 1.5).
     static let pageGuidance: Float = 7.5
@@ -396,10 +397,12 @@ public struct SeedPipeline: Sendable {
     // MARK: - Prompt budget
 
     /// ~50 words ≈ ≤68 CLIP tokens — safety margin under the 75-token cut.
+    /// Rebalanced toward the scene: the rewritten style scaffold carries the
+    /// child look in 12 words, freeing 3 words for concrete scene detail.
     static let totalWordBudget = 50
-    static let styleWordLimit = 15
+    static let styleWordLimit = 12
     static let lockWordLimit = 15
-    static let sceneWordLimit = 20
+    static let sceneWordLimit = 23
     static let minSceneWords = 6
     static let minLockWords = 4
 

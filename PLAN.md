@@ -540,6 +540,12 @@ landmines found on a second pass.
     species — not a paragraph). Otherwise every page looks like the same
     establish shot, or faces drift because the lock got truncated. Fold into
     the §12.4 strength spike.
+    → **Update (2026-09-06):** budget rebalanced to style 12 / lock 15 /
+    scene 23 words (total 50) — the rewritten scaffold carries the child look
+    (toddler, chibi, pastel) in its first 12 words; the extra scene words buy
+    concrete per-page detail. The scaffold's `anime` token was removed and
+    adult-anime negatives now LEAD the negative prompt: the negative also
+    truncates at 77 tokens, so tail additions never reach the encoder.
 
 13. **Illustration prompts must be English, even when the story is not.** CLIP is
     English-only. `img2img.<lang>.md` style prefixes are already English in all

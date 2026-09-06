@@ -150,6 +150,19 @@ final class StorybookKitTests: XCTestCase {
         XCTAssertTrue(pipeline.negativePrompt.lowercased().contains("nsfw"))
     }
 
+    func testStyleCoreIsChildLike() {
+        // Only the first styleWordLimit words of the positive scaffold reach
+        // CLIP on every render — they must carry the child look, never the
+        // mature-anime summons.
+        let core = SeedPipeline.words(
+            in: ImageGenTemplate.positive(for: .englishUS),
+            limit: SeedPipeline.styleWordLimit
+        )
+        XCTAssertTrue(core.lowercased().contains("toddler"), "style core lost the child look: \(core)")
+        let words = core.lowercased().split(whereSeparator: \.isWhitespace)
+        XCTAssertFalse(words.contains("anime"), "style core summons adult anime: \(core)")
+    }
+
     func testPipelineEmitsTextsThenPagesInCoverFirstOrder() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
