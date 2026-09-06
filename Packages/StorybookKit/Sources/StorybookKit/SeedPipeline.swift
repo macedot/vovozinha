@@ -192,37 +192,59 @@ public struct SeedPipeline: Sendable {
         tick()
 
         continuation.yield(.phaseChanged(.pages))
-        // Chain for temporal coherence: the cover (page 1) img2img's from the
-        // reference (photo cartoonified, or txt2img character sheet), then every
-        // next page img2img's from the PREVIOUS page's illustration, so elements
-        // like page 1's rose survive into page 2's pixels. txt2img fallback when
-        // no base image exists. A page whose render failed leaves the chain base
-        // at the newest earlier page — the next page chains from there.
+        // Content-aware bases: a page that RE-MENTIONS elements from the previous
+        // rendered page chains from its pixels (the shared rose/figure persists);
+        // a page opening a new scene anchors on the plain-background reference
+        // instead, so the paragraph's moment drives the whole frame. The cover
+        // (page 1) always renders from the reference. txt2img when no base
+        // exists. A failed page leaves `lastRendered` untouched — a later carry
+        // page chains from the newest good page.
         let order = [1] + Array(2...10)
-        var chainBase: Data? = referenceData
+        var lastRendered: (index: Int, data: Data)?
         for index in order {
             try Task.checkCancellation()
             let fileName = store.pageFileName(index: index)
             if store.pngExists(id: storyID, fileName: fileName) {
                 pages[index - 1].imageFileName = fileName
-                chainBase = try? Data(
+                if let data = try? Data(
                     contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
-                )
+                ) {
+                    lastRendered = (index, data)
+                }
                 continuation.yield(.illustrationReady(index: index, fileName: fileName))
                 tick()
                 continue
             }
             let page = pages[index - 1]
             let prompt = clipPrompt(scene: page.illustrationPrompt, lock: characterDescriptor)
+            var shared: [String] = []
+            if index > 1, let lastRendered {
+                shared = Self.sharedElements(
+                    bible: bible,
+                    pages[lastRendered.index - 1].illustrationPrompt,
+                    page.illustrationPrompt
+                )
+            }
+            let base: (data: Data, strength: Float)?
+            if index == 1 {
+                base = referenceData.map { ($0, Self.coverStrength) }
+            } else if let lastRendered, !shared.isEmpty {
+                base = (lastRendered.data, Self.carryStrength)
+            } else {
+                base = referenceData.map { ($0, Self.freshStrength) }
+            }
             #if DEBUG
             print("[SeedPipeline] page \(index) prompt: \(prompt)")
+            if !shared.isEmpty {
+                print("[SeedPipeline] page \(index) carries: \(shared.joined(separator: ", "))")
+            }
             #endif
-            let input = ImageGenInput(imageData: chainBase ?? Data())
+            let input = ImageGenInput(imageData: base?.data ?? Data())
             let config = ImageGenConfig(
-                strength: Self.chainStrength,
+                strength: base?.strength ?? Self.freshStrength,
                 guidanceScale: Self.pageGuidance,
                 seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
-                mode: chainBase == nil ? .textToImage : .imageToImage,
+                mode: base == nil ? .textToImage : .imageToImage,
                 prompt: prompt,
                 negativePrompt: negativePrompt
             )
@@ -231,9 +253,11 @@ public struct SeedPipeline: Sendable {
                 _ = try store.writePNG(result.cgImage, id: storyID, fileName: fileName)
                 pages[index - 1].imageFileName = fileName
                 // Chain from the persisted PNG, not an in-memory copy.
-                chainBase = try? Data(
+                if let data = try? Data(
                     contentsOf: store.storyDirectory(id: storyID).appendingPathComponent(fileName)
-                )
+                ) {
+                    lastRendered = (index, data)
+                }
                 continuation.yield(.illustrationReady(index: index, fileName: fileName))
             } catch is CancellationError {
                 throw CancellationError()
@@ -263,7 +287,15 @@ public struct SeedPipeline: Sendable {
     /// pages 2–10 chain from the previous page. High — the CURRENT page's prompt
     /// must drive the scene, while low-frequency traits (cast, palette, props)
     /// still carry over from the previous illustration (temporal coherence).
-    static let chainStrength: Float = 0.78
+    static let coverStrength: Float = 0.78
+    /// img2img strength when the page RE-MENTIONS elements from the previous
+    /// rendered page: low enough that the shared rose/figure visibly persists
+    /// while the new moment still leads the frame.
+    static let carryStrength: Float = 0.7
+    /// img2img strength when the page opens a NEW scene: anchored on the
+    /// plain-background reference for identity only — the paragraph's moment
+    /// drives the whole frame.
+    static let freshStrength: Float = 0.8
     /// CFG for page renders: above the 6.0 default so the page prompt pulls
     /// harder than the chained base image (text adherence on SD 1.5).
     static let pageGuidance: Float = 7.5
@@ -378,6 +410,27 @@ public struct SeedPipeline: Sendable {
 
     static func wordCount(_ parts: [String]) -> Int {
         parts.reduce(0) { $0 + $1.split(separator: " ").count }
+    }
+
+    // MARK: - Continuity
+
+    /// Recurring bible elements (props + supporting cast) present in BOTH scene
+    /// lines — the only reason a page inherits the previous page's pixels. The
+    /// main character is deliberately excluded: their identity travels in the
+    /// prompt lock, not in chained pixels.
+    static func sharedElements(bible: StoryBible?, _ previous: String, _ next: String) -> [String] {
+        guard let bible, !previous.isEmpty, !next.isEmpty else { return [] }
+        let previousLower = previous.lowercased()
+        let nextLower = next.lowercased()
+        var candidates = bible.props.map { $0.lowercased() }
+        let supporting = bible.supporting.lowercased()
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && $0 != "(none)" }
+        candidates.append(contentsOf: supporting)
+        return candidates.filter {
+            previousLower.contains($0) && nextLower.contains($0)
+        }
     }
 
     /// Scene fallback when the illustration LLM pass fails — the paragraph itself, not invented copy.
