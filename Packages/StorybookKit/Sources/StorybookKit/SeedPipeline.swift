@@ -115,7 +115,11 @@ public struct SeedPipeline: Sendable {
         // Story text is the product. Publish it before the second LLM pass so a
         // CHARACTER:/numbered-line parse miss cannot hide the book.
         var pages = zip(draft.paragraphs.indices, draft.paragraphs).map { i, text in
-            StoryPage(index: i + 1, text: text, illustrationPrompt: scenePrompt(from: text))
+            StoryPage(
+                index: i + 1,
+                text: text,
+                illustrationPrompt: scenePrompt(setting: bible?.setting ?? "")
+            )
         }
         continuation.yield(.pageTextsReady(
             pages: pages,
@@ -168,7 +172,7 @@ public struct SeedPipeline: Sendable {
             }
         } catch {
             #if DEBUG
-            print("[SeedPipeline] illustration prompts failed (\(error)); using paragraph scenes")
+            print("[SeedPipeline] illustration prompts failed (\(error)); using English scene fallback")
             #endif
         }
         book.characterDescriptor = characterDescriptor
@@ -192,13 +196,16 @@ public struct SeedPipeline: Sendable {
         tick()
 
         continuation.yield(.phaseChanged(.pages))
-        // Content-aware bases: a page that RE-MENTIONS elements from the previous
-        // rendered page chains from its pixels (the shared rose/figure persists);
-        // a page opening a new scene anchors on the plain-background reference
-        // instead, so the paragraph's moment drives the whole frame. The cover
-        // (page 1) always renders from the reference. txt2img when no base
-        // exists. A failed page leaves `lastRendered` untouched — a later carry
-        // page chains from the newest good page.
+        // Scene first, identity second. A page that re-mentions a supporting
+        // cast member chains from the previous good page so that figure persists.
+        // Recurring props travel as prompt words, not pixels — otherwise a bible
+        // rose on every line recreates full-book chaining. Fresh scenes: photo
+        // books img2img the cartoonified reference at high strength (face traces
+        // remain, pose/place can change); no-photo books txt2img so the standing
+        // character sheet cannot lock composition. A failed page leaves
+        // `lastRendered` untouched — a later carry page chains from the newest
+        // good page.
+        let hasPhotoBase = photo.map { !$0.isEmpty } ?? false
         let order = [1] + Array(2...10)
         var lastRendered: (index: Int, data: Data)?
         for index in order {
@@ -226,12 +233,12 @@ public struct SeedPipeline: Sendable {
                 )
             }
             let base: (data: Data, strength: Float)?
-            if index == 1 {
-                base = referenceData.map { ($0, Self.coverStrength) }
-            } else if let lastRendered, !shared.isEmpty {
+            if let lastRendered, !shared.isEmpty {
                 base = (lastRendered.data, Self.carryStrength)
+            } else if hasPhotoBase, let referenceData {
+                base = (referenceData, index == 1 ? Self.coverStrength : Self.freshStrength)
             } else {
-                base = referenceData.map { ($0, Self.freshStrength) }
+                base = nil
             }
             #if DEBUG
             print("[SeedPipeline] page \(index) prompt: \(prompt)")
@@ -246,7 +253,7 @@ public struct SeedPipeline: Sendable {
                 seed: StoryIdentity.pageSeed(storyID: storyID, pageIndex: index),
                 mode: base == nil ? .textToImage : .imageToImage,
                 prompt: prompt,
-                negativePrompt: negativePrompt
+                negativePrompt: pageNegativePrompt()
             )
             do {
                 let result = try await imageGenerator.generate(input, config: config)
@@ -283,20 +290,20 @@ public struct SeedPipeline: Sendable {
     /// resembles the photo, while the locked negative + anime style scaffold shed
     /// photoreal residue (kids-safe, §12.21).
     static let referenceStrength: Float = 0.68
-    /// img2img strength for page passes: page 1 re-renders the reference sheet;
-    /// pages 2–10 chain from the previous page. High — the CURRENT page's prompt
-    /// must drive the scene, while low-frequency traits (cast, palette, props)
-    /// still carry over from the previous illustration (temporal coherence).
-    static let coverStrength: Float = 0.78
-    /// img2img strength when the page RE-MENTIONS elements from the previous
-    /// rendered page: low enough that the shared rose/figure visibly persists
-    /// while the new moment still leads the frame.
-    static let carryStrength: Float = 0.7
-    /// img2img strength when the page opens a NEW scene: anchored on the
-    /// plain-background reference for identity — 0.75 so the cartoonified cast
-    /// stays recognizable across fresh scenes (plain background contributes no
-    /// composition), while the paragraph's moment drives the frame.
-    static let freshStrength: Float = 0.75
+    /// img2img strength for the photo-path cover: high enough that the standing
+    /// reference sheet cannot keep its pose, low enough that face/hair traces remain.
+    static let coverStrength: Float = 0.88
+    /// img2img strength when a supporting-cast member is re-mentioned: the figure
+    /// persists from the previous good page while the new action still leads.
+    static let carryStrength: Float = 0.82
+    /// img2img strength for a photo-path page that opens a new scene. Same band
+    /// as the cover — the cartoonified reference is a likeness hint, not a pose.
+    static let freshStrength: Float = 0.88
+    /// Prepended on page renders (not the reference pass) so leftover sheet
+    /// composition loses the CLIP-negative race. Negative also truncates at 77
+    /// tokens, so these have to lead.
+    static let pageNegativePrefix =
+        "character sheet, reference sheet, standing pose, front view, plain background, white background, character design"
     /// CFG for page renders: above the 6.0 default so the page prompt pulls
     /// harder than the chained base image (text adherence on SD 1.5).
     static let pageGuidance: Float = 7.5
@@ -372,24 +379,33 @@ public struct SeedPipeline: Sendable {
         }
     }
 
-    /// CLIP 77-token budget, enforced hard: nothing may truncate, so the lock and
-    /// the style core stay byte-identical on every page. Assembly order — unique
-    /// scene, short identity lock, compressed style core. Overflow eats the scene
-    /// first, then the lock; the style core is never cut.
+    /// CLIP 77-token budget, enforced hard. Assembly order — unique scene, short
+    /// identity lock, compressed style core. Overflow eats style first, then the
+    /// lock; the scene is the last thing cut, because that is the page description.
     func clipPrompt(scene: String, lock: String) -> String {
-        let styleCore = Self.words(in: stylePrefix, limit: Self.styleWordLimit)
+        var styleCore = Self.words(in: stylePrefix, limit: Self.styleWordLimit)
         var lockBit = Self.words(in: lock, limit: Self.lockWordLimit)
         var sceneBit = Self.words(in: scene, limit: Self.sceneWordLimit)
         while Self.wordCount([sceneBit, lockBit, styleCore]) > Self.totalWordBudget {
-            if sceneBit.split(separator: " ").count > Self.minSceneWords {
-                sceneBit = Self.words(in: sceneBit, limit: sceneBit.split(separator: " ").count - 1)
+            if styleCore.split(separator: " ").count > Self.minStyleWords {
+                styleCore = Self.words(in: styleCore, limit: styleCore.split(separator: " ").count - 1)
             } else if lockBit.split(separator: " ").count > Self.minLockWords {
                 lockBit = Self.words(in: lockBit, limit: lockBit.split(separator: " ").count - 1)
+            } else if sceneBit.split(separator: " ").count > Self.minSceneWords {
+                sceneBit = Self.words(in: sceneBit, limit: sceneBit.split(separator: " ").count - 1)
             } else {
                 break
             }
         }
         return [sceneBit, lockBit, styleCore]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+    }
+
+    /// Page renders fight leftover character-sheet composition; the reference
+    /// pass keeps the locked kids negative as-is.
+    func pageNegativePrompt() -> String {
+        [Self.pageNegativePrefix, negativePrompt]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
     }
@@ -405,6 +421,7 @@ public struct SeedPipeline: Sendable {
     static let sceneWordLimit = 23
     static let minSceneWords = 6
     static let minLockWords = 4
+    static let minStyleWords = 4
 
     static func words(in text: String, limit: Int) -> String {
         guard limit > 0 else { return "" }
@@ -417,28 +434,51 @@ public struct SeedPipeline: Sendable {
 
     // MARK: - Continuity
 
-    /// Recurring bible elements (props + supporting cast) present in BOTH scene
-    /// lines — the only reason a page inherits the previous page's pixels. The
-    /// main character is deliberately excluded: their identity travels in the
-    /// prompt lock, not in chained pixels.
+    /// Supporting-cast phrases present in BOTH scene lines — the only reason a
+    /// page inherits the previous page's pixels. Props stay as prompt words so a
+    /// bible rose on every line cannot recreate full-book chaining. The main
+    /// character is excluded: their identity travels in the prompt lock. Matching
+    /// is whole-word (`cat` does not match `catch`).
     static func sharedElements(bible: StoryBible?, _ previous: String, _ next: String) -> [String] {
         guard let bible, !previous.isEmpty, !next.isEmpty else { return [] }
-        let previousLower = previous.lowercased()
-        let nextLower = next.lowercased()
-        var candidates = bible.props.map { $0.lowercased() }
-        let supporting = bible.supporting.lowercased()
+        let previousTokens = wholeWords(in: previous)
+        let nextTokens = wholeWords(in: next)
+        let supporting = bible.supporting
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty && $0 != "(none)" }
-        candidates.append(contentsOf: supporting)
-        return candidates.filter {
-            previousLower.contains($0) && nextLower.contains($0)
+        return supporting.filter { phrase in
+            containsWholePhrase(phrase, in: previousTokens)
+                && containsWholePhrase(phrase, in: nextTokens)
         }
     }
 
-    /// Scene fallback when the illustration LLM pass fails — the paragraph itself, not invented copy.
-    func scenePrompt(from paragraph: String) -> String {
-        paragraph.split(whereSeparator: \.isWhitespace).prefix(24).joined(separator: " ")
+    static func wholeWords(in text: String) -> [String] {
+        text.lowercased()
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+            .filter { !$0.isEmpty }
+    }
+
+    static func containsWholePhrase(_ phrase: String, in tokens: [String]) -> Bool {
+        let words = wholeWords(in: phrase)
+        guard !words.isEmpty, words.count <= tokens.count else { return false }
+        let last = tokens.count - words.count
+        for i in 0...last {
+            if Array(tokens[i..<(i + words.count)]) == words { return true }
+        }
+        return false
+    }
+
+    /// Scene fallback when the illustration LLM pass fails — English setting
+    /// (or a generic scene). Never the story-language paragraph: CLIP is
+    /// English-only. The character lock is appended separately by `clipPrompt`.
+    func scenePrompt(setting: String) -> String {
+        let place = setting.trimmingCharacters(in: .whitespaces)
+        if place.isEmpty || place == "(none)" {
+            return "bedtime picture book scene"
+        }
+        return Self.words(in: place, limit: Self.sceneWordLimit)
     }
 
     func characterLock(from caption: String?) -> String {

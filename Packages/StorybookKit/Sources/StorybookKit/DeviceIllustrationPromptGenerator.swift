@@ -10,13 +10,18 @@ public protocol IllustrationPromptCompleting: Sendable {
 /// Wraps the concrete Qwen completer behind the seam.
 public struct DeviceCompleterAdapter: IllustrationPromptCompleting {
     private let completer: DevicePromptCompleter
+    private let temperature: Float
 
-    public init(_ completer: DevicePromptCompleter) {
+    public init(
+        _ completer: DevicePromptCompleter,
+        temperature: Float = DevicePromptCompleter.extractionTemperature
+    ) {
         self.completer = completer
+        self.temperature = temperature
     }
 
     public func complete(_ prompt: String) async throws -> String {
-        try await completer.complete(prompt)
+        try await completer.complete(prompt, temperature: temperature)
     }
 }
 

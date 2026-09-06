@@ -165,13 +165,15 @@ SeedPipeline.run(seed, photo?, language) -> AsyncStream<PipelineEvent>
   [4]     photo? -> ImageGenerating.generate(referencePrompt, img2img(ORIGINAL photo),
           seed: baseSeed) -> reference.png (ONE render, persisted per story)
           The original photo's elements, cartoonified into the locked kids style.
+          No photo -> txt2img character sheet (kept for resume; not a scene base).
   [5]     for page in pages (strict order 1..10, one render at a time), CFG 7.5:
-            page 1: img2img(reference.png) @ coverStrength (0.78) | txt2img if none
-            page N re-mentions elements from the previous rendered page
-            (bible props / supporting cast present in BOTH lines):
-                -> img2img(previous page PNG) @ carryStrength (0.7)
+            page N re-mentions a supporting-cast member from the previous
+            rendered page:
+                -> img2img(previous page PNG) @ carryStrength (0.82)
             page N opens a NEW scene:
-                -> img2img(reference.png) @ freshStrength (0.8) | txt2img if none
+                photo   -> img2img(reference.png) @ freshStrength/coverStrength (0.88)
+                no photo -> txt2img (the standing sheet must not lock pose/place)
+            Recurring props travel as prompt words, not pixels.
             A failed page leaves the next carry page chaining from the newest
             good page. -> yield .illustrationReady(page)
   [6]     yield .finished(storybook)
@@ -200,19 +202,20 @@ The strict page-order, one-at-a-time render loop is also what keeps memory flat.
   the IllustrationPromptGenerator copies the bible lock verbatim into all 10
   illustration prompts and names recurring props with their exact bible words
   (step [3]).
-- **Image coherence (chained illustrations):** the ORIGINAL photo is cartoonified
-  exactly once (step [4]) into a per-story `reference.png`. Page bases are
-  CONTENT-AWARE (update 2026-09-06, per Thiago): a page that RE-MENTIONS bible
-  props / supporting cast from the previous rendered page chains from that
-  page's pixels, so the shared rose/figure persists; a page opening a new scene
-  anchors on the plain-background reference instead, so its own paragraph
-  drives the whole frame (unconditional chaining made pages read as variations
-  of the previous page — see invariant 9 and §12.4).
+- **Image coherence:** the ORIGINAL photo is cartoonified exactly once (step
+  [4]) into a per-story `reference.png`. Identity travels in the CLIP lock +
+  named props. Page bases (update 2026-09-06, per Thiago — scene-first): a page
+  that RE-MENTIONS a supporting-cast member from the previous rendered page
+  chains from that page's pixels; a page opening a new scene is txt2img when
+  there is no photo, or img2img of the reference at 0.88 when there is (the
+  standing character sheet must not lock pose/place). Recurring props are
+  named with the same bible words in the prompt, not chained as pixels —
+  otherwise a bible rose on every line recreates full-book chaining.
 - Reference pass @ 0.68 (keeps the photo person's face and hair through the
-  cartoonify); carry pages @ `carryStrength` 0.7, fresh pages @ `freshStrength`
-  0.8, all with CFG `pageGuidance` 7.5. Scene lines are pure moments (who does
-  what, with what, where) — they no longer start with the identity phrase; the
-  lock appended to every prompt carries the cast.
+  cartoonify); carry pages @ `carryStrength` 0.82, photo-path fresh/cover
+  pages @ 0.88, all with CFG `pageGuidance` 7.5. Scene lines translate the
+  paragraph (who does what, with what, where); the lock appended to every
+  prompt carries the cast.
 
 ### 4.4 Persisted model (host, SwiftData)
 
@@ -418,15 +421,14 @@ Scripts/test.sh                                      # XCUITest on device
    it in, and every illustration prompt carries its lock verbatim and names props
    with its exact words ("red rose" on every page the rose appears). When a photo
    is provided, the ORIGINAL image is used exactly once to extract its elements
-   and "cartoonify" them into a per-story reference (§4.3 step [4]); that
-   reference seeds page 1 (the cover). Pages 2–10 chain from the previous
-   page's illustration ONLY when they re-mention its elements (bible props /
-   supporting cast present in both lines); a page opening a new scene anchors
-   on the reference so its own paragraph drives the frame (update 2026-09-06,
-   per Thiago: continuity when repeated, theme always = description + page
-   text; supersedes both the reference-as-base-for-all-pages recipe and the
-   unconditional 2026-09-05 chain). A book whose cast changes appearance between pages,
-   or whose recurring props change look, is a defect, not a style choice.
+   and "cartoonify" them into a per-story reference (§4.3 step [4]). Pages chain
+   from the previous page ONLY when they re-mention a supporting-cast member; a
+   page opening a new scene is txt2img (no photo) or high-strength img2img of
+   the reference (photo), so the paragraph drives pose and place (update
+   2026-09-06, per Thiago: continuity when a figure repeats, theme always =
+   description + page text; props are prompt-identical, not pixel-chained). A
+   book whose cast changes appearance between pages, or whose pictures ignore
+   the page text, is a defect, not a style choice.
 
 ---
 

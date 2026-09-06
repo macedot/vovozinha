@@ -82,8 +82,8 @@ final class StorybookKitTests: XCTestCase {
             SeedPipeline.totalWordBudget
         )
 
-        // The identity lock and the style core are byte-identical across pages —
-        // variable scene length can no longer move the truncation point.
+        // Caps keep every page inside the budget; style is the overflow valve,
+        // so a long scene cannot push the lock or style past the CLIP cut.
         let styleCore = SeedPipeline.words(in: pipeline.stylePrefix, limit: SeedPipeline.styleWordLimit)
         let lockBit = SeedPipeline.words(in: hugeLock, limit: SeedPipeline.lockWordLimit)
         for prompt in [a, b] {
@@ -196,6 +196,17 @@ final class StorybookKitTests: XCTestCase {
         XCTAssertTrue(store.pngExists(id: storyID, fileName: store.pageFileName(index: 10)))
     }
 
+    func testPageNegativeFightsCharacterSheet() {
+        let pipeline = makePipeline()
+        let pageNegative = pipeline.pageNegativePrompt().lowercased()
+        for term in ["character sheet", "standing pose", "plain background"] {
+            XCTAssertTrue(pageNegative.contains(term), "missing \(term)")
+        }
+        // Kids-safety lock still present after the composition prefix.
+        XCTAssertTrue(pageNegative.contains("nsfw"))
+        XCTAssertFalse(pipeline.negativePrompt.lowercased().contains("character sheet"))
+    }
+
     func testPhotoFeedsReferenceAndFreshPagesAnchorOnIt() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -229,9 +240,9 @@ final class StorybookKitTests: XCTestCase {
         // The photo bytes reach the generator exactly once — the reference pass.
         XCTAssertEqual(images.inputs.filter { $0 == photoBytes }.count, 1)
 
-        // No bible in this pipeline → no shared elements → every page is a
-        // FRESH scene anchored on the reference sheet, never the raw photo or
-        // a previous page's pixels.
+        // No bible → no supporting-cast carry. Photo path: every page img2img's
+        // the cartoonified reference at high strength, never the raw photo or a
+        // previous page's pixels.
         let store = StoryFileStore(rootURL: root)
         let referenceData = try Data(
             contentsOf: store.storyDirectory(id: storyID)
@@ -239,10 +250,12 @@ final class StorybookKitTests: XCTestCase {
         )
         XCTAssertTrue(images.inputs.dropFirst().allSatisfy { $0 == referenceData })
         XCTAssertNotEqual(referenceData, photoBytes)
-        // Reference pass runs at its own strength; the cover and fresh pages at theirs.
         XCTAssertEqual(images.strengths.first, SeedPipeline.referenceStrength)
         XCTAssertEqual(images.strengths[1], SeedPipeline.coverStrength)
         XCTAssertTrue(images.strengths.dropFirst(2).allSatisfy { $0 == SeedPipeline.freshStrength })
+        // Reference keeps the locked kids negative; page renders prepend sheet terms.
+        XCTAssertFalse(images.negatives[0].lowercased().contains("character sheet"))
+        XCTAssertTrue(images.negatives.dropFirst().allSatisfy { $0.lowercased().contains("character sheet") })
     }
 
     func testNoPhotoTxt2imgReferenceThenFreshPagesAnchorOnIt() async throws {
@@ -260,38 +273,26 @@ final class StorybookKitTests: XCTestCase {
         let storyID = UUID()
         for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
 
-        // 1 txt2img character sheet + 10 fresh pages anchored on it.
+        // 1 txt2img character sheet (kept for resume, not used as a scene base)
+        // + 10 txt2img pages. The standing sheet must not lock composition.
         XCTAssertEqual(images.calls, 11)
-        XCTAssertEqual(images.modes.first, .textToImage)
-        XCTAssertTrue(images.modes.dropFirst().allSatisfy { $0 == .imageToImage })
-        XCTAssertEqual(images.inputs.first?.isEmpty, true)
+        XCTAssertTrue(images.modes.allSatisfy { $0 == .textToImage })
+        XCTAssertTrue(images.inputs.allSatisfy(\.isEmpty))
         let store = StoryFileStore(rootURL: root)
-        let referenceData = try Data(
-            contentsOf: store.storyDirectory(id: storyID)
-                .appendingPathComponent(StoryFileStore.referenceFileName)
-        )
-        XCTAssertTrue(images.inputs.dropFirst().allSatisfy { $0 == referenceData })
-        XCTAssertEqual(images.strengths[1], SeedPipeline.coverStrength)
-        XCTAssertTrue(images.strengths.dropFirst(2).allSatisfy { $0 == SeedPipeline.freshStrength })
+        XCTAssertTrue(store.pngExists(id: storyID, fileName: StoryFileStore.referenceFileName))
     }
 
-    func testResumeSkipsExistingPageFilesAndAnchorsOnReference() async throws {
+    func testResumeSkipsExistingPageFilesAndTxt2imgRestWhenNoPhoto() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let storyID = UUID()
         let store = StoryFileStore(rootURL: root)
-        // Reference (orange) and page 1 (blue) differ, so "fresh pages anchor on
-        // the reference — not on page 1" is observable.
         let referenceImage = try XCTUnwrap(Self.makeCGImage())
         let pageOneImage = try XCTUnwrap(Self.solidImage(red: 0.2, green: 0.4, blue: 0.9))
         _ = try store.writePNG(referenceImage, id: storyID, fileName: StoryFileStore.referenceFileName)
         _ = try store.writePNG(pageOneImage, id: storyID, fileName: store.pageFileName(index: 1))
-        let referenceData = try Data(
-            contentsOf: store.storyDirectory(id: storyID)
-                .appendingPathComponent(StoryFileStore.referenceFileName)
-        )
 
         let images = CountingImageGenerator(image: referenceImage, varied: true)
         let pipeline = makePipeline(storeRoot: root, images: images)
@@ -302,10 +303,11 @@ final class StorybookKitTests: XCTestCase {
         for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
 
         // Reference and page 1 already on disk → 9 remaining page renders. No
-        // bible, so no shared elements: every page anchors on the reference.
+        // photo and no supporting-cast carry: remaining pages are txt2img, not
+        // img2img from the standing sheet or from page 1.
         XCTAssertEqual(images.calls, 9)
-        XCTAssertTrue(images.modes.allSatisfy { $0 == .imageToImage })
-        XCTAssertTrue(images.inputs.allSatisfy { $0 == referenceData })
+        XCTAssertTrue(images.modes.allSatisfy { $0 == .textToImage })
+        XCTAssertTrue(images.inputs.allSatisfy(\.isEmpty))
     }
 
     func testSharedElementsDetection() {
@@ -315,34 +317,16 @@ final class StorybookKitTests: XCTestCase {
             setting: "sunny garden",
             props: ["red rose", "brass lantern"]
         )
-        // A prop re-mentioned on both lines is carried.
+        // Props are prompt-only: a rose on both lines does not chain pixels.
         XCTAssertEqual(
             SeedPipeline.sharedElements(
                 bible: bible,
                 "the kitten finds a red rose by the fence",
                 "she smells the red rose at dawn"
             ),
-            ["red rose"]
-        )
-        // Different props on each line carry nothing.
-        XCTAssertEqual(
-            SeedPipeline.sharedElements(
-                bible: bible,
-                "the kitten finds a red rose by the fence",
-                "she lights a brass lantern at dusk"
-            ),
             []
         )
-        // Multiword props need the full phrase.
-        XCTAssertEqual(
-            SeedPipeline.sharedElements(
-                bible: bible,
-                "the kitten finds a red rose by the fence",
-                "she smells a rose at dawn"
-            ),
-            []
-        )
-        // Supporting cast counts as a carried element (matched per phrase).
+        // Supporting cast still carries (matched per comma-separated phrase).
         XCTAssertEqual(
             SeedPipeline.sharedElements(
                 bible: bible,
@@ -351,9 +335,40 @@ final class StorybookKitTests: XCTestCase {
             ),
             ["grandpa"]
         )
+        // Multiword supporting phrases need consecutive whole words.
+        XCTAssertEqual(
+            SeedPipeline.sharedElements(
+                bible: bible,
+                "a grey beard by the fence",
+                "the grey beard nods at dawn"
+            ),
+            ["grey beard"]
+        )
+        // Whole-word: "cat" must not match "catch".
+        let catBible = StoryBible(
+            characterLock: "orange kitten",
+            supporting: "cat",
+            setting: "garden"
+        )
+        XCTAssertEqual(
+            SeedPipeline.sharedElements(
+                bible: catBible,
+                "they catch the ball",
+                "they catch the kite"
+            ),
+            []
+        )
+        XCTAssertEqual(
+            SeedPipeline.sharedElements(
+                bible: catBible,
+                "the cat sits on the mat",
+                "the cat drinks milk"
+            ),
+            ["cat"]
+        )
         // No bible, no carry.
         XCTAssertEqual(
-            SeedPipeline.sharedElements(bible: nil, "red rose", "red rose"),
+            SeedPipeline.sharedElements(bible: nil, "grandpa", "grandpa"),
             []
         )
     }
@@ -366,12 +381,13 @@ final class StorybookKitTests: XCTestCase {
         let storyID = UUID()
         let bible = StoryBible(
             characterLock: "orange kitten, round eyes",
+            supporting: "grandpa, grey beard",
             setting: "sunny garden",
             props: ["red rose"]
         )
         let prompts = MockIllustrationPrompts()
         prompts.lineProvider = { index in
-            index <= 2 ? "the kitten finds a red rose by the fence" : "page \(index) scene"
+            index <= 2 ? "grandpa opens the garden gate" : "page \(index) scene"
         }
         let image = try XCTUnwrap(Self.makeCGImage())
         let images = CountingImageGenerator(image: image, varied: true)
@@ -392,23 +408,56 @@ final class StorybookKitTests: XCTestCase {
 
         let store = StoryFileStore(rootURL: root)
         let directory = store.storyDirectory(id: storyID)
-        let referenceData = try Data(
-            contentsOf: directory.appendingPathComponent(StoryFileStore.referenceFileName)
-        )
         let pageOneData = try Data(
             contentsOf: directory.appendingPathComponent(store.pageFileName(index: 1))
         )
-        // Page 1 (cover) renders from the reference…
-        XCTAssertEqual(images.inputs[1], referenceData)
-        XCTAssertEqual(images.strengths[1], SeedPipeline.coverStrength)
-        // …page 2 re-mentions the rose → carries page 1's pixels at carry strength…
+        // No photo: page 1 is txt2img…
+        XCTAssertEqual(images.modes[1], .textToImage)
+        XCTAssertTrue(images.inputs[1].isEmpty)
+        // …page 2 re-mentions grandpa → carries page 1's pixels at carry strength…
         XCTAssertEqual(images.inputs[2], pageOneData)
         XCTAssertEqual(images.strengths[2], SeedPipeline.carryStrength)
-        // …pages 3–10 open new scenes → anchor on the reference again.
+        XCTAssertEqual(images.modes[2], .imageToImage)
+        // …pages 3–10 open new scenes → txt2img again (no photo, no carry).
         for pageIndex in 3...10 {
-            XCTAssertEqual(images.inputs[pageIndex], referenceData, "page \(pageIndex) base")
-            XCTAssertEqual(images.strengths[pageIndex], SeedPipeline.freshStrength, "page \(pageIndex)")
+            XCTAssertEqual(images.modes[pageIndex], .textToImage, "page \(pageIndex)")
+            XCTAssertTrue(images.inputs[pageIndex].isEmpty, "page \(pageIndex) base")
         }
+    }
+
+    func testSharedPropDoesNotCarry() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let storyID = UUID()
+        let bible = StoryBible(
+            characterLock: "orange kitten, round eyes",
+            setting: "sunny garden",
+            props: ["red rose"]
+        )
+        let prompts = MockIllustrationPrompts()
+        prompts.lineProvider = { _ in "the kitten finds a red rose by the fence" }
+        let image = try XCTUnwrap(Self.makeCGImage())
+        let images = CountingImageGenerator(image: image, varied: true)
+        let pipeline = SeedPipeline(
+            storyGenerator: MockStoryGenerator(),
+            illustrationPrompts: prompts,
+            imageGenerator: images,
+            photoDescriber: nil,
+            memory: NoopMemory(),
+            store: StoryFileStore(rootURL: root),
+            bibleGenerator: RecordingBibleGenerator(bible: bible)
+        )
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        for await _ in pipeline.run(seed: seed, photo: nil, storyID: storyID) {}
+
+        // Rose on every line must not chain pixels.
+        XCTAssertTrue(images.modes.dropFirst().allSatisfy { $0 == .textToImage })
+        XCTAssertTrue(images.inputs.dropFirst().allSatisfy(\.isEmpty))
     }
 
     func testFailedCarryPageChainsNextFromLastGoodPage() async throws {
@@ -420,13 +469,14 @@ final class StorybookKitTests: XCTestCase {
         let pageTwoSeed = StoryIdentity.pageSeed(storyID: storyID, pageIndex: 2)
         let bible = StoryBible(
             characterLock: "orange kitten, round eyes",
+            supporting: "grandpa, grey beard",
             setting: "sunny garden",
             props: ["red rose"]
         )
         let prompts = MockIllustrationPrompts()
-        // The rose spans pages 1–3, so pages 2 and 3 both want to carry.
+        // Grandpa spans pages 1–3, so pages 2 and 3 both want to carry.
         prompts.lineProvider = { index in
-            index <= 3 ? "the kitten finds a red rose by the fence" : "page \(index) scene"
+            index <= 3 ? "grandpa opens the garden gate" : "page \(index) scene"
         }
         let image = try XCTUnwrap(Self.makeCGImage())
         let images = CountingImageGenerator(image: image, varied: true, failSeeds: [pageTwoSeed])
@@ -454,22 +504,21 @@ final class StorybookKitTests: XCTestCase {
         }
         XCTAssertEqual(images.calls, 11) // reference + 10 attempts (page 2 threw)
 
-        // Page 2 attempted to carry page 1's pixels; page 3 also re-mentions the
-        // rose, so it carries from page 1 — the newest GOOD page — not from the
-        // failed page, and pages 4+ anchor on the reference (new scenes).
-        let referenceData = try Data(
-            contentsOf: directory.appendingPathComponent(StoryFileStore.referenceFileName)
-        )
+        // Page 2 attempted to carry page 1's pixels; page 3 also re-mentions
+        // grandpa, so it carries from page 1 — the newest GOOD page — not from
+        // the failed page, and pages 4+ txt2img (new scenes, no photo).
         let pageOneData = try Data(
             contentsOf: directory.appendingPathComponent(store.pageFileName(index: 1))
         )
-        XCTAssertEqual(images.inputs[1], referenceData)
+        XCTAssertEqual(images.modes[1], .textToImage)
+        XCTAssertTrue(images.inputs[1].isEmpty)
         XCTAssertEqual(images.inputs[2], pageOneData) // page 2 attempt (carry)
         XCTAssertEqual(images.inputs[3], pageOneData) // page 3 carry from last good page
         XCTAssertEqual(images.strengths[2], SeedPipeline.carryStrength)
         XCTAssertEqual(images.strengths[3], SeedPipeline.carryStrength)
         for pageIndex in 4...10 {
-            XCTAssertEqual(images.inputs[pageIndex], referenceData, "page \(pageIndex) base")
+            XCTAssertEqual(images.modes[pageIndex], .textToImage, "page \(pageIndex)")
+            XCTAssertTrue(images.inputs[pageIndex].isEmpty, "page \(pageIndex) base")
         }
     }
 
@@ -534,6 +583,9 @@ final class StorybookKitTests: XCTestCase {
             return false
         }))
         XCTAssertEqual(events.last, .finished)
+        // CLIP is English-only: fallback is the default lock, never the paragraph.
+        XCTAssertTrue(images.prompts.dropFirst().allSatisfy { $0.contains("cute kids-book hero") })
+        XCTAssertFalse(images.prompts.contains(where: { $0.contains("Paragraph") }))
     }
 
     func testPageTextsReadyComesBeforeIllustrationPromptPhase() async throws {
@@ -932,6 +984,8 @@ final class CountingImageGenerator: ImageGenerating, @unchecked Sendable {
     private(set) var modes: [ImageGenMode] = []
     private(set) var inputs: [Data] = []
     private(set) var strengths: [Float] = []
+    private(set) var prompts: [String] = []
+    private(set) var negatives: [String] = []
     private(set) var receivedNonEmptyImage = false
     init(image: CGImage, varied: Bool = false, failSeeds: Set<UInt32> = []) {
         self.image = image
@@ -943,6 +997,8 @@ final class CountingImageGenerator: ImageGenerating, @unchecked Sendable {
         modes.append(config.mode)
         inputs.append(input.imageData)
         strengths.append(config.strength)
+        prompts.append(config.prompt)
+        negatives.append(config.negativePrompt)
         if !input.isEmpty { receivedNonEmptyImage = true }
         if let seed = config.seed, failSeeds.contains(seed) {
             throw ImageGenError.generationFailed
