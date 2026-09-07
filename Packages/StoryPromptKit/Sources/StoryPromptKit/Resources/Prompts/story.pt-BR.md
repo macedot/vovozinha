@@ -3,8 +3,8 @@ You are a skilled children's storyteller. Using the following story description 
 Story description:
 [INSERIR A DESCRIÇÃO DA HISTÓRIA AQUI]
 
-Photo elements (weave these people, objects, and places into the story; do not invent extras that are not here; omit this section if empty):
-[INSERIR A LEGENDA DA FOTO AQUI]
+Story elements (the extracted cast and world. Every named character MUST look and behave exactly as described here; weave the setting and objects into the story; do not invent extra people or objects that are not here; omit this section if empty):
+[INSERIR OS ELEMENTOS DA HISTÓRIA AQUI]
 
 Requirements:
 - Write the ENTIRE story in Brazilian Portuguese (pt-BR).

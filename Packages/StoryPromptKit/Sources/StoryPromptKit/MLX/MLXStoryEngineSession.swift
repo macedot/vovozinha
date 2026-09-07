@@ -6,7 +6,15 @@ import Foundation
 /// download handled by `OnDeviceMLXModelStore`, never for inference.
 public protocol MLXStoryEngineSessioning: Sendable {
     /// Send `prompt` and return the model's full text reply.
-    func send(_ prompt: String) async throws -> String
+    /// `temperature` 0.7 is the story-writing band; extraction passes (bible,
+    /// illustration lines) use a lower value so the model copies rather than directs.
+    func send(_ prompt: String, temperature: Float) async throws -> String
+}
+
+extension MLXStoryEngineSessioning {
+    public func send(_ prompt: String) async throws -> String {
+        try await send(prompt, temperature: 0.7)
+    }
 }
 
 // MARK: - Concrete adapter
@@ -37,7 +45,7 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
         self.modelDirectory = modelDirectory
     }
 
-    func send(_ prompt: String) async throws -> String {
+    func send(_ prompt: String, temperature: Float) async throws -> String {
         // Runs after the detached task finishes and the container is dropped: return MLX's
         // cached Metal buffers to the OS so repeated generations don't stack residency.
         defer { MLX.Memory.clearCache() }
@@ -45,7 +53,7 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
             let container = try await Self.loadContainer(from: modelDirectory)
             let parameters = GenerateParameters(
                 maxTokens: Self.defaultMaxTokens,
-                temperature: Self.defaultTemperature,
+                temperature: temperature,
                 topP: Self.defaultTopP,
                 topK: Self.defaultTopK
             )

@@ -17,7 +17,8 @@ final class MockMLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Send
 
     var capturedPrompt: String? { lastPrompt.withLock { $0 } }
 
-    func send(_ prompt: String) async throws -> String {
+    func send(_ prompt: String, temperature: Float) async throws -> String {
+        _ = temperature
         lastPrompt.withLock { $0 = prompt }
         if let error { throw error }
         return reply

@@ -203,3 +203,21 @@ Não foi possível terminar o livro. Tente de novo.
 
 ## readerWaitingPicture
 Desenhando esta página…
+
+## storyHistoryTitle
+Histórico de Histórias
+
+## storyHistoryButton
+Histórico de Histórias
+
+## storyHistoryEmpty
+Ainda não há histórias. Toda história criada é salva aqui automaticamente.
+
+## storyHistoryPages
+Ilustrações {{count}}/{{total}}
+
+## readerBack
+Voltar
+
+## readerNewStory
+Nova História

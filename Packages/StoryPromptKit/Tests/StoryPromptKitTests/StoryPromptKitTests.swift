@@ -80,15 +80,63 @@ final class StoryPromptKitTests: XCTestCase {
         }
     }
 
-    func testStoryPromptWeavesPhotoCaption() {
-        let caption = "a child in a red coat beside a blue bicycle"
+    func testStoryPromptWeavesStoryElements() {
+        let elements = "Main character (must look exactly like this on every page): little girl, dark hair"
         let filled = StoryPromptTemplate.filledStoryPrompt(
             description: "a little rabbit finds a glowing pebble under the soft moon",
-            photoCaption: caption,
+            storyElements: elements,
             language: .englishUS
         )
-        XCTAssertTrue(filled.contains(caption))
-        XCTAssertTrue(filled.contains("Photo elements"))
+        XCTAssertTrue(filled.contains(elements))
+        XCTAssertTrue(filled.contains("Story elements"))
+    }
+
+    func testStoryPromptDropsEmptyStoryElementsSection() {
+        let filled = StoryPromptTemplate.filledStoryPrompt(
+            description: "a little rabbit finds a glowing pebble under the soft moon",
+            storyElements: nil,
+            language: .englishUS
+        )
+        XCTAssertFalse(filled.contains("Story elements"))
+        XCTAssertFalse(filled.contains("[INSERT STORY ELEMENTS HERE]"))
+    }
+
+    func testBiblePromptFillsDescriptionAndTagsInAllLanguages() {
+        let cases: [(AppLanguage, String)] = [
+            (.englishUS, "Alice is a happy kid who loves her garden"),
+            (.portugueseBrazil, "Alice é uma criança feliz que adora o jardim"),
+            (.spanishSpain, "Alice es una niña feliz que adora su jardín")
+        ]
+        for (lang, description) in cases {
+            let filled = StoryPromptTemplate.filledBiblePrompt(
+                description: description,
+                photoTags: "little girl, dark hair, red coat",
+                language: lang
+            )
+            XCTAssertTrue(filled.contains("CHARACTER:"), lang.rawValue)
+            XCTAssertTrue(filled.contains("SETTING:"), lang.rawValue)
+            XCTAssertTrue(filled.contains("PROPS:"), lang.rawValue)
+            XCTAssertTrue(filled.contains(description), lang.rawValue)
+            XCTAssertTrue(filled.contains("little girl, dark hair, red coat"), lang.rawValue)
+            XCTAssertFalse(
+                filled.contains("[INSERT PHOTO TAGS HERE]"),
+                "unresolved tag placeholder in \(lang.rawValue)"
+            )
+            XCTAssertFalse(
+                StoryPromptTemplate.containsUnresolvedDescriptionPlaceholder(filled),
+                "unresolved description placeholder in \(lang.rawValue)"
+            )
+        }
+    }
+
+    func testBiblePromptWithoutTagsSaysNone() {
+        let filled = StoryPromptTemplate.filledBiblePrompt(
+            description: "a little rabbit finds a glowing pebble under the soft moon",
+            photoTags: nil,
+            language: .englishUS
+        )
+        XCTAssertTrue(filled.contains("(none)"))
+        XCTAssertFalse(filled.contains("[INSERT PHOTO TAGS HERE]"))
     }
 
     func testIllustrationPromptIsEnglishAndHasTenSlots() {
@@ -96,18 +144,112 @@ final class StoryPromptKitTests: XCTestCase {
             let filled = StoryPromptTemplate.filledIllustrationPrompt(
                 title: "Lantern Garden",
                 paragraphs: (1...10).map { "Paragraph \($0)" },
-                photoCaption: "orange kitten, round eyes",
+                elementsBlock: "Main character (must look exactly like this on every page): orange kitten, round eyes",
                 language: lang
             )
             XCTAssertTrue(filled.contains("CHARACTER:"), lang.rawValue)
             XCTAssertTrue(filled.lowercased().contains("english"), lang.rawValue)
+            XCTAssertTrue(filled.contains("Lantern Garden"), lang.rawValue)
             XCTAssertTrue(filled.contains("Paragraph 10"), lang.rawValue)
+            XCTAssertTrue(filled.contains("orange kitten, round eyes"), lang.rawValue)
+            XCTAssertTrue(filled.contains("Story bible"), lang.rawValue)
+            XCTAssertTrue(filled.contains("paragraph `N.`"), lang.rawValue)
+            XCTAssertFalse(filled.contains("COVER"), lang.rawValue)
+            XCTAssertFalse(filled.lowercased().contains("no action verb may repeat"), lang.rawValue)
             XCTAssertFalse(filled.contains("[INSERT STORY TITLE HERE]"), lang.rawValue)
+            XCTAssertFalse(filled.contains("[INSERT STORY BIBLE HERE]"), lang.rawValue)
         }
     }
 
-    func testDeviceStoryGeneratorThrowsWhenModelMissing() async throws {
-        let tmp = FileManager.default.temporaryDirectory
+    func testStoryBibleParserParsesFullReply() throws {
+        let raw = """
+        CHARACTER: little girl, dark brown braids, red coat, yellow boots
+        ALSO: grandpa, grey beard, blue cardigan
+        SETTING: cozy seaside village, spring morning
+        PROPS: red rose, brass lantern, wicker basket
+        """
+        let bible = try StoryBibleParser.parse(raw)
+        XCTAssertEqual(bible.characterLock, "little girl, dark brown braids, red coat, yellow boots")
+        XCTAssertEqual(bible.supporting, "grandpa, grey beard, blue cardigan")
+        XCTAssertEqual(bible.setting, "cozy seaside village, spring morning")
+        XCTAssertEqual(bible.props, ["red rose", "brass lantern", "wicker basket"])
+    }
+
+    func testStoryBibleParserTreatsNoneAsEmptyAndToleratesFences() throws {
+        let raw = """
+        ```text
+        **CHARACTER:** orange kitten, round eyes
+        **ALSO:** (none)
+        SETTING: sunny garden
+        PROPS: (none)
+        ```
+        """
+        let bible = try StoryBibleParser.parse(raw)
+        XCTAssertEqual(bible.characterLock, "orange kitten, round eyes")
+        XCTAssertEqual(bible.supporting, "")
+        XCTAssertEqual(bible.setting, "sunny garden")
+        XCTAssertTrue(bible.props.isEmpty)
+    }
+
+    func testStoryBibleParserRequiresCharacterLock() {
+        XCTAssertThrowsError(try StoryBibleParser.parse("SETTING: a quiet attic at night")) { error in
+            XCTAssertEqual(error as? StoryBibleError, .missingCharacterLock)
+        }
+        XCTAssertThrowsError(try StoryBibleParser.parse("   ")) { error in
+            XCTAssertEqual(error as? StoryBibleError, .missingCharacterLock)
+        }
+    }
+
+    func testStoryBiblePartialMergePrefersFirstPassValues() throws {
+        let first = StoryBibleParser.parsePartial("""
+        SETTING: first setting
+        """)
+        let second = StoryBibleParser.parsePartial("""
+        CHARACTER: brave bunny, white fur
+        SETTING: second setting
+        """)
+        var merged = first
+        if merged.characterLock.isEmpty { merged.characterLock = second.characterLock }
+        if merged.setting.isEmpty { merged.setting = second.setting }
+        let bible = try StoryBibleParser.validate(merged)
+        XCTAssertEqual(bible.characterLock, "brave bunny, white fur")
+        XCTAssertEqual(bible.setting, "first setting")
+    }
+
+    func testStoryBibleRenderedBlockCarriesLockPropsAndSkipsEmpties() {
+        let bible = StoryBible(
+            characterLock: "little girl, dark brown braids, red coat",
+            supporting: "",
+            setting: "cozy seaside village",
+            props: ["red rose"]
+        )
+        let block = bible.renderedBlock
+        XCTAssertTrue(block.contains("little girl, dark brown braids, red coat"))
+        XCTAssertTrue(block.contains("cozy seaside village"))
+        XCTAssertTrue(block.contains("red rose"))
+        XCTAssertFalse(block.contains("Other characters"))
+
+        // Codable round-trip keeps the bible persistable in story.json.
+        let data = try! JSONEncoder().encode(bible)
+        let decoded = try! JSONDecoder().decode(StoryBible.self, from: data)
+        XCTAssertEqual(decoded, bible)
+    }
+
+    func testStoryBibleIllustrationAnchorsUseExactVisualVocabulary() {
+        let bible = StoryBible(
+            characterLock: "little girl, dark brown braids, red coat",
+            supporting: "grandpa, grey beard",
+            setting: "cozy seaside village",
+            props: ["red rose", "brass lantern"]
+        )
+
+        XCTAssertEqual(
+            bible.illustrationAnchorBlock,
+            "little girl, dark brown braids, red coat, grandpa, grey beard, cozy seaside village, red rose, brass lantern"
+        )
+    }
+
+    func testDeviceStoryGeneratorThrowsWhenModelMissing() async throws {        let tmp = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmp) }

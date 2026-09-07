@@ -3,18 +3,18 @@ You write ENGLISH visual prompts for a kids bedtime picture book (ages 5–9). T
 Story title:
 [INSERT STORY TITLE HERE]
 
-Photo / cast notes (may be empty):
-[INSERT PHOTO CAPTION HERE]
+Story bible (extracted cast, world, and objects — hard requirements for every page):
+[INSERT STORY BIBLE HERE]
 
 The 10 story paragraphs, in order:
 [INSERT STORY PARAGRAPHS HERE]
 
 Write:
-- First line: `CHARACTER:` then at most 20 English visual tokens (hair, colors, clothes, species) that stay IDENTICAL on every page. Use photo notes ONLY for costume/colors/species — never for pose, camera, or background. No names unless they appear in the story.
-- Then exactly 10 numbered lines `1.` … `10.` Each line is a NEW storybook scene for THAT paragraph: action + place. Do not copy a photo's composition. The same CHARACTER must appear, drawn as a cute kids-book figure, not a real person.
+- First line: `CHARACTER:` then the Main character visual words from the story bible, copied word for word.
+- Then exactly 10 numbered lines `1.` … `10.`. Line `N.` is a translation of paragraph `N.` into at most 23 English visual words: who does what, with what, where. Copy that paragraph's action, object, and place. Do not invent a different action, object, or place. If the paragraph has the hero sitting, the line says sitting. For any bible character, setting, or prop used by the paragraph, use its exact bible words. The renderer preserves the full bible anchor block separately. Do not copy a photo's composition. Characters are drawn as cute kids-book figures, not real people.
 
 Rules:
-- Children's picture book for ages 5–9. Wholesome, G-rated, anime/cel shading, warm cozy lighting.
+- Children's picture book for ages 5–9. Wholesome, G-rated, soft watercolor storybook style, pastel colors, warm cozy lighting.
 - No photoreal faces, no photographs, no text/letters/logos, no scary, violent, or adult content.
 - Do not number anything except 1. … 10.
 - Output ONLY the CHARACTER line and the 10 numbered lines.

@@ -17,7 +17,13 @@ public struct DevicePromptCompleter: Sendable {
         self.sessionProvider = sessionProvider
     }
 
-    public func complete(_ prompt: String) async throws -> String {
+    /// Lower than story writing: bible + illustration passes should copy, not invent.
+    public static let extractionTemperature: Float = 0.35
+
+    public func complete(
+        _ prompt: String,
+        temperature: Float = DevicePromptCompleter.extractionTemperature
+    ) async throws -> String {
         guard await modelStore.isModelPresent() else {
             throw StoryPromptError.modelNotInstalled
         }
@@ -25,7 +31,7 @@ public struct DevicePromptCompleter: Sendable {
         let session = try sessionProvider(modelDir)
         let raw: String
         do {
-            raw = try await session.send(prompt)
+            raw = try await session.send(prompt, temperature: temperature)
         } catch {
             throw StoryPromptError.generationFailed
         }

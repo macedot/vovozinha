@@ -74,6 +74,13 @@ public enum VovoL10n {
         case storyPreparingPictures
         case storyPipelineFailed
         case readerWaitingPicture
+
+        // Story history + reader navigation
+        case storyHistoryTitle
+        case storyHistoryButton
+        case storyHistoryEmpty
+        case readerBack
+        case readerNewStory
     }
 
     public static func t(_ key: Key, _ lang: AppLanguage) -> String {
@@ -133,6 +140,14 @@ public enum VovoL10n {
             "storyModelGateDownloadBytes",
             lang: lang,
             vars: ["received": received, "total": total]
+        )
+    }
+
+    public static func historyPages(illustrated: Int, total: Int, lang: AppLanguage) -> String {
+        string(
+            "storyHistoryPages",
+            lang: lang,
+            vars: ["count": "\(illustrated)", "total": "\(total)"]
         )
     }
 
