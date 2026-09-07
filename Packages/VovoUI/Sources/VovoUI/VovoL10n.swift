@@ -74,6 +74,16 @@ public enum VovoL10n {
         case storyPreparingPictures
         case storyPipelineFailed
         case readerWaitingPicture
+        case storyHistoryTitle
+        case storyHistorySubtitle
+        case storyHistoryEmptyTitle
+        case storyHistoryEmptyBody
+        case storyHistoryDelete
+        case storyHistoryLoadFailed
+        case storyHistoryDeleteFailed
+        case storyHistoryMissing
+        case storyHistoryPageCount
+        case storyHistorySaveFailed
     }
 
     public static func t(_ key: Key, _ lang: AppLanguage) -> String {
@@ -134,6 +144,10 @@ public enum VovoL10n {
             lang: lang,
             vars: ["received": received, "total": total]
         )
+    }
+
+    public static func historyPageCount(_ count: Int, lang: AppLanguage) -> String {
+        string("storyHistoryPageCount", lang: lang, vars: ["count": "\(count)"])
     }
 
     public static func seedSubtitle(min: Int, max: Int, lang: AppLanguage) -> String {

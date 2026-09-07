@@ -20,6 +20,39 @@ final class StorybookKitTests: XCTestCase {
         )
     }
 
+    func testStoryHistoryPersistsUpdatesAndDeletes() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let id = UUID()
+        let page = StoryPage(index: 1, text: "A quiet night.", illustrationPrompt: "quiet night")
+        let story = Storybook(
+            id: id,
+            title: "The Quiet Night",
+            summary: "A gentle bedtime story.",
+            language: "en-US",
+            seedPrompt: "a quiet night in a glowing garden",
+            characterDescriptor: "",
+            baseSeed: 42,
+            phase: .story,
+            pages: [page]
+        )
+        let store = StoryHistoryStore(rootURL: root)
+
+        try store.upsert(story)
+        XCTAssertEqual(try store.load().first?.title, "The Quiet Night")
+
+        var finished = story
+        finished.phase = .finished
+        try store.upsert(finished)
+        XCTAssertEqual(try store.load().first?.phase, .finished)
+
+        try store.delete(finished)
+        XCTAssertTrue(try store.load().isEmpty)
+    }
+
     func testParserRequiresTenLinesAndCharacter() throws {
         var body = "CHARACTER: little girl, red coat, brown hair\n"
         for i in 1...10 { body += "\(i). scene \(i) in the garden\n" }
