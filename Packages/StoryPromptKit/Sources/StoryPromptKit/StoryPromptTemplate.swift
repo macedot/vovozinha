@@ -49,6 +49,8 @@ public enum StoryPromptTemplate: Sendable {
         storyElements: String? = nil,
         language: AppLanguage
     ) -> String {
+        let cleanDescription = sanitizePromptInput(description)
+        let cleanElements = storyElements.map(sanitizePromptInput)
         let path = "Prompts/story.\(language.rawValue).md"
         let fallback = "Prompts/story.\(AppLanguage.englishUS.rawValue).md"
         var raw = MarkdownTextCatalog.loadFile(
@@ -63,8 +65,8 @@ public enum StoryPromptTemplate: Sendable {
                 sourceFallbackRoot: sourcePromptsRoot
             )
         }
-        raw = applyStoryElements(raw, storyElements)
-        return replaceDescriptionPlaceholders(in: raw, with: description)
+        raw = applyStoryElements(raw, cleanElements)
+        return replaceDescriptionPlaceholders(in: raw, with: cleanDescription)
     }
 
     /// Loads `bible.<lang>.md` and fills the description + optional photo tags.
@@ -115,10 +117,10 @@ public enum StoryPromptTemplate: Sendable {
                 sourceFallbackRoot: sourcePromptsRoot
             )
         }
-        let block = elementsBlock.trimmingCharacters(in: .whitespacesAndNewlines)
+        let block = sanitizePromptInput(elementsBlock.trimmingCharacters(in: .whitespacesAndNewlines))
         raw = replaceTokens(storyBiblePlaceholders, in: raw, with: block.isEmpty ? "(none)" : block)
-        raw = raw.replacingOccurrences(of: "[INSERT STORY TITLE HERE]", with: title)
-        let body = paragraphs.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n\n")
+        raw = raw.replacingOccurrences(of: "[INSERT STORY TITLE HERE]", with: sanitizePromptInput(title))
+        let body = paragraphs.enumerated().map { "\($0.offset + 1). \(sanitizePromptInput($0.element))" }.joined(separator: "\n\n")
         raw = raw.replacingOccurrences(of: "[INSERT STORY PARAGRAPHS HERE]", with: body)
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -168,5 +170,19 @@ public enum StoryPromptTemplate: Sendable {
             return true
         }
         return text.range(of: #"\[(?:INSERT|INSERIR|INSERTAR)[^\]]*\]"#, options: .regularExpression) != nil
+    }
+
+    /// Sanitizes user input to prevent prompt injection and delimiter subversion.
+    public static func sanitizePromptInput(_ text: String) -> String {
+        var s = text
+        for token in ["<|im_start|>", "<|im_end|>", "<|endoftext|>"] {
+            s = s.replacingOccurrences(of: token, with: "", options: .caseInsensitive)
+        }
+        s = s.replacingOccurrences(of: "{{", with: "{ {")
+        s = s.replacingOccurrences(of: "}}", with: "} }")
+        s = s.replacingOccurrences(of: "[INSERT", with: "[ INSERT", options: .caseInsensitive)
+        s = s.replacingOccurrences(of: "[INSERIR", with: "[ INSERIR", options: .caseInsensitive)
+        s = s.replacingOccurrences(of: "[INSERTAR", with: "[ INSERTAR", options: .caseInsensitive)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

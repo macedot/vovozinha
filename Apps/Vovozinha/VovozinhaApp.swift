@@ -16,6 +16,8 @@ struct VovozinhaApp: App {
 }
 
 private struct RootView: View {
+    @Environment(LanguageStore.self) private var languageStore
+
     var body: some View {
         NavigationStack {
             StorybookFeatureView()
@@ -23,6 +25,18 @@ private struct RootView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbarBackground(VovoTheme.deepNight.opacity(0.9), for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            StoryHistoryView()
+                        } label: {
+                            Image(systemName: "books.vertical")
+                        }
+                        .accessibilityLabel(
+                            VovoL10n.t(.storyHistoryTitle, languageStore.language)
+                        )
+                    }
+                }
         }
     }
 }

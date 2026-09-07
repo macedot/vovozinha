@@ -101,10 +101,10 @@ xcodegen generate
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app
-./scripts/deploy.sh
+IPHONE_UDID=YOUR_DEVICE_UDID ./scripts/deploy.sh
 ```
 
-Override the phone with `IPHONE_UDID=…` if needed. Bundle id: `app.vovozinha.Vovozinha`. The host is a thin `NavigationStack` around `StorybookFeatureView`.
+`IPHONE_UDID` is required and must identify the connected physical iPhone. Bundle id: `app.vovozinha.Vovozinha`. The host is a thin `NavigationStack` around `StorybookFeatureView`.
 
 ### Testing
 
@@ -154,6 +154,7 @@ Live inference is validated on a **physical iPhone** after both packs are instal
 6. **Handoff** — drop MLX (`MLX.Memory.clearCache()`), wait, load Core ML only if ≥ 900 MB is free
 7. **Pictures** — txt2img, cover first then 2…10, one at a time. CLIP prompt is scene + short character lock + kids style prefix; locked negative (no photoreal, nsfw, violence, text). A failed page does not drop the story
 8. **Files** — `Documents/Vovozinha/Stories/<storyID>/page-N.png` (parent-visible). Packs stay out of Documents
+9. **History** — the books icon opens saved storybooks; metadata is stored locally in `Documents/Vovozinha/Stories/history.json`, with reopen and delete actions
 
 ```
 Apps/Vovozinha/          thin host (StorybookFeatureView)
@@ -174,6 +175,7 @@ Story text loads Qwen through the **LLM** factory (drops unused `vision_tower` w
 - **No Hugging Face / third-party download path** in the app
 - **Model packs** live in Application Support (backup-excluded, never Files → On My iPhone)
 - **Stories / page PNGs** live under `Documents/Vovozinha/Stories/`
+- **Story history metadata** stays in `Documents/Vovozinha/Stories/history.json`
 - **Photos** stay on-device; used for a caption, not uploaded, not remixed as the page image
 - **Kids-safe imagery** — locked negative prompt scaffold; SafetyChecker is stripped from the pack
 - **Increased memory entitlement** — `com.apple.developer.kernel.increased-memory-limit` for the ~2.4 GB Qwen resident set

@@ -1,5 +1,22 @@
 // swift-tools-version: 6.0
 import PackageDescription
+import Foundation
+
+func resolveSiblingPackagePath(_ relativeName: String) -> String {
+    let manifestDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    let candidates = [
+        "../../../\(relativeName)",
+        "../../../../\(relativeName)",
+        "../../\(relativeName)"
+    ]
+    for c in candidates {
+        let candidateURL = manifestDir.appendingPathComponent(c)
+        if FileManager.default.fileExists(atPath: candidateURL.path) {
+            return c
+        }
+    }
+    return "../../../\(relativeName)"
+}
 
 let package = Package(
     name: "StoryPromptKit",
@@ -15,8 +32,8 @@ let package = Package(
         //
         // Setup once from repo root:
         //   ./scripts/setup_mlx_local.sh
-        .package(path: "../../../mlx-swift"),
-        .package(path: "../../../mlx-swift-lm"),
+        .package(path: resolveSiblingPackagePath("mlx-swift")),
+        .package(path: resolveSiblingPackagePath("mlx-swift-lm")),
         .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
         // Native libcompression unzip — replaces pure-Swift SimpleZip (too slow for ~GB packs).
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19"),

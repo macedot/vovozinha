@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import ZIPFoundation
+import VovoUI
 
 /// Owns the on-device **Qwen3.5-4B-MLX-4bit** MLX model directory.
 ///
@@ -222,6 +223,13 @@ public actor OnDeviceMLXModelStore {
             let outcome = try await downloadOutcome
             received = outcome.bytesReceived
             bytesTotal = outcome.bytesTotal
+        } catch let e as ModelDownloadError {
+            try? FileManager.default.removeItem(at: tempZip)
+            switch e {
+            case .http(let code): throw DownloadError.http(statusCode: code)
+            case .emptyFile: throw DownloadError.emptyFile
+            case .cancelled: throw CancellationError()
+            }
         } catch let e as DownloadError {
             try? FileManager.default.removeItem(at: tempZip)
             throw e
@@ -320,31 +328,12 @@ public actor OnDeviceMLXModelStore {
         phase: ModelDownloadProgress.Phase,
         fractionOverride: Double? = nil
     ) -> ModelDownloadProgress {
-        let elapsed = max(Date().timeIntervalSince(started), 0.001)
-        let bps = Double(received) / elapsed
-        let fraction: Double
-        if let fractionOverride {
-            fraction = fractionOverride
-        } else if let bytesTotal, bytesTotal > 0 {
-            // Leave headroom for verify + unpack.
-            fraction = min(Double(received) / Double(bytesTotal) * 0.92, 0.92)
-        } else {
-            fraction = 0
-        }
-        var eta: TimeInterval?
-        if phase == .downloading, let bytesTotal, bytesTotal > received, bps > 1 {
-            eta = Double(bytesTotal - received) / bps
-        } else if phase == .finished {
-            eta = 0
-        }
-        return ModelDownloadProgress(
-            fraction: fraction,
-            bytesReceived: received,
-            bytesTotal: bytesTotal,
-            bytesPerSecond: bps,
-            elapsed: elapsed,
-            estimatedRemaining: eta,
-            phase: phase
+        ModelZipDownloadLiveState.calculateSnapshot(
+            started: started,
+            received: received,
+            total: bytesTotal,
+            phase: phase,
+            fractionOverride: fractionOverride
         )
     }
 
@@ -516,62 +505,44 @@ public actor OnDeviceMLXModelStore {
 
     /// Downloads and parses a shasum-style sidecar (`hex  filename` or bare hex).
     static func fetchRemoteSHA256(from url: URL, session: URLSession) async throws -> String {
-        var request = URLRequest(url: url)
-        request.setValue("Vovozinha/1.0 (iOS; Qwen3.5 MLX checksum fetch)", forHTTPHeaderField: "User-Agent")
-        request.setValue("text/plain", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 60
-
-        let (data, response) = try await session.data(for: request)
-        if let http = response as? HTTPURLResponse {
-            guard (200..<300).contains(http.statusCode) else {
-                throw DownloadError.http(statusCode: http.statusCode)
+        do {
+            return try await ModelChecksumVerifier.fetchRemoteSHA256(
+                from: url,
+                userAgent: "Vovozinha/1.0 (iOS; Qwen3.5 MLX checksum fetch)",
+                session: session
+            )
+        } catch let e as ModelDownloadError {
+            switch e {
+            case .http(let code): throw DownloadError.http(statusCode: code)
+            default: throw DownloadError.checksumUnavailable
             }
-        } else if !url.isFileURL {
-            // Production always hits HTTPS; file URLs are allowed for unit tests.
-            throw DownloadError.checksumUnavailable
+        } catch let e as ModelChecksumError {
+            switch e {
+            case .checksumFileInvalid: throw DownloadError.checksumFileInvalid
+            case .checksumUnavailable: throw DownloadError.checksumUnavailable
+            case .checksumMismatch: throw DownloadError.checksumMismatch
+            }
         }
-        guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else {
-            throw DownloadError.checksumFileInvalid
-        }
-        return try parseSHA256File(text)
     }
 
     /// Accepts `8b78…  Qwen3.5-4B-MLX-4bit.zip` or a bare 64-char hex line.
     static func parseSHA256File(_ text: String) throws -> String {
-        let lines = text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
-
-        for line in lines {
-            let token = line.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? ""
-            let hex = token.lowercased()
-            if hex.count == 64, hex.unicodeScalars.allSatisfy({ CharacterSet(charactersIn: "0123456789abcdef").contains($0) }) {
-                return hex
-            }
+        do {
+            return try ModelChecksumVerifier.parseSHA256File(text)
+        } catch {
+            throw DownloadError.checksumFileInvalid
         }
-        throw DownloadError.checksumFileInvalid
     }
 
     /// SHA-256 (lowercase hex) of the file at `url`. Used for host CDN downloads only.
     static func sha256Hex(ofFileAt url: URL) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-
-        var hasher = SHA256()
-        while true {
-            let chunk = try handle.read(upToCount: 1 << 20) // 1 MB
-            guard let chunk, !chunk.isEmpty else { break }
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        try ModelChecksumVerifier.sha256Hex(ofFileAt: url)
     }
 
     static func verifySHA256(ofFileAt url: URL, expectedHex: String) throws {
-        let actual = try sha256Hex(ofFileAt: url)
-        let expected = expectedHex.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard actual == expected else {
+        do {
+            try ModelChecksumVerifier.verifySHA256(ofFileAt: url, expectedHex: expectedHex)
+        } catch {
             throw DownloadError.checksumMismatch
         }
     }
@@ -638,10 +609,10 @@ public actor OnDeviceMLXModelStore {
         try fm.copyItem(at: source, to: destination)
     }
 
-    /// Unpacks a model zip with ZIPFoundation (libcompression). Prefer CDN packs built with
-    /// `zip -0` (store): safetensors are already compressed, so deflate only wastes CPU on
-    /// device. Still accepts legacy deflate zips for manual Import.
+    /// Unpacks a model zip with ZIPFoundation (libcompression). Validates entries against
+    /// Zip Slip, symbolic links, and archive expansion bounds before unpacking.
     static func unzipItem(at zipURL: URL, to destination: URL) throws {
+        try validateArchiveSafety(at: zipURL, destination: destination)
         do {
             try FileManager.default.unzipItem(at: zipURL, to: destination)
         } catch {
@@ -649,215 +620,31 @@ public actor OnDeviceMLXModelStore {
         }
     }
 
-}
-
-// MARK: - Large zip download (session delegate + polled progress)
-
-/// Thread-safe live counters for UI polling (session queue writes, download task reads).
-private final class ModelZipDownloadLiveState: @unchecked Sendable {
-    private let lock = NSLock()
-    private let started: Date
-    private var received: Int64 = 0
-    private var total: Int64?
-    private var finished = false
-
-    init(started: Date) {
-        self.started = started
-    }
-
-    var isFinished: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return finished
-    }
-
-    func update(received: Int64, total: Int64?) {
-        lock.lock()
-        self.received = max(self.received, received)
-        if let total, total > 0 {
-            self.total = total
+    static func validateArchiveSafety(at zipURL: URL, destination: URL) throws {
+        guard let archive = try? Archive(url: zipURL, accessMode: .read) else {
+            throw ImportError.unzipFailed
         }
-        lock.unlock()
-    }
-
-    func markFinished(received: Int64? = nil, total: Int64? = nil) {
-        lock.lock()
-        if let received {
-            self.received = max(self.received, received)
-        }
-        if let total, total > 0 {
-            self.total = total
-        }
-        finished = true
-        lock.unlock()
-    }
-
-    func snapshot(phase: ModelDownloadProgress.Phase) -> ModelDownloadProgress {
-        lock.lock()
-        let received = self.received
-        let total = self.total
-        lock.unlock()
-        return OnDeviceMLXModelStore.makeDownloadSnapshot(
-            started: started,
-            received: received,
-            bytesTotal: total,
-            phase: phase
-        )
-    }
-}
-
-/// One-shot multi‑GB download via `URLSessionDownloadDelegate`.
-///
-/// The session retains this object as its delegate for the lifetime of the task; we break
-/// the cycle with `finishTasksAndInvalidate()` when settled. Progress is published only via
-/// `live` (polled by the caller) — not via unstructured MainActor tasks.
-private final class ModelZipDownloadController: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-    struct Outcome: Sendable {
-        var bytesReceived: Int64
-        var bytesTotal: Int64?
-    }
-
-    private let destinationURL: URL
-    private let live: ModelZipDownloadLiveState
-    private let continuation: CheckedContinuation<Outcome, Error>
-
-    private let lock = NSLock()
-    private var settled = false
-    private var session: URLSession?
-    private var progressObservation: NSKeyValueObservation?
-
-    private init(
-        destinationURL: URL,
-        live: ModelZipDownloadLiveState,
-        continuation: CheckedContinuation<Outcome, Error>
-    ) {
-        self.destinationURL = destinationURL
-        self.live = live
-        self.continuation = continuation
-    }
-
-    static func download(
-        request: URLRequest,
-        destinationURL: URL,
-        live: ModelZipDownloadLiveState
-    ) async throws -> Outcome {
-        try await withCheckedThrowingContinuation { cont in
-            let controller = ModelZipDownloadController(
-                destinationURL: destinationURL,
-                live: live,
-                continuation: cont
-            )
-            controller.start(request: request)
-        }
-    }
-
-    private func start(request: URLRequest) {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 120
-        config.timeoutIntervalForResource = 6 * 60 * 60
-        config.waitsForConnectivity = true
-        config.allowsExpensiveNetworkAccess = true
-        config.allowsConstrainedNetworkAccess = false
-        config.urlCache = nil
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.httpMaximumConnectionsPerHost = 6
-
-        let queue = OperationQueue()
-        queue.name = "app.vovozinha.ModelZipDownload"
-        queue.maxConcurrentOperationCount = 1
-
-        let session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
-        self.session = session
-        let task = session.downloadTask(with: request)
-        // KVO backup: some OS versions are flaky about `didWriteData` frequency.
-        progressObservation = task.progress.observe(\.completedUnitCount, options: [.new]) { [live] progress, _ in
-            let completed = progress.completedUnitCount
-            let total = progress.totalUnitCount
-            live.update(
-                received: completed,
-                total: total > 0 ? total : nil
-            )
-        }
-        task.resume()
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didWriteData bytesWritten: Int64,
-        totalBytesWritten: Int64,
-        totalBytesExpectedToWrite: Int64
-    ) {
-        live.update(
-            received: totalBytesWritten,
-            total: totalBytesExpectedToWrite > 0 ? totalBytesExpectedToWrite : nil
-        )
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didFinishDownloadingTo location: URL
-    ) {
-        if let http = downloadTask.response as? HTTPURLResponse,
-           !(200..<300).contains(http.statusCode) {
-            live.markFinished()
-            settle(.failure(OnDeviceMLXModelStore.DownloadError.http(statusCode: http.statusCode)))
-            return
-        }
-
-        do {
-            let fm = FileManager.default
-            if fm.fileExists(atPath: destinationURL.path) {
-                try fm.removeItem(at: destinationURL)
+        let destCanonical = destination.resolvingSymlinksInPath().path
+        var totalBytes: UInt64 = 0
+        var entryCount = 0
+        let maxAllowedEntries = 5_000
+        let maxAllowedTotalBytes: UInt64 = 15 * 1024 * 1024 * 1024 // 15 GB ceiling
+        for entry in archive {
+            entryCount += 1
+            if entryCount > maxAllowedEntries { throw ImportError.unzipFailed }
+            if entry.type == .symlink { throw ImportError.unzipFailed }
+            let p = entry.path
+            if p.contains("..") || p.hasPrefix("/") || p.hasPrefix("\\") {
+                throw ImportError.unzipFailed
             }
-            // Must copy/move before this method returns — system temp file is ephemeral.
-            try fm.copyItem(at: location, to: destinationURL)
-
-            let attrs = try fm.attributesOfItem(atPath: destinationURL.path)
-            let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
-            guard size > 0 else {
-                live.markFinished()
-                settle(.failure(OnDeviceMLXModelStore.DownloadError.emptyFile))
-                return
+            let targetURL = destination.appendingPathComponent(p).resolvingSymlinksInPath()
+            if !targetURL.path.hasPrefix(destCanonical) {
+                throw ImportError.unzipFailed
             }
-
-            let expectedFromResponse = (downloadTask.response as? HTTPURLResponse)?.expectedContentLength ?? -1
-            let total: Int64? = expectedFromResponse > 0 ? expectedFromResponse : size
-            live.markFinished(received: size, total: total)
-            settle(.success(Outcome(bytesReceived: size, bytesTotal: total)))
-        } catch {
-            live.markFinished()
-            settle(.failure(error))
+            guard entry.uncompressedSize <= maxAllowedTotalBytes - totalBytes else {
+                throw ImportError.unzipFailed
+            }
+            totalBytes += entry.uncompressedSize
         }
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didCompleteWithError error: Error?
-    ) {
-        if let error {
-            live.markFinished()
-            settle(.failure(error))
-        }
-        // Success is settled in `didFinishDownloadingTo`.
-    }
-
-    private func settle(_ result: Result<Outcome, Error>) {
-        lock.lock()
-        guard !settled else {
-            lock.unlock()
-            return
-        }
-        settled = true
-        progressObservation?.invalidate()
-        progressObservation = nil
-        let session = self.session
-        self.session = nil
-        lock.unlock()
-
-        session?.finishTasksAndInvalidate()
-        continuation.resume(with: result)
     }
 }

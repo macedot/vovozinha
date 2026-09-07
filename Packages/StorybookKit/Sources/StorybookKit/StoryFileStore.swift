@@ -79,6 +79,12 @@ public struct StoryFileStore: Sendable {
         FileManager.default.fileExists(atPath: storyDirectory(id: id).appendingPathComponent(fileName).path)
     }
 
+    public func removeStory(id: UUID) throws {
+        let directory = storyDirectory(id: id)
+        guard FileManager.default.fileExists(atPath: directory.path) else { return }
+        try FileManager.default.removeItem(at: directory)
+    }
+
 #if canImport(CoreGraphics) && canImport(ImageIO)
     @discardableResult
     public func writePNG(_ image: CGImage, id: UUID, fileName: String) throws -> URL {

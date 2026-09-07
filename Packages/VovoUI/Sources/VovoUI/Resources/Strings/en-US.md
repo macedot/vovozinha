@@ -221,3 +221,30 @@ Back
 
 ## readerNewStory
 New Story
+
+## storyHistorySubtitle
+Saved storybooks stay on this iPhone.
+
+## storyHistoryEmptyTitle
+No saved stories yet
+
+## storyHistoryEmptyBody
+Create a story and it will appear here.
+
+## storyHistoryDelete
+Delete story
+
+## storyHistoryLoadFailed
+Could not load story history.
+
+## storyHistoryDeleteFailed
+Could not delete this story.
+
+## storyHistoryMissing
+Story not found.
+
+## storyHistoryPageCount
+{{count}} pages
+
+## storyHistorySaveFailed
+Could not save this story to history.

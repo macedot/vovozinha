@@ -1,5 +1,6 @@
 import Foundation
 import CoreImage
+import StoryPromptKit
 import VovoUI
 
 /// On-device VLM captioner for a local photo.
@@ -30,7 +31,7 @@ public struct MLXPhotoDescriber: PhotoDescribing {
             throw PhotoDescribeError.describeFailed
         }
 
-        let cleaned = Self.normalizeCaption(Self.stripThinkingBlocks(raw))
+        let cleaned = Self.normalizeCaption(MLXStoryGenerator.stripThinkingBlocks(raw))
         guard !cleaned.isEmpty else {
             throw PhotoDescribeError.describeFailed
         }
@@ -38,26 +39,9 @@ public struct MLXPhotoDescriber: PhotoDescribing {
         return PhotoCaption(text: cleaned, language: language)
     }
 
-    /// Drop Qwen-style thinking wrappers if the model emits them despite `enable_thinking: false`.
+    /// Drop Qwen-style thinking wrappers (reuses canonical StoryPromptKit implementation).
     static func stripThinkingBlocks(_ raw: String) -> String {
-        var text = raw
-        if let regex = try? NSRegularExpression(
-            pattern: #"(?is)<think>.*?</think>"#,
-            options: []
-        ) {
-            let range = NSRange(text.startIndex..<text.endIndex, in: text)
-            text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
-        }
-        if let open = text.range(of: "<think>", options: .caseInsensitive) {
-            if let close = text.range(of: "</think>", options: [.caseInsensitive, .backwards]),
-               close.lowerBound > open.lowerBound
-            {
-                text.removeSubrange(open.lowerBound..<close.upperBound)
-            } else {
-                text = String(text[text.startIndex..<open.lowerBound])
-            }
-        }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        MLXStoryGenerator.stripThinkingBlocks(raw)
     }
 
     static func normalizeCaption(_ raw: String) -> String {

@@ -5,8 +5,17 @@ import StoryPromptKit
 import SwiftUI
 import VovoUI
 
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+#if canImport(ImageIO)
+import ImageIO
+#endif
 #if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit) && !canImport(UIKit)
+import AppKit
 #endif
 
 private enum DualGate {
@@ -50,6 +59,9 @@ public struct StorybookFeatureView: View {
     @State private var summary: String = ""
     @State private var pages: [StoryPage] = []
     @State private var storyID = UUID()
+    @State private var storyCreatedAt = Date()
+    @State private var activeSeedPrompt = ""
+    @State private var activeLanguage: AppLanguage = .englishUS
     @State private var pipelineTask: Task<Void, Never>?
     @State private var phase: PipelinePhase = .story
     @State private var screen: Screen = .create
@@ -58,8 +70,11 @@ public struct StorybookFeatureView: View {
     @State private var readerOrigin: Screen = .create
     @State private var historyBooks: [Storybook] = []
     @FocusState private var seedFocused: Bool
+    private let historyStore: StoryHistoryStore
 
-    public init() {}
+    public init(historyStore: StoryHistoryStore = StoryHistoryStore()) {
+        self.historyStore = historyStore
+    }
 
     private var lang: AppLanguage { languageStore.language }
 
@@ -627,6 +642,9 @@ public struct StorybookFeatureView: View {
         setIdleTimer(true)
         let id = UUID()
         storyID = id
+        storyCreatedAt = Date()
+        activeSeedPrompt = seed.trimmed
+        activeLanguage = seed.language
         pages = []
         title = ""
         summary = ""
@@ -667,11 +685,20 @@ public struct StorybookFeatureView: View {
             pages = readyPages
             title = readyTitle
             summary = readySummary
+            persistStory(
+                phase: .story,
+                pages: readyPages,
+                title: readyTitle,
+                summary: readySummary
+            )
             readerOrigin = .create
             screen = .reader
         case .illustrationReady(let index, let fileName):
-            if let i = pages.firstIndex(where: { $0.index == index }) {
-                pages[i].imageFileName = fileName
+            var updatedPages = pages
+            if let i = updatedPages.firstIndex(where: { $0.index == index }) {
+                updatedPages[i].imageFileName = fileName
+                pages = updatedPages
+                persistStory(phase: .pages, pages: updatedPages)
             }
         case .progress:
             break
@@ -684,9 +711,41 @@ public struct StorybookFeatureView: View {
             #else
             errorMessage = fallback
             #endif
-            if pages.isEmpty { isRunning = false }
+            isRunning = false
+            setIdleTimer(false)
+            persistStory(phase: .failed)
         case .finished:
-            break
+            persistStory(phase: .finished)
+        }
+    }
+
+    private func persistStory(
+        phase: PipelinePhase,
+        pages: [StoryPage]? = nil,
+        title: String? = nil,
+        summary: String? = nil
+    ) {
+        let storyPages = pages ?? self.pages
+        guard !storyPages.isEmpty else { return }
+        let story = Storybook(
+            id: storyID,
+            title: title ?? self.title,
+            summary: summary ?? self.summary,
+            language: activeLanguage.rawValue,
+            seedPrompt: activeSeedPrompt,
+            characterDescriptor: "",
+            baseSeed: StoryIdentity.baseSeed(storyID: storyID),
+            phase: phase,
+            pages: storyPages,
+            createdAt: storyCreatedAt
+        )
+        do {
+            try historyStore.upsert(story)
+        } catch {
+            errorMessage = VovoL10n.t(.storyHistorySaveFailed, lang)
+            #if DEBUG
+            print("[Storybook] history save failed: \(error)")
+            #endif
         }
     }
 
@@ -699,6 +758,8 @@ public struct StorybookFeatureView: View {
     private func uiImage(from data: Data) -> Image? {
         #if canImport(UIKit)
         if let ui = UIImage(data: data) { return Image(uiImage: ui) }
+        #elseif canImport(AppKit)
+        if let ns = NSImage(data: data) { return Image(nsImage: ns) }
         #endif
         return nil
     }

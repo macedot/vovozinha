@@ -3,42 +3,44 @@ import MLXLMCommon
 import Tokenizers
 
 /// Local-folder tokenizer loader (no MLXHuggingFace macros — avoids Xcode “enable macro” gate).
-struct HuggingFaceTokenizerLoader: MLXLMCommon.TokenizerLoader {
-    func load(from directory: URL) async throws -> any MLXLMCommon.Tokenizer {
+public struct HuggingFaceTokenizerLoader: MLXLMCommon.TokenizerLoader, Sendable {
+    public init() {}
+
+    public func load(from directory: URL) async throws -> any MLXLMCommon.Tokenizer {
         let upstream = try await AutoTokenizer.from(modelFolder: directory)
         return HuggingFaceTokenizerBridge(upstream)
     }
 }
 
 /// Adapts `Tokenizers.Tokenizer` to `MLXLMCommon.Tokenizer`.
-struct HuggingFaceTokenizerBridge: MLXLMCommon.Tokenizer {
+public struct HuggingFaceTokenizerBridge: MLXLMCommon.Tokenizer {
     private let upstream: any Tokenizers.Tokenizer
 
-    init(_ upstream: any Tokenizers.Tokenizer) {
+    public init(_ upstream: any Tokenizers.Tokenizer) {
         self.upstream = upstream
     }
 
-    func encode(text: String, addSpecialTokens: Bool) -> [Int] {
+    public func encode(text: String, addSpecialTokens: Bool) -> [Int] {
         upstream.encode(text: text, addSpecialTokens: addSpecialTokens)
     }
 
-    func decode(tokenIds: [Int], skipSpecialTokens: Bool) -> String {
+    public func decode(tokenIds: [Int], skipSpecialTokens: Bool) -> String {
         upstream.decode(tokens: tokenIds, skipSpecialTokens: skipSpecialTokens)
     }
 
-    func convertTokenToId(_ token: String) -> Int? {
+    public func convertTokenToId(_ token: String) -> Int? {
         upstream.convertTokenToId(token)
     }
 
-    func convertIdToToken(_ id: Int) -> String? {
+    public func convertIdToToken(_ id: Int) -> String? {
         upstream.convertIdToToken(id)
     }
 
-    var bosToken: String? { upstream.bosToken }
-    var eosToken: String? { upstream.eosToken }
-    var unknownToken: String? { upstream.unknownToken }
+    public var bosToken: String? { upstream.bosToken }
+    public var eosToken: String? { upstream.eosToken }
+    public var unknownToken: String? { upstream.unknownToken }
 
-    func applyChatTemplate(
+    public func applyChatTemplate(
         messages: [[String: any Sendable]],
         tools: [[String: any Sendable]]?,
         additionalContext: [String: any Sendable]?

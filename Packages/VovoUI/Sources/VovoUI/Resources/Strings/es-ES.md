@@ -221,3 +221,30 @@ Volver
 
 ## readerNewStory
 Nuevo Cuento
+
+## storyHistorySubtitle
+Los cuentos guardados permanecen en este iPhone.
+
+## storyHistoryEmptyTitle
+Todavía no hay cuentos guardados
+
+## storyHistoryEmptyBody
+Crea un cuento y aparecerá aquí.
+
+## storyHistoryDelete
+Eliminar cuento
+
+## storyHistoryLoadFailed
+No se pudo cargar el historial.
+
+## storyHistoryDeleteFailed
+No se pudo eliminar este cuento.
+
+## storyHistoryMissing
+Cuento no encontrado.
+
+## storyHistoryPageCount
+{{count}} páginas
+
+## storyHistorySaveFailed
+No se pudo guardar este cuento en el historial.

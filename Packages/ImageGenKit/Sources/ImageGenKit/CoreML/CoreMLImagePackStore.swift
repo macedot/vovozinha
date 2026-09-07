@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import ZIPFoundation
+import VovoUI
 
 /// Owns the on-device **Core ML image pack** — the compiled `.mlmodelc` bundles that
 /// `StableDiffusionPipeline(resourcesAt:)` loads.
@@ -17,9 +18,8 @@ import ZIPFoundation
 /// install, then record that hash beside the pack for later update checks. Manual Import
 /// (document picker) is the explicit no-checksum fallback.
 ///
-/// **img2img requirement:** a valid pack **must** contain `VAEEncoder.mlmodelc` — without
-/// it the pipeline cannot encode a source photo. `supportsImageToImage` is therefore
-/// always `true` for packs that pass `directoryLooksLikeImagePack`.
+/// **Capabilities:** a valid pack must contain the text-to-image resources. The optional
+/// `VAEEncoder.mlmodelc` is required only for img2img/source-photo generation.
 public actor CoreMLImagePackStore {
 
     // MARK: - Defaults
@@ -92,7 +92,7 @@ public actor CoreMLImagePackStore {
             case .copyFailed:
                 return "Could not copy the image pack into the app. Try again."
             case .incompletePack:
-                return "Image pack is incomplete. It needs TextEncoder, VAEDecoder, VAEEncoder, a Unet (or Unet chunks), vocab.json, and merges.txt."
+                return "Image pack is incomplete. It needs TextEncoder, VAEDecoder, a Unet (or Unet chunks), vocab.json, and merges.txt."
             case .unzipFailed:
                 return "Could not unpack the image pack archive."
             }
@@ -143,12 +143,13 @@ public actor CoreMLImagePackStore {
 
     public func isPackPresent() -> Bool {
         migrateLegacyDocumentsPackIfNeeded()
-        return Self.directoryLooksLikeImagePack(resourcesURL)
+        return Self.directoryLooksLikeTextToImagePack(resourcesURL)
     }
 
     /// True when `VAEEncoder.mlmodelc` is present (required to encode a source photo).
     public func supportsImageToImage() -> Bool {
-        Self.fileExists(in: resourcesURL, named: "VAEEncoder.mlmodelc", isDirectory: true)
+        supportsTextToImage()
+            && Self.fileExists(in: resourcesURL, named: "VAEEncoder.mlmodelc", isDirectory: true)
     }
 
     /// True when TextEncoder + Unet(+chunks) + VAEDecoder + tokenizer files are present.
@@ -214,6 +215,13 @@ public actor CoreMLImagePackStore {
             let out = try await outcome
             received = out.bytesReceived
             bytesTotal = out.bytesTotal
+        } catch let e as ModelDownloadError {
+            try? FileManager.default.removeItem(at: tempZip)
+            switch e {
+            case .http(let code): throw DownloadError.http(statusCode: code)
+            case .emptyFile: throw DownloadError.emptyFile
+            case .cancelled: throw CancellationError()
+            }
         } catch let e as DownloadError {
             try? FileManager.default.removeItem(at: tempZip)
             throw e
@@ -259,7 +267,7 @@ public actor CoreMLImagePackStore {
             throw DownloadError.unzipFailed
         }
 
-        guard Self.directoryLooksLikeImagePack(resourcesURL) else {
+        guard Self.directoryLooksLikeTextToImagePack(resourcesURL) else {
             throw DownloadError.unzipFailed
         }
 
@@ -290,9 +298,9 @@ public actor CoreMLImagePackStore {
             // A folder whose contents are the .mlmodelc files, OR a folder containing
             // a `Resources/` subdir. Accept the Resources layout if present.
             let candidate = sourceURL.appendingPathComponent(Self.resourcesSubdirectoryName)
-            let root = Self.directoryLooksLikeImagePack(candidate)
+            let root = Self.directoryLooksLikeTextToImagePack(candidate)
                 ? candidate
-                : (Self.directoryLooksLikeImagePack(sourceURL) ? sourceURL : nil)
+                : (Self.directoryLooksLikeTextToImagePack(sourceURL) ? sourceURL : nil)
             guard let root else { throw ImportError.incompletePack }
             try Self.replaceDirectory(at: resourcesURL, withContentsOf: root)
         } else {
@@ -317,7 +325,7 @@ public actor CoreMLImagePackStore {
             }
         }
 
-        guard Self.directoryLooksLikeImagePack(resourcesURL) else {
+        guard Self.directoryLooksLikeTextToImagePack(resourcesURL) else {
             throw ImportError.incompletePack
         }
         clearInstallSHA256()
@@ -379,10 +387,10 @@ public actor CoreMLImagePackStore {
     private func migrateLegacyDocumentsPackIfNeeded() {
         guard !didAttemptLegacyMigration else { return }
         didAttemptLegacyMigration = true
-        if Self.directoryLooksLikeImagePack(resourcesURL) { return }
+        if Self.directoryLooksLikeTextToImagePack(resourcesURL) { return }
 
         let legacy = Self.legacyDocumentsResourcesURL()
-        guard Self.directoryLooksLikeImagePack(legacy) else { return }
+        guard Self.directoryLooksLikeTextToImagePack(legacy) else { return }
         do {
             try Self.replaceDirectory(at: resourcesURL, withContentsOf: legacy)
             try Self.excludeFromBackup(resourcesURL)
@@ -425,60 +433,47 @@ public actor CoreMLImagePackStore {
         try? FileManager.default.removeItem(at: installedSHA256SidecarURL())
     }
 
-    // MARK: - Host integrity (shared with MLX store — proven helpers)
+    // MARK: - Host integrity (delegated to ModelChecksumVerifier)
 
     static func fetchRemoteSHA256(from url: URL, session: URLSession) async throws -> String {
-        var request = URLRequest(url: url)
-        request.setValue("Vovozinha/1.0 (iOS; Core ML image pack checksum fetch)", forHTTPHeaderField: "User-Agent")
-        request.setValue("text/plain", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 60
-
-        let (data, response) = try await session.data(for: request)
-        if let http = response as? HTTPURLResponse {
-            guard (200..<300).contains(http.statusCode) else {
-                throw DownloadError.http(statusCode: http.statusCode)
+        do {
+            return try await ModelChecksumVerifier.fetchRemoteSHA256(
+                from: url,
+                userAgent: "Vovozinha/1.0 (iOS; Core ML image pack checksum fetch)",
+                session: session
+            )
+        } catch let e as ModelDownloadError {
+            switch e {
+            case .http(let code): throw DownloadError.http(statusCode: code)
+            default: throw DownloadError.checksumUnavailable
             }
-        } else if !url.isFileURL {
-            throw DownloadError.checksumUnavailable
+        } catch let e as ModelChecksumError {
+            switch e {
+            case .checksumFileInvalid: throw DownloadError.checksumFileInvalid
+            case .checksumUnavailable: throw DownloadError.checksumUnavailable
+            case .checksumMismatch: throw DownloadError.checksumMismatch
+            }
         }
-        guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else {
-            throw DownloadError.checksumFileInvalid
-        }
-        return try parseSHA256File(text)
     }
 
     static func parseSHA256File(_ text: String) throws -> String {
-        let lines = text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
-        for line in lines {
-            let token = line.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? ""
-            let hex = token.lowercased()
-            if hex.count == 64, hex.unicodeScalars.allSatisfy({ CharacterSet(charactersIn: "0123456789abcdef").contains($0) }) {
-                return hex
-            }
+        do {
+            return try ModelChecksumVerifier.parseSHA256File(text)
+        } catch {
+            throw DownloadError.checksumFileInvalid
         }
-        throw DownloadError.checksumFileInvalid
     }
 
     static func sha256Hex(ofFileAt url: URL) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        while true {
-            let chunk = try handle.read(upToCount: 1 << 20)  // 1 MB
-            guard let chunk, !chunk.isEmpty else { break }
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        try ModelChecksumVerifier.sha256Hex(ofFileAt: url)
     }
 
     static func verifySHA256(ofFileAt url: URL, expectedHex: String) throws {
-        let actual = try sha256Hex(ofFileAt: url)
-        let expected = expectedHex.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard actual == expected else { throw DownloadError.checksumMismatch }
+        do {
+            try ModelChecksumVerifier.verifySHA256(ofFileAt: url, expectedHex: expectedHex)
+        } catch {
+            throw DownloadError.checksumMismatch
+        }
     }
 
     // MARK: - Pack helpers
@@ -506,12 +501,6 @@ public actor CoreMLImagePackStore {
         return singleUnet || chunked
     }
 
-    /// Full pack (txt2img + img2img): txt2img files plus **VAEEncoder**.
-    static func directoryLooksLikeImagePack(_ url: URL) -> Bool {
-        directoryLooksLikeTextToImagePack(url)
-            && fileExists(in: url, named: "VAEEncoder.mlmodelc", isDirectory: true)
-    }
-
     /// Unzips `zip` into a temp staging dir, then promotes the nested `Resources/` (or the
     /// flat `.mlmodelc` root) into `destination`. Drops `SafetyChecker.mlmodelc` if present.
     static func installPack(fromZip zip: URL, to destination: URL) throws {
@@ -520,22 +509,23 @@ public actor CoreMLImagePackStore {
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: staging) }
 
+        try validateArchiveSafety(at: zip, destination: staging)
         try fm.unzipItem(at: zip, to: staging)
 
         // Locate the models root: prefer a nested `Resources/`; else the staged dir if it
         // already looks like a pack; else search one level deep for a pack-shaped folder.
         var modelsRoot: URL?
         let candidateResources = staging.appendingPathComponent(resourcesSubdirectoryName)
-        if directoryLooksLikeImagePack(candidateResources) {
+        if directoryLooksLikeTextToImagePack(candidateResources) {
             modelsRoot = candidateResources
-        } else if directoryLooksLikeImagePack(staging) {
+        } else if directoryLooksLikeTextToImagePack(staging) {
             modelsRoot = staging
         } else if let contents = try? fm.contentsOfDirectory(atPath: staging.path) {
             for name in contents {
                 let sub = staging.appendingPathComponent(name)
                 let subResources = sub.appendingPathComponent(resourcesSubdirectoryName)
-                if directoryLooksLikeImagePack(subResources) { modelsRoot = subResources; break }
-                if directoryLooksLikeImagePack(sub) { modelsRoot = sub; break }
+                if directoryLooksLikeTextToImagePack(subResources) { modelsRoot = subResources; break }
+                if directoryLooksLikeTextToImagePack(sub) { modelsRoot = sub; break }
             }
         }
         guard let root = modelsRoot else { throw DownloadError.unzipFailed }
@@ -570,21 +560,40 @@ public actor CoreMLImagePackStore {
         started: Date, received: Int64, total: Int64?,
         phase: ModelDownloadProgress.Phase, fractionOverride: Double? = nil
     ) -> ModelDownloadProgress {
-        let elapsed = max(Date().timeIntervalSince(started), 0.001)
-        let bps = Double(received) / elapsed
-        let fraction: Double
-        if let fractionOverride { fraction = fractionOverride }
-        else if let total, total > 0 { fraction = min(Double(received) / Double(total) * 0.92, 0.92) }
-        else { fraction = 0 }
-        var eta: TimeInterval?
-        if phase == .downloading, let total, total > received, bps > 1 {
-            eta = Double(total - received) / bps
-        } else if phase == .finished {
-            eta = 0
-        }
-        return ModelDownloadProgress(
-            fraction: fraction, bytesReceived: received, bytesTotal: total,
-            bytesPerSecond: bps, elapsed: elapsed, estimatedRemaining: eta, phase: phase
+        ModelZipDownloadLiveState.calculateSnapshot(
+            started: started,
+            received: received,
+            total: total,
+            phase: phase,
+            fractionOverride: fractionOverride
         )
+    }
+
+    static func validateArchiveSafety(at zipURL: URL, destination: URL) throws {
+        guard let archive = try? Archive(url: zipURL, accessMode: .read) else {
+            throw DownloadError.unzipFailed
+        }
+        let destCanonical = destination.resolvingSymlinksInPath().path
+        var totalBytes: UInt64 = 0
+        var entryCount = 0
+        let maxAllowedEntries = 5_000
+        let maxAllowedTotalBytes: UInt64 = 15 * 1024 * 1024 * 1024 // 15 GB ceiling
+        for entry in archive {
+            entryCount += 1
+            if entryCount > maxAllowedEntries { throw DownloadError.unzipFailed }
+            if entry.type == .symlink { throw DownloadError.unzipFailed }
+            let p = entry.path
+            if p.contains("..") || p.hasPrefix("/") || p.hasPrefix("\\") {
+                throw DownloadError.unzipFailed
+            }
+            let targetURL = destination.appendingPathComponent(p).resolvingSymlinksInPath()
+            if !targetURL.path.hasPrefix(destCanonical) {
+                throw DownloadError.unzipFailed
+            }
+            guard entry.uncompressedSize <= maxAllowedTotalBytes - totalBytes else {
+                throw DownloadError.unzipFailed
+            }
+            totalBytes += entry.uncompressedSize
+        }
     }
 }

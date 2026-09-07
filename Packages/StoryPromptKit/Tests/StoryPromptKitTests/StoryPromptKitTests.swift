@@ -31,7 +31,8 @@ final class StoryPromptKitTests: XCTestCase {
     func testVovoL10nCoversStoryKeysInAllLanguages() {
         let keys: [VovoL10n.Key] = [
             .language, .storySeedTitle, .storyCreate, .storyGenerateFailed,
-            .storyModelNotInstalled, .storySeedPlaceholder
+            .storyModelNotInstalled, .storySeedPlaceholder, .storyHistoryTitle,
+            .storyHistoryEmptyTitle, .storyHistorySaveFailed
         ]
         for lang in AppLanguage.allCases {
             for key in keys {
@@ -41,6 +42,10 @@ final class StoryPromptKitTests: XCTestCase {
             }
         }
         XCTAssertEqual(VovoL10n.t(.storyCreate, .englishUS), "Create story")
+        XCTAssertEqual(
+            VovoL10n.historyPageCount(10, lang: .englishUS),
+            "10 pages"
+        )
     }
 
     func testMarkdownCatalogParsesSectionsAndPlaceholders() {

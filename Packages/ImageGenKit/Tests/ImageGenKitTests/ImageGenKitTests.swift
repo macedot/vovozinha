@@ -130,8 +130,8 @@ final class ImageGenKitTests: XCTestCase {
         XCTAssertFalse(present)
     }
 
-    func testDirectoryWithAllModelsButNoVAEEncoderIsInvalid() async throws {
-        // A pack without VAEEncoder must NOT be considered valid (img2img requires it).
+    func testDirectoryWithAllModelsButNoVAEEncoderSupportsTextToImageOnly() async throws {
+        // VAEEncoder is optional for the text-to-image path and required only for img2img.
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let resources = root.appendingPathComponent("Vovozinha/ImagePack/Resources")
         try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
@@ -147,7 +147,11 @@ final class ImageGenKitTests: XCTestCase {
 
         let store = CoreMLImagePackStore(storageRootURL: root)
         let present = await store.isPackPresent()
-        XCTAssertFalse(present, "pack without VAEEncoder must be invalid for img2img")
+        XCTAssertTrue(present, "text-to-image pack should not require VAEEncoder")
+        let supportsImg2Img = await store.supportsImageToImage()
+        let supportsTxt2Img = await store.supportsTextToImage()
+        XCTAssertFalse(supportsImg2Img)
+        XCTAssertTrue(supportsTxt2Img)
     }
 
     func testDirectoryWithAllModelsIncludingVAEEncoderIsValid() async throws {

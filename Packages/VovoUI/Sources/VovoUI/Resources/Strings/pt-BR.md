@@ -221,3 +221,30 @@ Voltar
 
 ## readerNewStory
 Nova História
+
+## storyHistorySubtitle
+As histórias salvas ficam neste iPhone.
+
+## storyHistoryEmptyTitle
+Ainda não há histórias salvas
+
+## storyHistoryEmptyBody
+Crie uma história e ela aparecerá aqui.
+
+## storyHistoryDelete
+Apagar história
+
+## storyHistoryLoadFailed
+Não foi possível carregar o histórico.
+
+## storyHistoryDeleteFailed
+Não foi possível apagar esta história.
+
+## storyHistoryMissing
+História não encontrada.
+
+## storyHistoryPageCount
+{{count}} páginas
+
+## storyHistorySaveFailed
+Não foi possível salvar esta história no histórico.

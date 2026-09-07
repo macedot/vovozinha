@@ -6,7 +6,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-beta.app}"
-IPHONE_UDID="${IPHONE_UDID:-00008130-001C78EC18EB8D3A}"
+IPHONE_UDID="${IPHONE_UDID:-}"
+if [[ -z "$IPHONE_UDID" ]]; then
+  echo "test.sh: set IPHONE_UDID to the connected physical iPhone UDID" >&2
+  exit 1
+fi
 DESTINATION="${DESTINATION:-platform=iOS,id=$IPHONE_UDID}"
 DERIVED="${DERIVED:-$ROOT/build/DerivedData}"
 
@@ -29,5 +33,5 @@ xcodebuild \
   -allowProvisioningUpdates \
   -skipPackagePluginValidation \
   CODE_SIGN_STYLE=Automatic \
-  DEVELOPMENT_TEAM=FTS4YLJNG3 \
+  DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-FTS4YLJNG3}" \
   test
