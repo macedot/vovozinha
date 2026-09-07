@@ -34,6 +34,8 @@ public enum StoryPromptTemplate: Sendable {
         photoCaption: String? = nil,
         language: AppLanguage
     ) -> String {
+        let cleanDescription = sanitizePromptInput(description)
+        let cleanCaption = photoCaption.map(sanitizePromptInput)
         let path = "Prompts/story.\(language.rawValue).md"
         let fallback = "Prompts/story.\(AppLanguage.englishUS.rawValue).md"
         var raw = MarkdownTextCatalog.loadFile(
@@ -48,8 +50,8 @@ public enum StoryPromptTemplate: Sendable {
                 sourceFallbackRoot: sourcePromptsRoot
             )
         }
-        raw = applyPhotoCaption(raw, photoCaption)
-        return replaceDescriptionPlaceholders(in: raw, with: description)
+        raw = applyPhotoCaption(raw, cleanCaption)
+        return replaceDescriptionPlaceholders(in: raw, with: cleanDescription)
     }
 
     /// Loads `illustration.<lang>.md` and fills title, paragraphs, optional caption.
@@ -73,10 +75,11 @@ public enum StoryPromptTemplate: Sendable {
                 sourceFallbackRoot: sourcePromptsRoot
             )
         }
-        let caption = photoCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let cleanCaption = photoCaption.map(sanitizePromptInput)
+        let caption = cleanCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         raw = replaceTokens(photoCaptionPlaceholders, in: raw, with: caption.isEmpty ? "(none)" : caption)
-        raw = raw.replacingOccurrences(of: "[INSERT STORY TITLE HERE]", with: title)
-        let body = paragraphs.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n\n")
+        raw = raw.replacingOccurrences(of: "[INSERT STORY TITLE HERE]", with: sanitizePromptInput(title))
+        let body = paragraphs.enumerated().map { "\($0.offset + 1). \(sanitizePromptInput($0.element))" }.joined(separator: "\n\n")
         raw = raw.replacingOccurrences(of: "[INSERT STORY PARAGRAPHS HERE]", with: body)
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -126,5 +129,19 @@ public enum StoryPromptTemplate: Sendable {
             return true
         }
         return text.range(of: #"\[(?:INSERT|INSERIR|INSERTAR)[^\]]*\]"#, options: .regularExpression) != nil
+    }
+
+    /// Sanitizes user input to prevent prompt injection and delimiter subversion.
+    public static func sanitizePromptInput(_ text: String) -> String {
+        var s = text
+        for token in ["<|im_start|>", "<|im_end|>", "<|endoftext|>"] {
+            s = s.replacingOccurrences(of: token, with: "", options: .caseInsensitive)
+        }
+        s = s.replacingOccurrences(of: "{{", with: "{ {")
+        s = s.replacingOccurrences(of: "}}", with: "} }")
+        s = s.replacingOccurrences(of: "[INSERT", with: "[ INSERT", options: .caseInsensitive)
+        s = s.replacingOccurrences(of: "[INSERIR", with: "[ INSERIR", options: .caseInsensitive)
+        s = s.replacingOccurrences(of: "[INSERTAR", with: "[ INSERTAR", options: .caseInsensitive)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

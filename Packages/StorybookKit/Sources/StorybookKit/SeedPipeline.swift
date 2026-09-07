@@ -129,8 +129,8 @@ public struct SeedPipeline: Sendable {
         try await memory.prepareCoreML()
 
         continuation.yield(.phaseChanged(.pages))
-        // Cover first (page 1), then 2...10. txt2img only — photo is never an img2img base.
-        let order = [1] + Array(2...10)
+        // Pages generated in sequence (1...10). txt2img only — photo is never an img2img base.
+        let order = Array(1...10)
         for index in order {
             try Task.checkCancellation()
             let fileName = store.pageFileName(index: index)

@@ -64,7 +64,7 @@ pick_python() {
   fi
   local c
   for c in python3.11 python3.12 python3.10 \
-           /Users/thiago/.local/bin/python3.11 \
+           "$HOME/.local/bin/python3.11" \
            /opt/homebrew/bin/python3.12 \
            /opt/homebrew/bin/python3.11; do
     if command -v "$c" >/dev/null 2>&1 || [[ -x "$c" ]]; then

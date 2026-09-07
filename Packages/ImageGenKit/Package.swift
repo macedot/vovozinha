@@ -1,5 +1,22 @@
 // swift-tools-version: 6.0
 import PackageDescription
+import Foundation
+
+func resolveSiblingPackagePath(_ relativeName: String) -> String {
+    let manifestDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    let candidates = [
+        "../../../\(relativeName)",
+        "../../../../\(relativeName)",
+        "../../\(relativeName)"
+    ]
+    for c in candidates {
+        let candidateURL = manifestDir.appendingPathComponent(c)
+        if FileManager.default.fileExists(atPath: candidateURL.path) {
+            return c
+        }
+    }
+    return "../../../\(relativeName)"
+}
 
 let package = Package(
     name: "ImageGenKit",
@@ -12,7 +29,7 @@ let package = Package(
         // Local checkout of apple/ml-stable-diffusion 1.1.1. That release vendors
         // BPETokenizer and no longer depends on swift-transformers, so this kit can
         // share a graph with StoryPromptKit (transformers 1.x via MLX).
-        .package(path: "../../../ml-stable-diffusion"),
+        .package(path: resolveSiblingPackagePath("ml-stable-diffusion")),
         // Native libcompression unzip for the multi-GB Core ML image pack.
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19"),
     ],

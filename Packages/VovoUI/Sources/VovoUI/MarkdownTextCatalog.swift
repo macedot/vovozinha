@@ -190,9 +190,7 @@ public enum MarkdownTextCatalog: Sendable {
         let fileName = (relativePath as NSString).lastPathComponent
         for candidate in [
             root.appendingPathComponent(relativePath),
-            root.appendingPathComponent(fileName),
-            // Nested source layout: Resources/Strings/… or Resources/Prompts/…
-            root.appendingPathComponent(relativePath)
+            root.appendingPathComponent(fileName)
         ] {
             if let text = try? String(contentsOf: candidate, encoding: .utf8), !text.isEmpty {
                 return text

@@ -1,5 +1,22 @@
 // swift-tools-version: 6.0
 import PackageDescription
+import Foundation
+
+func resolveSiblingPackagePath(_ relativeName: String) -> String {
+    let manifestDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    let candidates = [
+        "../../../\(relativeName)",
+        "../../../../\(relativeName)",
+        "../../\(relativeName)"
+    ]
+    for c in candidates {
+        let candidateURL = manifestDir.appendingPathComponent(c)
+        if FileManager.default.fileExists(atPath: candidateURL.path) {
+            return c
+        }
+    }
+    return "../../../\(relativeName)"
+}
 
 let package = Package(
     name: "PhotoDescribeKit",
@@ -11,9 +28,8 @@ let package = Package(
         .package(path: "../VovoUI"),
         // Shared on-device Qwen pack store / download gate (same Application Support path).
         .package(path: "../StoryPromptKit"),
-        .package(path: "../../../mlx-swift"),
-        .package(path: "../../../mlx-swift-lm"),
-        .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.0"),
+        .package(path: resolveSiblingPackagePath("mlx-swift")),
+        .package(path: resolveSiblingPackagePath("mlx-swift-lm")),
     ],
     targets: [
         .target(
@@ -26,7 +42,6 @@ let package = Package(
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXVLM", package: "mlx-swift-lm"),
-                .product(name: "Tokenizers", package: "swift-transformers"),
             ],
             path: "Sources/PhotoDescribeKit",
             resources: [

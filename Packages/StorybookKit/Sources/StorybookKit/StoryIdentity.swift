@@ -9,6 +9,6 @@ public enum StoryIdentity {
     }
 
     public static func pageSeed(storyID: UUID, pageIndex: Int) -> UInt32 {
-        baseSeed(storyID: storyID) &+ UInt32(pageIndex)
+        baseSeed(storyID: storyID) &+ UInt32(max(0, pageIndex))
     }
 }

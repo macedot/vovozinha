@@ -1,5 +1,6 @@
 import Foundation
 import ImageGenKit
+import StoryPromptKit
 
 /// Hands off between MLX and Core ML. One engine resident at a time.
 public protocol MemorySequencing: Sendable {
@@ -16,7 +17,9 @@ public struct MemorySequencer: MemorySequencing {
         coreMLReset: @escaping @Sendable () async -> Void = {
             await CoreMLImageGenSession.resetCache()
         },
-        mlxRelease: @escaping @Sendable () async -> Void = {}
+        mlxRelease: @escaping @Sendable () async -> Void = {
+            await MLXMemoryManager.releaseMemory()
+        }
     ) {
         self.coreMLReset = coreMLReset
         self.mlxRelease = mlxRelease

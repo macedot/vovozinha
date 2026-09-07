@@ -101,10 +101,10 @@ xcodegen generate
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode-beta.app
-./scripts/deploy.sh
+IPHONE_UDID=YOUR_DEVICE_UDID ./scripts/deploy.sh
 ```
 
-Override the phone with `IPHONE_UDID=…` if needed. Bundle id: `app.vovozinha.Vovozinha`. The host is a thin `NavigationStack` around `StorybookFeatureView`.
+`IPHONE_UDID` is required and must identify the connected physical iPhone. Bundle id: `app.vovozinha.Vovozinha`. The host is a thin `NavigationStack` around `StorybookFeatureView`.
 
 ### Testing
 

@@ -5,8 +5,17 @@ import StoryPromptKit
 import SwiftUI
 import VovoUI
 
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+#if canImport(ImageIO)
+import ImageIO
+#endif
 #if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit) && !canImport(UIKit)
+import AppKit
 #endif
 
 private enum DualGate {
@@ -44,6 +53,7 @@ public struct StorybookFeatureView: View {
     @State private var summary: String = ""
     @State private var pages: [StoryPage] = []
     @State private var storyID = UUID()
+    @State private var imageCache: [String: Image] = [:]
     @State private var pipelineTask: Task<Void, Never>?
     @State private var phase: PipelinePhase = .story
     @FocusState private var seedFocused: Bool
@@ -300,25 +310,36 @@ public struct StorybookFeatureView: View {
 
     @ViewBuilder
     private func pageImage(_ page: StoryPage) -> some View {
-        if let name = page.imageFileName,
-           let img = loadStoryPNG(id: storyID, fileName: name) {
-            img
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(VovoTheme.cardFill)
-                    .frame(height: 220)
-                VStack(spacing: 8) {
-                    if isRunning {
-                        ProgressView().tint(VovoTheme.amber)
+        if let name = page.imageFileName {
+            let key = imageCacheKey(id: storyID, fileName: name)
+            if let img = imageCache[key] {
+                img
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            } else {
+                waitingPicture
+                    .task(id: key) {
+                        await loadStoryImage(id: storyID, fileName: name)
                     }
-                    Text(VovoL10n.t(.readerWaitingPicture, lang))
-                        .font(.caption)
-                        .foregroundStyle(VovoTheme.cream.opacity(0.7))
+            }
+        } else {
+            waitingPicture
+        }
+    }
+
+    private var waitingPicture: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(VovoTheme.cardFill)
+                .frame(height: 220)
+            VStack(spacing: 8) {
+                if isRunning {
+                    ProgressView().tint(VovoTheme.amber)
                 }
+                Text(VovoL10n.t(.readerWaitingPicture, lang))
+                    .font(.caption)
+                    .foregroundStyle(VovoTheme.cream.opacity(0.7))
             }
         }
     }
@@ -397,6 +418,7 @@ public struct StorybookFeatureView: View {
         setIdleTimer(true)
         let id = UUID()
         storyID = id
+        imageCache = [:]
         pages = []
         title = ""
         summary = ""
@@ -450,7 +472,8 @@ public struct StorybookFeatureView: View {
             #else
             errorMessage = fallback
             #endif
-            if pages.isEmpty { isRunning = false }
+            isRunning = false
+            setIdleTimer(false)
         case .finished:
             break
         }
@@ -465,15 +488,46 @@ public struct StorybookFeatureView: View {
     private func uiImage(from data: Data) -> Image? {
         #if canImport(UIKit)
         if let ui = UIImage(data: data) { return Image(uiImage: ui) }
+        #elseif canImport(AppKit)
+        if let ns = NSImage(data: data) { return Image(nsImage: ns) }
         #endif
         return nil
     }
 
-    private func loadStoryPNG(id: UUID, fileName: String) -> Image? {
+    private func platformImage(from cgImage: CGImage) -> Image? {
+        #if canImport(UIKit)
+        return Image(uiImage: UIImage(cgImage: cgImage))
+        #elseif canImport(AppKit)
+        return Image(nsImage: NSImage(
+            cgImage: cgImage,
+            size: NSSize(width: cgImage.width, height: cgImage.height)
+        ))
+        #else
+        return nil
+        #endif
+    }
+
+    private func imageCacheKey(id: UUID, fileName: String) -> String {
+        "\(id.uuidString)/\(fileName)"
+    }
+
+    @MainActor
+    private func loadStoryImage(id: UUID, fileName: String) async {
+        let key = imageCacheKey(id: id, fileName: fileName)
+        guard imageCache[key] == nil else { return }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         let url = StoryFileStore(rootURL: docs).storyDirectory(id: id).appendingPathComponent(fileName)
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return uiImage(from: data)
+        let cgImage: CGImage? = await Task.detached(priority: .utility) { () -> CGImage? in
+            guard let data = try? Data(contentsOf: url),
+                  let source = CGImageSourceCreateWithData(data as CFData, nil),
+                  let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+            else {
+                return nil
+            }
+            return image
+        }.value
+        guard !Task.isCancelled, let cgImage, let image = platformImage(from: cgImage) else { return }
+        imageCache[key] = image
     }
 }

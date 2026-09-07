@@ -1,6 +1,7 @@
 import Foundation
 import CoreImage
 import CoreGraphics
+import StoryPromptKit
 
 #if canImport(MLXLLM) && canImport(MLXLMCommon) && canImport(MLXVLM)
 import MLX
