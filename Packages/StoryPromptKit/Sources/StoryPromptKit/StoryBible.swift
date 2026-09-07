@@ -46,6 +46,28 @@ public struct StoryBible: Equatable, Codable, Sendable {
         }
         return lines.joined(separator: "\n")
     }
+
+    /// Exact visual vocabulary that must reach every page image prompt.
+    public var illustrationAnchorBlock: String {
+        var anchors: [String] = []
+        let character = characterLock.trimmingCharacters(in: .whitespaces)
+        if !character.isEmpty {
+            anchors.append(character)
+        }
+        let support = supporting.trimmingCharacters(in: .whitespaces)
+        if !support.isEmpty, support != "(none)" {
+            anchors.append(support)
+        }
+        let place = setting.trimmingCharacters(in: .whitespaces)
+        if !place.isEmpty, place != "(none)" {
+            anchors.append(place)
+        }
+        anchors.append(contentsOf: props.filter {
+            let value = $0.trimmingCharacters(in: .whitespaces)
+            return !value.isEmpty && value != "(none)"
+        })
+        return anchors.joined(separator: ", ")
+    }
 }
 
 public enum StoryBibleError: Error, Equatable, Sendable {

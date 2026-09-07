@@ -96,6 +96,22 @@ final class StorybookKitTests: XCTestCase {
         )
     }
 
+    func testClipPromptPreservesAllRequiredIllustrationAnchors() {
+        let pipeline = makePipeline()
+        let anchors = "orange kitten, grandpa grey beard, cozy garden, red rose, brass lantern"
+        let prompt = pipeline.clipPrompt(
+            scene: Array(repeating: "detailed", count: 60).joined(separator: " "),
+            lock: "",
+            anchors: anchors
+        )
+
+        XCTAssertTrue(prompt.contains(anchors))
+        XCTAssertLessThanOrEqual(
+            SeedPipeline.wordCount([prompt]),
+            SeedPipeline.totalWordBudget
+        )
+    }
+
     func testRepairRetryMergesMissingLinesOnly() async throws {
         var body = "CHARACTER: little girl, red coat, brown hair\n"
         for i in 1...6 { body += "\(i). scene \(i) in the garden\n" }
@@ -583,9 +599,9 @@ final class StorybookKitTests: XCTestCase {
             return false
         }))
         XCTAssertEqual(events.last, .finished)
-        // CLIP is English-only: fallback is the default lock, never the paragraph.
+        // Fallback keeps the default identity lock and the page-specific text.
         XCTAssertTrue(images.prompts.dropFirst().allSatisfy { $0.contains("cute kids-book hero") })
-        XCTAssertFalse(images.prompts.contains(where: { $0.contains("Paragraph") }))
+        XCTAssertTrue(images.prompts.dropFirst().allSatisfy { $0.contains("Paragraph") })
     }
 
     func testPageTextsReadyComesBeforeIllustrationPromptPhase() async throws {
@@ -786,10 +802,58 @@ final class StorybookKitTests: XCTestCase {
         XCTAssertEqual(storyGenerator.receivedImageContexts, [bible.renderedBlock])
         // The illustration pass gets the bible block as hard requirements.
         XCTAssertEqual(illustrationPrompts.receivedElementsBlocks, [bible.renderedBlock])
+        XCTAssertTrue(images.prompts.first?.contains(bible.illustrationAnchorBlock) == true)
         // The saved book persists the bible and the byte-stable lock.
         let saved = try XCTUnwrap(StoryFileStore(rootURL: root).loadStorybook(id: storyID))
         XCTAssertEqual(saved.bible, bible)
         XCTAssertEqual(saved.characterDescriptor, bible.characterLock)
+        for prompt in images.prompts.dropFirst() {
+            XCTAssertTrue(prompt.contains(bible.illustrationAnchorBlock))
+        }
+    }
+
+    func testFailedIllustrationPassFallsBackToPageTextAndAllBibleAnchors() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let bible = StoryBible(
+            characterLock: "little girl, dark braids, red coat",
+            supporting: "grandpa, grey beard",
+            setting: "cozy garden",
+            props: ["red rose", "brass lantern"]
+        )
+        let image = try XCTUnwrap(Self.makeCGImage())
+        let images = CountingImageGenerator(image: image)
+        let pipeline = SeedPipeline(
+            storyGenerator: MockStoryGenerator(),
+            illustrationPrompts: FailingIllustrationPrompts(),
+            imageGenerator: images,
+            photoDescriber: nil,
+            memory: NoopMemory(),
+            store: StoryFileStore(rootURL: root),
+            bibleGenerator: RecordingBibleGenerator(bible: bible)
+        )
+        let seed = StorySeedPrompt(
+            text: "a brave kitten finds a lantern in the garden path tonight",
+            language: .englishUS
+        )
+        for await _ in pipeline.run(seed: seed, photo: nil, storyID: UUID()) {}
+
+        let pagePrompts = Array(images.prompts.dropFirst())
+        XCTAssertEqual(pagePrompts.count, 10)
+        for (index, prompt) in pagePrompts.enumerated() {
+            XCTAssertTrue(prompt.contains("Paragraph \(index + 1)"), "page \(index + 1)")
+            for anchor in [
+                "little girl, dark braids, red coat",
+                "grandpa, grey beard",
+                "cozy garden",
+                "red rose",
+                "brass lantern",
+            ] {
+                XCTAssertTrue(prompt.contains(anchor), "missing \(anchor) on page \(index + 1)")
+            }
+        }
     }
 
     func testBibleFailureFallsBackToRawTags() async throws {

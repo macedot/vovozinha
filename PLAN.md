@@ -199,9 +199,11 @@ The strict page-order, one-at-a-time render loop is also what keeps memory flat.
   + optional photo tags; persisted in `story.json`; hard requirements for the
   story and every illustration.
 - **Text coherence:** the bible block is woven into the story body (step [2]);
-  the IllustrationPromptGenerator copies the bible lock verbatim into all 10
-  illustration prompts and names recurring props with their exact bible words
-  (step [3]).
+  the IllustrationPromptGenerator maps line N to paragraph N, and the final
+  render prompt carries the complete StoryBible visual vocabulary (hero,
+  supporting cast, setting, and props) with exact words on all 10 pages
+  (step [3]). If that pass fails, the fallback keeps the page paragraph as its
+  scene source instead of degrading to the setting alone.
 - **Image coherence:** the ORIGINAL photo is cartoonified exactly once (step
   [4]) into a per-story `reference.png`. Identity travels in the CLIP lock +
   named props. Page bases (update 2026-09-06, per Thiago — scene-first): a page
@@ -441,7 +443,7 @@ Scripts/test.sh                                      # XCUITest on device
 | Qwen 4B unreliable at emitting 10 clean illustration prompts | Medium | Strict parser (missing line = error, never fabricate) + one automatic retry; validate before rendering starts (§12.26) |
 | Jetsam when loading Core ML after MLX | Medium | MemorySequencer + explicit unload + `os_proc_available_memory` guard; measure in Phase 3 |
 | Large CDN files / flaky mobile networks | Medium | sidecar-first verify, resume-friendly download controller (already exists), Import fallback |
-| CLIP 77-token overflow (style + lock + scene) | High | Unique page scene first; cap the English character lock; see §12.12–12.13 |
+| CLIP 77-token overflow (style + lock + scene + StoryBible anchors) | High | Keep the complete extracted anchor block; trim optional style, scene, and fallback-lock words first; see §12.12–12.13 |
 | No-photo face drift (invariant 9 photo-only) | High | Same reference-pass architecture without a photo: txt2img one `reference.png`, then img2img pages (§12.17) |
 | Pack download dies on background | High | `URLSessionConfiguration.background` (today: `.default`); Wi-Fi confirm (§12.6, §12.22) |
 | `PipelineCache.loadFailed` sticky after MLX | Medium | `reset()` + backoff retry; `os_proc_available_memory` lags Metal reclaim (§12.16, §12.24) |
@@ -535,8 +537,8 @@ landmines found on a second pass.
 12. **CLIP 77-token budget (coherence vs scene) — Phase 3 spike item.** SD1.5 CLIP
     truncates at 77 tokens. The locked style prefix is already ~20 tokens
     (`anime illustration, soft cel shading, …`). Adding a verbatim character
-    descriptor plus a scene prompt will overflow; whichever half sits past token
-    77 is silently dropped. Legacy `ScenePromptBuilder` already solved this:
+    descriptor, StoryBible anchors, and a scene prompt can overflow; whichever
+    half sits past token 77 is silently dropped. Legacy `ScenePromptBuilder` already solved this:
     unique page scene **first** (CLIP weights early tokens), then a **short**
     English identity clause. Cap the lock to ~15–25 tokens (hair, colors, outfit,
     species — not a paragraph). Otherwise every page looks like the same

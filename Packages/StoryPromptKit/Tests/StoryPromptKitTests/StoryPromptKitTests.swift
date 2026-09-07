@@ -235,6 +235,20 @@ final class StoryPromptKitTests: XCTestCase {
         XCTAssertEqual(decoded, bible)
     }
 
+    func testStoryBibleIllustrationAnchorsUseExactVisualVocabulary() {
+        let bible = StoryBible(
+            characterLock: "little girl, dark brown braids, red coat",
+            supporting: "grandpa, grey beard",
+            setting: "cozy seaside village",
+            props: ["red rose", "brass lantern"]
+        )
+
+        XCTAssertEqual(
+            bible.illustrationAnchorBlock,
+            "little girl, dark brown braids, red coat, grandpa, grey beard, cozy seaside village, red rose, brass lantern"
+        )
+    }
+
     func testDeviceStoryGeneratorThrowsWhenModelMissing() async throws {        let tmp = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)

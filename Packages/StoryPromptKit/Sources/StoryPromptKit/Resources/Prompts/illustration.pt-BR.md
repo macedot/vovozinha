@@ -11,7 +11,7 @@ The 10 story paragraphs, in order:
 
 Write:
 - First line: `CHARACTER:` then the Main character visual words from the story bible, copied word for word.
-- Then exactly 10 numbered lines `1.` … `10.`. Line `N.` is a translation of paragraph `N.` into at most 23 English visual words: who does what, with what, where. Copy that paragraph's action, object, and place. Do not invent a different action, object, or place. If the paragraph has the hero sitting, the line says sitting. When a recurring object from the bible appears, call it by its EXACT bible words (for example `red rose`) so it looks the same on every page. Describe the place with the bible's setting words. Do not copy a photo's composition. Characters are drawn as cute kids-book figures, not real people.
+- Then exactly 10 numbered lines `1.` … `10.`. Line `N.` is a translation of paragraph `N.` into at most 23 English visual words: who does what, with what, where. Copy that paragraph's action, object, and place. Do not invent a different action, object, or place. If the paragraph has the hero sitting, the line says sitting. For any bible character, setting, or prop used by the paragraph, use its exact bible words. The renderer preserves the full bible anchor block separately. Do not copy a photo's composition. Characters are drawn as cute kids-book figures, not real people.
 
 Rules:
 - Children's picture book for ages 5–9. Wholesome, G-rated, soft watercolor storybook style, pastel colors, warm cozy lighting.

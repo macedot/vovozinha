@@ -111,6 +111,7 @@ public struct SeedPipeline: Sendable {
         guard draft.paragraphs.count == 10 else {
             throw StoryPromptError.generationFailed
         }
+        let illustrationAnchors = bible?.illustrationAnchorBlock ?? (photoTags ?? "")
 
         // Story text is the product. Publish it before the second LLM pass so a
         // CHARACTER:/numbered-line parse miss cannot hide the book.
@@ -118,7 +119,10 @@ public struct SeedPipeline: Sendable {
             StoryPage(
                 index: i + 1,
                 text: text,
-                illustrationPrompt: scenePrompt(setting: bible?.setting ?? "")
+                illustrationPrompt: scenePrompt(
+                    paragraph: text,
+                    setting: bible?.setting ?? ""
+                )
             )
         }
         continuation.yield(.pageTextsReady(
@@ -191,7 +195,8 @@ public struct SeedPipeline: Sendable {
         let referenceData = try await ensureReference(
             storyID: storyID,
             photo: photo,
-            lock: characterDescriptor
+            lock: characterDescriptor,
+            anchors: illustrationAnchors
         )
         tick()
 
@@ -223,7 +228,11 @@ public struct SeedPipeline: Sendable {
                 continue
             }
             let page = pages[index - 1]
-            let prompt = clipPrompt(scene: page.illustrationPrompt, lock: characterDescriptor)
+            let prompt = clipPrompt(
+                scene: page.illustrationPrompt,
+                lock: bible == nil ? characterDescriptor : "",
+                anchors: illustrationAnchors
+            )
             var shared: [String] = []
             if index > 1, let lastRendered {
                 shared = Self.sharedElements(
@@ -290,8 +299,8 @@ public struct SeedPipeline: Sendable {
     /// resembles the photo, while the locked negative + anime style scaffold shed
     /// photoreal residue (kids-safe, §12.21).
     static let referenceStrength: Float = 0.68
-    /// img2img strength for the photo-path cover: high enough that the standing
-    /// reference sheet cannot keep its pose, low enough that face/hair traces remain.
+    /// img2img strength for the photo-path cover: high enough that the reference
+    /// composition cannot keep its pose, low enough that face/hair traces remain.
     static let coverStrength: Float = 0.88
     /// img2img strength when a supporting-cast member is re-mentioned: the figure
     /// persists from the previous good page while the new action still leads.
@@ -313,7 +322,8 @@ public struct SeedPipeline: Sendable {
     private func ensureReference(
         storyID: UUID,
         photo: PhotoDescribeInput?,
-        lock: String
+        lock: String,
+        anchors: String
     ) async throws -> Data? {
         let fileName = StoryFileStore.referenceFileName
         if store.pngExists(id: storyID, fileName: fileName) {
@@ -322,10 +332,11 @@ public struct SeedPipeline: Sendable {
             )
         }
         let prompt = clipPrompt(
-            // One figure, plain background — "character reference sheet" invites
-            // multi-view grids that dilute the person's identity.
-            scene: "single character design, one full body figure, standing, front view, plain background",
-            lock: lock
+            // Keep the reference as one clean composition while preserving the
+            // extracted cast, setting, and props for every later page.
+            scene: "storybook character and story elements, plain background",
+            lock: lock,
+            anchors: anchors
         )
         let seed = StoryIdentity.baseSeed(storyID: storyID)
         if let photo, !photo.isEmpty {
@@ -379,25 +390,27 @@ public struct SeedPipeline: Sendable {
         }
     }
 
-    /// CLIP 77-token budget, enforced hard. Assembly order — unique scene, short
-    /// identity lock, compressed style core. Overflow eats style first, then the
-    /// lock; the scene is the last thing cut, because that is the page description.
-    func clipPrompt(scene: String, lock: String) -> String {
+    /// CLIP 77-token budget, enforced as a target. Required anchors are never
+    /// truncated; optional style, scene, and fallback lock words are reduced
+    /// first. A long anchor block is allowed to exceed the word target rather
+    /// than silently dropping extracted visual vocabulary.
+    func clipPrompt(scene: String, lock: String, anchors: String = "") -> String {
         var styleCore = Self.words(in: stylePrefix, limit: Self.styleWordLimit)
         var lockBit = Self.words(in: lock, limit: Self.lockWordLimit)
         var sceneBit = Self.words(in: scene, limit: Self.sceneWordLimit)
-        while Self.wordCount([sceneBit, lockBit, styleCore]) > Self.totalWordBudget {
+        let anchorBit = anchors.trimmingCharacters(in: .whitespacesAndNewlines)
+        while Self.wordCount([sceneBit, lockBit, anchorBit, styleCore]) > Self.totalWordBudget {
             if styleCore.split(separator: " ").count > Self.minStyleWords {
                 styleCore = Self.words(in: styleCore, limit: styleCore.split(separator: " ").count - 1)
-            } else if lockBit.split(separator: " ").count > Self.minLockWords {
-                lockBit = Self.words(in: lockBit, limit: lockBit.split(separator: " ").count - 1)
             } else if sceneBit.split(separator: " ").count > Self.minSceneWords {
                 sceneBit = Self.words(in: sceneBit, limit: sceneBit.split(separator: " ").count - 1)
+            } else if lockBit.split(separator: " ").count > Self.minLockWords {
+                lockBit = Self.words(in: lockBit, limit: lockBit.split(separator: " ").count - 1)
             } else {
                 break
             }
         }
-        return [sceneBit, lockBit, styleCore]
+        return [sceneBit, lockBit, anchorBit, styleCore]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
     }
@@ -412,9 +425,8 @@ public struct SeedPipeline: Sendable {
 
     // MARK: - Prompt budget
 
-    /// ~50 words ≈ ≤68 CLIP tokens — safety margin under the 75-token cut.
-    /// Rebalanced toward the scene: the rewritten style scaffold carries the
-    /// child look in 12 words, freeing 3 words for concrete scene detail.
+    /// ~50 words ≈ ≤68 CLIP tokens — safety margin under the 75-token cut for
+    /// normal-sized anchor blocks.
     static let totalWordBudget = 50
     static let styleWordLimit = 12
     static let lockWordLimit = 15
@@ -470,10 +482,14 @@ public struct SeedPipeline: Sendable {
         return false
     }
 
-    /// Scene fallback when the illustration LLM pass fails — English setting
-    /// (or a generic scene). Never the story-language paragraph: CLIP is
-    /// English-only. The character lock is appended separately by `clipPrompt`.
-    func scenePrompt(setting: String) -> String {
+    /// Scene fallback when the illustration LLM pass fails. Keep the page
+    /// paragraph as the source of truth; the StoryBible is appended separately
+    /// by `clipPrompt`.
+    func scenePrompt(paragraph: String, setting: String) -> String {
+        let text = paragraph.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty {
+            return Self.words(in: text, limit: Self.sceneWordLimit)
+        }
         let place = setting.trimmingCharacters(in: .whitespaces)
         if place.isEmpty || place == "(none)" {
             return "bedtime picture book scene"
