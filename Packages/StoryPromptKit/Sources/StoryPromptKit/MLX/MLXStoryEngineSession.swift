@@ -6,8 +6,8 @@ import Foundation
 /// download handled by `OnDeviceMLXModelStore`, never for inference.
 public protocol MLXStoryEngineSessioning: Sendable {
     /// Send `prompt` and return the model's full text reply.
-    /// `temperature` 0.7 is the story-writing band; extraction passes (bible,
-    /// illustration lines) use a lower value so the model copies rather than directs.
+    /// `temperature` 0.7 is the story-writing band; extraction passes use a
+    /// lower value so the model copies rather than directs.
     func send(_ prompt: String, temperature: Float) async throws -> String
 }
 
@@ -57,9 +57,6 @@ final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable
                 topP: Self.defaultTopP,
                 topK: Self.defaultTopK
             )
-            // Generic on purpose: this session also writes illustration scene lists.
-            // A "story format only" instruction made the second LLM pass emit TITLE/SUMMARY
-            // instead of CHARACTER: + 10 numbered lines, which aborted the whole book.
             let instructions = """
             You follow the user's instructions exactly and output only the requested format. \
             Do not include chain-of-thought, analysis, or tool calls.

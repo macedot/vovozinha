@@ -1,6 +1,6 @@
 import Foundation
 
-/// Persists story metadata alongside the page PNGs in the user-visible Documents container.
+/// Persists story metadata as `history.json` in the user-visible Documents container.
 public struct StoryHistoryStore: Sendable {
     public let rootURL: URL
 
@@ -35,7 +35,7 @@ public struct StoryHistoryStore: Sendable {
 
     public func delete(_ story: Storybook) throws {
         let files = StoryFileStore(rootURL: rootURL)
-        try files.removeStory(id: story.id)
+        try files.deleteStory(id: story.id)
         try save(try load().filter { $0.id != story.id })
     }
 

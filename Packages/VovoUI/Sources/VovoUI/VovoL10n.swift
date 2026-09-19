@@ -56,24 +56,8 @@ public enum VovoL10n {
         case storyValidationTooShort
         case storyValidationTooLong
 
-        // Photo describe feature
-        case photoDescribeTitle
-        case photoDescribeSubtitle
-        case photoDescribePick
-        case photoDescribeAction
-        case photoDescribeFailed
-        case photoDescribeInvalidImage
-
-        case imagePackGateTitle
-        case imagePackGateBody
-        case imagePackGateDownload
-        case imagePackGateFilenameHint
-        case storyAddPhoto
-        case storyClearPhoto
         case storyWriting
-        case storyPreparingPictures
         case storyPipelineFailed
-        case readerWaitingPicture
 
         // Story history + reader navigation
         case storyHistoryTitle
@@ -149,14 +133,6 @@ public enum VovoL10n {
             "storyModelGateDownloadBytes",
             lang: lang,
             vars: ["received": received, "total": total]
-        )
-    }
-
-    public static func historyPages(illustrated: Int, total: Int, lang: AppLanguage) -> String {
-        string(
-            "storyHistoryPages",
-            lang: lang,
-            vars: ["count": "\(illustrated)", "total": "\(total)"]
         )
     }
 

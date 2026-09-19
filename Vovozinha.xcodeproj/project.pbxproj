@@ -20,7 +20,6 @@
 		CBA0BC7939BE7E0E370DF3E4 /* StorybookKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StorybookKit; path = Packages/StorybookKit; sourceTree = SOURCE_ROOT; };
 		D3E596C49EE9FD35A76E8F91 /* VovozinhaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VovozinhaApp.swift; sourceTree = "<group>"; };
 		F27FC19B37FD0AC6B37B09A7 /* Vovozinha.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vovozinha.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		FB8B9DAA756D624FF8322687 /* ImageGenKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ImageGenKit; path = Packages/ImageGenKit; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,7 +63,6 @@
 		729D73858EFEAD0ECA8AFD8B /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				FB8B9DAA756D624FF8322687 /* ImageGenKit */,
 				CBA0BC7939BE7E0E370DF3E4 /* StorybookKit */,
 				675DDD631D3E85381A748AF7 /* StoryPromptKit */,
 				A51E6CE3889F3CE86CC4C134 /* VovoUI */,
@@ -130,7 +128,6 @@
 			mainGroup = BD1FD6431E23B3582A8F709D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				2B6877E08F3B1B74A6D51707 /* XCLocalSwiftPackageReference "Packages/ImageGenKit" */,
 				3FA56A837A1CBBD562719EC0 /* XCLocalSwiftPackageReference "Packages/StoryPromptKit" */,
 				C9F0CCEA3DC9FE940255E906 /* XCLocalSwiftPackageReference "Packages/StorybookKit" */,
 				3E568F3618716272B53D9DE3 /* XCLocalSwiftPackageReference "Packages/VovoUI" */,
@@ -178,7 +175,6 @@
 				DEVELOPMENT_TEAM = FTS4YLJNG3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -206,7 +202,6 @@
 				DEVELOPMENT_TEAM = FTS4YLJNG3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Vovozinha;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -373,10 +368,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		2B6877E08F3B1B74A6D51707 /* XCLocalSwiftPackageReference "Packages/ImageGenKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/ImageGenKit;
-		};
 		3E568F3618716272B53D9DE3 /* XCLocalSwiftPackageReference "Packages/VovoUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VovoUI;

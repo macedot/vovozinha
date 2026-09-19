@@ -1,18 +1,8 @@
 import Foundation
-#if canImport(CoreGraphics)
-import CoreGraphics
-#endif
-#if canImport(ImageIO)
-import ImageIO
-#endif
-#if canImport(UniformTypeIdentifiers)
-import UniformTypeIdentifiers
-#endif
 
-/// Persists page PNGs and the cartoon reference as relative files.
+/// Persists storybook metadata as `story.json` under the user-visible Documents container.
 public struct StoryFileStore: Sendable {
     public let rootURL: URL
-    public static let referenceFileName = "reference.png"
 
     public init(rootURL: URL) {
         self.rootURL = rootURL
@@ -24,8 +14,6 @@ public struct StoryFileStore: Sendable {
             .appendingPathComponent("Stories", isDirectory: true)
             .appendingPathComponent(id.uuidString, isDirectory: true)
     }
-
-    public func pageFileName(index: Int) -> String { "page-\(index).png" }
 
     // MARK: - Storybook metadata (story.json)
 
@@ -47,7 +35,7 @@ public struct StoryFileStore: Sendable {
     }
 
     /// All saved books, newest first. Entries without a readable `story.json`
-    /// (e.g. an interrupted run that only wrote PNGs) are skipped.
+    /// are skipped.
     public func loadAllStorybooks() -> [Storybook] {
         let storiesRoot = rootURL
             .appendingPathComponent("Vovozinha", isDirectory: true)
@@ -66,7 +54,9 @@ public struct StoryFileStore: Sendable {
     }
 
     public func deleteStory(id: UUID) throws {
-        try FileManager.default.removeItem(at: storyDirectory(id: id))
+        let directory = storyDirectory(id: id)
+        guard FileManager.default.fileExists(atPath: directory.path) else { return }
+        try FileManager.default.removeItem(at: directory)
     }
 
     public func ensureStoryDirectory(id: UUID) throws -> URL {
@@ -74,30 +64,4 @@ public struct StoryFileStore: Sendable {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
-
-    public func pngExists(id: UUID, fileName: String) -> Bool {
-        FileManager.default.fileExists(atPath: storyDirectory(id: id).appendingPathComponent(fileName).path)
-    }
-
-    public func removeStory(id: UUID) throws {
-        let directory = storyDirectory(id: id)
-        guard FileManager.default.fileExists(atPath: directory.path) else { return }
-        try FileManager.default.removeItem(at: directory)
-    }
-
-#if canImport(CoreGraphics) && canImport(ImageIO)
-    @discardableResult
-    public func writePNG(_ image: CGImage, id: UUID, fileName: String) throws -> URL {
-        let dir = try ensureStoryDirectory(id: id)
-        let url = dir.appendingPathComponent(fileName)
-        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
-            throw ImageWriteError.failed
-        }
-        CGImageDestinationAddImage(dest, image, nil)
-        guard CGImageDestinationFinalize(dest) else { throw ImageWriteError.failed }
-        return url
-    }
-#endif
-
-    public enum ImageWriteError: Error { case failed }
 }

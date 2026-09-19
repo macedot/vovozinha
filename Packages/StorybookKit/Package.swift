@@ -10,8 +10,6 @@ let package = Package(
     dependencies: [
         .package(path: "../VovoUI"),
         .package(path: "../StoryPromptKit"),
-        .package(path: "../PhotoDescribeKit"),
-        .package(path: "../ImageGenKit"),
     ],
     targets: [
         .target(
@@ -19,8 +17,6 @@ let package = Package(
             dependencies: [
                 "VovoUI",
                 "StoryPromptKit",
-                "PhotoDescribeKit",
-                "ImageGenKit",
             ],
             path: "Sources/StorybookKit"
         ),

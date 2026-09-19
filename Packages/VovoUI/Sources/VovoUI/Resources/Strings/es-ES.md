@@ -7,7 +7,7 @@ Idioma
 Vovozinha
 
 ## placeholderSubtitle
-Un cuento ilustrado para la hora de dormir, hecho en este iPhone.
+Un cuento para la hora de dormir, escrito en este iPhone.
 
 ## storySeedTitle
 Descripción del cuento
@@ -156,53 +156,11 @@ Usa como máximo {{max}} palabras (ahora {{current}}).
 ## seedSubtitle
 Describe con pocas palabras el cuento que se va a generar ({{min}}–{{max}} palabras).
 
-## photoDescribeTitle
-Describir una foto
-
-## photoDescribeSubtitle
-Elige una foto. En este dispositivo escribimos un pie corto — primero personas, luego objetos, luego la escena. Nada se sube.
-
-## photoDescribePick
-Elegir foto
-
-## photoDescribeAction
-Describir foto
-
-## photoDescribeFailed
-No se pudo describir la foto. Inténtalo de nuevo.
-
-## photoDescribeInvalidImage
-No se pudo leer esa foto. Elige otra.
-
-## imagePackGateTitle
-Paquete de imágenes necesario
-
-## imagePackGateBody
-Las ilustraciones necesitan un paquete de imágenes (~2 GB). Descárgalo una vez por Wi‑Fi — permanece privado en la app. Si falla, usa Importar desde Archivos.
-
-## imagePackGateDownload
-Descargar paquete de imágenes
-
-## imagePackGateFilenameHint
-Paquete: AnimeImg2Img-SD15 (zip o carpeta). Mejor por Wi‑Fi.
-
-## storyAddPhoto
-Añadir una foto (opcional)
-
-## storyClearPhoto
-Quitar foto
-
 ## storyWriting
 Escribiendo el cuento…
 
-## storyPreparingPictures
-Preparando las imágenes…
-
 ## storyPipelineFailed
 No se pudo terminar el cuento. Inténtalo de nuevo.
-
-## readerWaitingPicture
-Dibujando esta página…
 
 ## storyHistoryTitle
 Historial de Cuentos
@@ -212,9 +170,6 @@ Historial de Cuentos
 
 ## storyHistoryEmpty
 Aún no hay cuentos. Cada cuento que crees se guarda aquí automáticamente.
-
-## storyHistoryPages
-Ilustraciones {{count}}/{{total}}
 
 ## readerBack
 Volver

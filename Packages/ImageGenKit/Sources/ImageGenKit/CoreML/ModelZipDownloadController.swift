@@ -1,5 +1,0 @@
-import Foundation
-import VovoUI
-
-public typealias ModelZipDownloadLiveState = VovoUI.ModelZipDownloadLiveState
-public typealias ModelZipDownloadController = VovoUI.ModelZipDownloadController

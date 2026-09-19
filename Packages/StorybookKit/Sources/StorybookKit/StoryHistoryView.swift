@@ -2,19 +2,6 @@ import Foundation
 import SwiftUI
 import VovoUI
 
-#if canImport(CoreGraphics)
-import CoreGraphics
-#endif
-#if canImport(ImageIO)
-import ImageIO
-#endif
-#if canImport(UIKit)
-import UIKit
-#endif
-#if canImport(AppKit) && !canImport(UIKit)
-import AppKit
-#endif
-
 public struct StoryHistoryView: View {
     @Environment(LanguageStore.self) private var languageStore
     @State private var stories: [Storybook] = []
@@ -66,7 +53,7 @@ public struct StoryHistoryView: View {
         .refreshable { reload() }
         .navigationDestination(for: UUID.self) { id in
             if let story = stories.first(where: { $0.id == id }) {
-                StoryHistoryReaderView(story: story, rootURL: store.rootURL)
+                StoryHistoryReaderView(story: story)
             } else {
                 Text(VovoL10n.t(.storyHistoryMissing, lang))
                     .foregroundStyle(VovoTheme.cream)
@@ -151,11 +138,9 @@ public struct StoryHistoryReaderView: View {
     @Environment(LanguageStore.self) private var languageStore
 
     private let story: Storybook
-    private let rootURL: URL
 
-    public init(story: Storybook, rootURL: URL) {
+    public init(story: Storybook) {
         self.story = story
-        self.rootURL = rootURL
     }
 
     private var lang: AppLanguage { languageStore.language }
@@ -168,15 +153,10 @@ public struct StoryHistoryReaderView: View {
                     subtitle: story.summary,
                     scrolls: true
                 ) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        StoryHistoryPageImage(
-                            url: safeImageURL(for: page.imageFileName)
-                        )
-                        Text(page.text)
-                            .font(.body)
-                            .foregroundStyle(VovoTheme.cream)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text(page.text)
+                        .font(.body)
+                        .foregroundStyle(VovoTheme.cream)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -186,74 +166,6 @@ public struct StoryHistoryReaderView: View {
         .navigationTitle(story.title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        #endif
-    }
-
-    private func safeImageURL(for fileName: String?) -> URL? {
-        guard let fileName else { return nil }
-        let files = StoryFileStore(rootURL: rootURL)
-        let directory = files.storyDirectory(id: story.id).standardizedFileURL
-        let candidate = directory.appendingPathComponent(fileName).standardizedFileURL
-        guard candidate.path.hasPrefix(directory.path + "/"),
-              FileManager.default.fileExists(atPath: candidate.path)
-        else {
-            return nil
-        }
-        return candidate
-    }
-}
-
-private struct StoryHistoryPageImage: View {
-    let url: URL?
-
-    @Environment(LanguageStore.self) private var languageStore
-    @State private var image: Image?
-
-    private var lang: AppLanguage { languageStore.language }
-
-    var body: some View {
-        Group {
-            if let image {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(VovoTheme.cardFill)
-                        .frame(height: 220)
-                    Text(VovoL10n.t(.readerWaitingPicture, lang))
-                        .font(.caption)
-                        .foregroundStyle(VovoTheme.cream.opacity(0.7))
-                }
-            }
-        }
-        .task(id: url) {
-            await load()
-        }
-    }
-
-    @MainActor
-    private func load() async {
-        guard let url else { return }
-        let cgImage: CGImage? = await Task.detached(priority: .utility) { () -> CGImage? in
-            guard let data = try? Data(contentsOf: url),
-                  let source = CGImageSourceCreateWithData(data as CFData, nil),
-                  let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-            else {
-                return nil
-            }
-            return image
-        }.value
-        guard !Task.isCancelled, let cgImage else { return }
-        #if canImport(UIKit)
-        image = Image(uiImage: UIImage(cgImage: cgImage))
-        #elseif canImport(AppKit)
-        image = Image(nsImage: NSImage(
-            cgImage: cgImage,
-            size: NSSize(width: cgImage.width, height: cgImage.height)
-        ))
         #endif
     }
 }

@@ -17,7 +17,7 @@ public struct DevicePromptCompleter: Sendable {
         self.sessionProvider = sessionProvider
     }
 
-    /// Lower than story writing: bible + illustration passes should copy, not invent.
+    /// Lower than story writing: extraction passes should copy, not invent.
     public static let extractionTemperature: Float = 0.35
 
     public func complete(

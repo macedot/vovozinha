@@ -3,9 +3,6 @@ You are a skilled children's storyteller. Using the following story description 
 Story description:
 [INSERTAR LA DESCRIPCIÓN DE LA HISTORIA AQUÍ]
 
-Story elements (the extracted cast and world. Every named character MUST look and behave exactly as described here; weave the setting and objects into the story; do not invent extra people or objects that are not here; omit this section if empty):
-[INSERTAR LOS ELEMENTOS DE LA HISTORIA AQUÍ]
-
 Requirements:
 - Write the ENTIRE story in Spanish from Spain (es-ES).
 - Keep the tone positive, imaginative, and kind. Avoid violence, scary elements, or complex themes.

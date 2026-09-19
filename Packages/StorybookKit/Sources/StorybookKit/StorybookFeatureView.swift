@@ -1,37 +1,14 @@
-import ImageGenKit
-import PhotosUI
-import PhotoDescribeKit
 import StoryPromptKit
 import SwiftUI
 import VovoUI
 
-#if canImport(CoreGraphics)
-import CoreGraphics
-#endif
-#if canImport(ImageIO)
-import ImageIO
-#endif
-#if canImport(UIKit)
-import UIKit
-#endif
-#if canImport(AppKit) && !canImport(UIKit)
-import AppKit
-#endif
-
-private enum DualGate {
+private enum Gate {
     case checking
     case needsStoryModel
-    case needsImagePack
     case downloadingStory(fraction: Double)
-    case downloadingImage(fraction: Double)
     case importing
     case failed(String)
     case ready
-}
-
-private enum ImporterTarget {
-    case storyModel
-    case imagePack
 }
 
 private enum Screen {
@@ -40,19 +17,15 @@ private enum Screen {
     case reader
 }
 
-/// Product create + reader: seed, optional photo, 10 illustrated pages.
+/// Product create + reader: a required description, 10 text pages.
 public struct StorybookFeatureView: View {
     @Environment(LanguageStore.self) private var languageStore
 
-    @State private var gate: DualGate = .checking
+    @State private var gate: Gate = .checking
     @State private var storyStore = OnDeviceMLXModelStore()
-    @State private var imageStore = CoreMLImagePackStore()
     @State private var showFileImporter = false
-    @State private var importerTarget: ImporterTarget = .storyModel
 
     @State private var promptText = ""
-    @State private var pickerItem: PhotosPickerItem?
-    @State private var photoData: Data?
     @State private var isRunning = false
     @State private var errorMessage: String?
     @State private var title: String = ""
@@ -99,12 +72,8 @@ public struct StorybookFeatureView: View {
                 }
             case .needsStoryModel:
                 storyModelGate
-            case .needsImagePack:
-                imagePackGate
             case .downloadingStory(let fraction):
                 downloadingScreen(title: VovoL10n.t(.storyModelGateTitle, lang), fraction: fraction)
-            case .downloadingImage(let fraction):
-                downloadingScreen(title: VovoL10n.t(.imagePackGateTitle, lang), fraction: fraction)
             case .importing:
                 VovoScreen(title: VovoL10n.t(.storyModelGateImporting, lang), scrolls: false) {
                     ProgressView().tint(VovoTheme.amber)
@@ -150,40 +119,12 @@ public struct StorybookFeatureView: View {
                 .buttonStyle(VovoPrimaryButtonStyle(enabled: true))
                 .accessibilityIdentifier("modelGateDownload")
                 Button {
-                    importerTarget = .storyModel
                     showFileImporter = true
                 } label: {
                     Text(VovoL10n.t(.storyModelGateImport, lang))
                 }
                 .buttonStyle(VovoSecondaryButtonStyle())
                 .accessibilityIdentifier("modelGateImport")
-            }
-        }
-    }
-
-    private var imagePackGate: some View {
-        VovoScreen(
-            title: VovoL10n.t(.imagePackGateTitle, lang),
-            subtitle: VovoL10n.t(.imagePackGateBody, lang)
-        ) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(VovoL10n.t(.imagePackGateFilenameHint, lang))
-                    .font(.caption)
-                    .foregroundStyle(VovoTheme.cream.opacity(0.75))
-                Button {
-                    Task { await downloadImagePack() }
-                } label: {
-                    Text(VovoL10n.t(.imagePackGateDownload, lang))
-                }
-                .buttonStyle(VovoPrimaryButtonStyle(enabled: true))
-                .accessibilityIdentifier("imagePackDownload")
-                Button {
-                    importerTarget = .imagePack
-                    showFileImporter = true
-                } label: {
-                    Text(VovoL10n.t(.storyModelGateImport, lang))
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
             }
         }
     }
@@ -230,30 +171,6 @@ public struct StorybookFeatureView: View {
                     Spacer()
                 }
 
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Text(VovoL10n.t(.storyAddPhoto, lang)).frame(maxWidth: .infinity)
-                }
-                .buttonStyle(VovoSecondaryButtonStyle())
-                .accessibilityIdentifier("storyAddPhoto")
-                .onChange(of: pickerItem) { _, item in
-                    Task { await loadPhoto(item) }
-                }
-
-                if let photoData, let image = uiImage(from: photoData) {
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    Button {
-                        self.photoData = nil
-                        pickerItem = nil
-                    } label: {
-                        Text(VovoL10n.t(.storyClearPhoto, lang))
-                    }
-                    .buttonStyle(VovoSecondaryButtonStyle())
-                }
-
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.caption)
@@ -291,10 +208,8 @@ public struct StorybookFeatureView: View {
 
     private var runningLabel: String {
         switch phase {
-        case .caption, .bible, .story:
+        case .story:
             return VovoL10n.t(.storyWriting, lang)
-        case .illustrationPrompts, .reference, .pages:
-            return VovoL10n.t(.storyPreparingPictures, lang)
         case .finished, .failed:
             return VovoL10n.t(.storyCreate, lang)
         }
@@ -316,13 +231,10 @@ public struct StorybookFeatureView: View {
                         subtitle: summary,
                         scrolls: true
                     ) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            pageArt(page)
-                            Text(page.text)
-                                .font(.body)
-                                .foregroundStyle(VovoTheme.cream)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(page.text)
+                            .font(.body)
+                            .foregroundStyle(VovoTheme.cream)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -388,7 +300,8 @@ public struct StorybookFeatureView: View {
 
     private func historyRow(_ book: Storybook) -> some View {
         HStack(spacing: 12) {
-            historyThumbnail(book)
+            Image(systemName: "book.fill")
+                .foregroundStyle(VovoTheme.amber)
             VStack(alignment: .leading, spacing: 4) {
                 Text(book.title.isEmpty ? VovoL10n.t(.storyScene, lang) : book.title)
                     .font(.headline)
@@ -397,13 +310,9 @@ public struct StorybookFeatureView: View {
                 Text(book.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(VovoTheme.cream.opacity(0.7))
-                Text(VovoL10n.historyPages(
-                    illustrated: book.pages.filter { $0.imageFileName != nil }.count,
-                    total: max(book.pages.count, 1),
-                    lang: lang
-                ))
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(VovoTheme.mint)
+                Text(VovoL10n.historyPageCount(book.pages.count, lang: lang))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(VovoTheme.mint)
             }
             Spacer()
             Button {
@@ -425,87 +334,11 @@ public struct StorybookFeatureView: View {
         .accessibilityIdentifier("storyHistoryItem_\(book.id.uuidString)")
     }
 
-    @ViewBuilder
-    private func historyThumbnail(_ book: Storybook) -> some View {
-        if let fileName = book.pages.compactMap(\.imageFileName).first,
-           let image = loadStoryPNG(id: book.id, fileName: fileName) {
-            image
-                .resizable()
-                .scaledToFill()
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(VovoTheme.cream.opacity(0.12))
-                Image(systemName: "book.fill")
-                    .foregroundStyle(VovoTheme.cream.opacity(0.6))
-            }
-            .frame(width: 56, height: 56)
-        }
-    }
-
-    /// Page artwork; page 1 doubles as the cover with the story title over the
-    /// art. The page text itself renders BELOW the image (reader body), never
-    /// on top of the artwork.
-    @ViewBuilder
-    private func pageArt(_ page: StoryPage) -> some View {
-        if let name = page.imageFileName,
-           let img = loadStoryPNG(id: storyID, fileName: name) {
-            img
-                .resizable()
-                .scaledToFit()
-                .overlay(alignment: .top) {
-                    if page.index == 1 {
-                        coverBanner
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(VovoTheme.cardFill)
-                    .frame(height: 220)
-                VStack(spacing: 8) {
-                    if isRunning {
-                        ProgressView().tint(VovoTheme.amber)
-                    }
-                    Text(VovoL10n.t(.readerWaitingPicture, lang))
-                        .font(.caption)
-                        .foregroundStyle(VovoTheme.cream.opacity(0.7))
-                }
-            }
-        }
-    }
-
-    private var coverBanner: some View {
-        Text(title.isEmpty ? VovoL10n.t(.storyScene, lang) : title)
-            .font(.title2.weight(.bold))
-            .multilineTextAlignment(.center)
-            .foregroundStyle(VovoTheme.cream)
-            .shadow(color: .black.opacity(0.6), radius: 4)
-            .frame(maxWidth: .infinity)
-            .padding(.top, 14)
-            .padding(.bottom, 22)
-            .padding(.horizontal, 12)
-            .background(
-                LinearGradient(
-                    colors: [.black.opacity(0.55), .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-    }
-
     @MainActor
     private func refreshGate() async {
         gate = .checking
         if await !storyStore.isModelPresent() {
             gate = .needsStoryModel
-            return
-        }
-        if await !imageStore.isPackPresent() {
-            gate = .needsImagePack
             return
         }
         gate = .ready
@@ -524,18 +357,6 @@ public struct StorybookFeatureView: View {
     }
 
     @MainActor
-    private func downloadImagePack() async {
-        do {
-            try await imageStore.download { snap in
-                gate = .downloadingImage(fraction: snap.fraction)
-            }
-            await refreshGate()
-        } catch {
-            gate = .failed(error.localizedDescription)
-        }
-    }
-
-    @MainActor
     private func handleImport(_ result: Result<[URL], Error>) async {
         switch result {
         case .failure:
@@ -544,23 +365,12 @@ public struct StorybookFeatureView: View {
             guard let url = urls.first else { return }
             gate = .importing
             do {
-                switch importerTarget {
-                case .storyModel:
-                    try await storyStore.importModel(from: url)
-                case .imagePack:
-                    try await imageStore.importPack(from: url)
-                }
+                try await storyStore.importModel(from: url)
                 await refreshGate()
             } catch {
                 gate = .failed(error.localizedDescription)
             }
         }
-    }
-
-    @MainActor
-    private func loadPhoto(_ item: PhotosPickerItem?) async {
-        guard let item else { photoData = nil; return }
-        photoData = try? await item.loadTransferable(type: Data.self)
     }
 
     // MARK: - Navigation (create / history / reader)
@@ -581,7 +391,6 @@ public struct StorybookFeatureView: View {
     }
 
     /// Returns to Create keeping the current draft so it can be tweaked.
-    /// A running pipeline keeps drawing; the book is already saved on disk.
     @MainActor
     private func goBack(to destination: Screen) {
         screen = destination
@@ -592,8 +401,6 @@ public struct StorybookFeatureView: View {
     private func startNewStory() {
         pipelineTask?.cancel()
         promptText = ""
-        photoData = nil
-        pickerItem = nil
         pages = []
         title = ""
         summary = ""
@@ -648,25 +455,13 @@ public struct StorybookFeatureView: View {
         pages = []
         title = ""
         summary = ""
-        let photo: PhotoDescribeInput? = photoData.map { PhotoDescribeInput(imageData: $0) }
         let pipeline = SeedPipeline(
             storyGenerator: DeviceStoryGenerator(modelStore: storyStore),
-            illustrationPrompts: DeviceIllustrationPromptGenerator(
-                completer: DeviceCompleterAdapter(DevicePromptCompleter(modelStore: storyStore)),
-                language: lang
-            ),
-            imageGenerator: DeviceImageGenerator(packStore: imageStore),
-            photoDescriber: DevicePhotoDescriber(modelStore: storyStore),
-            memory: MemorySequencer(),
-            store: StoryFileStore(rootURL: documentsURL),
-            bibleGenerator: DeviceStoryBibleGenerator(
-                completer: DeviceCompleterAdapter(DevicePromptCompleter(modelStore: storyStore)),
-                language: lang
-            )
+            store: StoryFileStore(rootURL: documentsURL)
         )
         let seedPrompt = seed
         pipelineTask = Task {
-            for await event in pipeline.run(seed: seedPrompt, photo: photo, storyID: id) {
+            for await event in pipeline.run(seed: seedPrompt, storyID: id) {
                 await MainActor.run { apply(event) }
             }
             await MainActor.run {
@@ -693,15 +488,6 @@ public struct StorybookFeatureView: View {
             )
             readerOrigin = .create
             screen = .reader
-        case .illustrationReady(let index, let fileName):
-            var updatedPages = pages
-            if let i = updatedPages.firstIndex(where: { $0.index == index }) {
-                updatedPages[i].imageFileName = fileName
-                pages = updatedPages
-                persistStory(phase: .pages, pages: updatedPages)
-            }
-        case .progress:
-            break
         case .failed(let message):
             let fallback = pages.isEmpty
                 ? VovoL10n.t(.storyGenerateFailed, lang)
@@ -733,8 +519,6 @@ public struct StorybookFeatureView: View {
             summary: summary ?? self.summary,
             language: activeLanguage.rawValue,
             seedPrompt: activeSeedPrompt,
-            characterDescriptor: "",
-            baseSeed: StoryIdentity.baseSeed(storyID: storyID),
             phase: phase,
             pages: storyPages,
             createdAt: storyCreatedAt
@@ -753,20 +537,5 @@ public struct StorybookFeatureView: View {
         #if canImport(UIKit)
         UIApplication.shared.isIdleTimerDisabled = disabled
         #endif
-    }
-
-    private func uiImage(from data: Data) -> Image? {
-        #if canImport(UIKit)
-        if let ui = UIImage(data: data) { return Image(uiImage: ui) }
-        #elseif canImport(AppKit)
-        if let ns = NSImage(data: data) { return Image(nsImage: ns) }
-        #endif
-        return nil
-    }
-
-    private func loadStoryPNG(id: UUID, fileName: String) -> Image? {
-        let url = StoryFileStore(rootURL: documentsURL).storyDirectory(id: id).appendingPathComponent(fileName)
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return uiImage(from: data)
     }
 }

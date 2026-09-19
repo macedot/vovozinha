@@ -3,9 +3,6 @@ You are a skilled children's storyteller. Using the following story description 
 Story description:
 [INSERIR A DESCRIÇÃO DA HISTÓRIA AQUI]
 
-Story elements (the extracted cast and world. Every named character MUST look and behave exactly as described here; weave the setting and objects into the story; do not invent extra people or objects that are not here; omit this section if empty):
-[INSERIR OS ELEMENTOS DA HISTÓRIA AQUI]
-
 Requirements:
 - Write the ENTIRE story in Brazilian Portuguese (pt-BR).
 - Keep the tone positive, imaginative, and kind. Avoid violence, scary elements, or complex themes.

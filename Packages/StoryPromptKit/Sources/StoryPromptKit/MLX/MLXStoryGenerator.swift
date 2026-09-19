@@ -34,7 +34,7 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
         let seed = prompt.trimmed
         let lang = prompt.language
 
-        let userPrompt = Self.buildPrompt(seed: seed, caption: prompt.imageContext, language: lang)
+        let userPrompt = Self.buildPrompt(seed: seed, language: lang)
         guard !userPrompt.isEmpty,
               !StoryPromptTemplate.containsUnresolvedDescriptionPlaceholder(userPrompt) else {
             throw StoryPromptError.generationFailed
@@ -84,8 +84,8 @@ public struct MLXStoryGenerator: StoryFromPromptGenerating {
 
     // MARK: - Prompt building
 
-    static func buildPrompt(seed: String, caption: String? = nil, language: AppLanguage) -> String {
-        StoryPromptTemplate.filledStoryPrompt(description: seed, storyElements: caption, language: language)
+    static func buildPrompt(seed: String, language: AppLanguage) -> String {
+        StoryPromptTemplate.filledStoryPrompt(description: seed, language: language)
     }
 
     /// Drop Qwen-style thinking wrappers if the model emits them despite `enable_thinking: false`.

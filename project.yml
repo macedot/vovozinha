@@ -17,8 +17,6 @@ packages:
     path: Packages/VovoUI
   StoryPromptKit:
     path: Packages/StoryPromptKit
-  ImageGenKit:
-    path: Packages/ImageGenKit
   StorybookKit:
     path: Packages/StorybookKit
 targets:
@@ -41,7 +39,6 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UIRequiresFullScreen: YES
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Vovozinha uses a photo you pick to illustrate a bedtime story. The photo never leaves this iPhone."
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Apps/Vovozinha/Vovozinha.entitlements
         CODE_SIGN_STYLE: Automatic

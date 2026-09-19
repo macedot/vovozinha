@@ -7,7 +7,7 @@ Language
 Vovozinha
 
 ## placeholderSubtitle
-An illustrated bedtime storybook, made on this iPhone.
+A bedtime storybook, written on this iPhone.
 
 ## storySeedTitle
 Story description
@@ -156,53 +156,11 @@ Use at most {{max}} words (now {{current}}).
 ## seedSubtitle
 Describe with a few words the story to be generated ({{min}}–{{max}} words).
 
-## photoDescribeTitle
-Describe a photo
-
-## photoDescribeSubtitle
-Pick a photo. On this device we write a short caption — people first, then objects, then the scene. Nothing is uploaded.
-
-## photoDescribePick
-Choose photo
-
-## photoDescribeAction
-Describe photo
-
-## photoDescribeFailed
-Could not describe the photo. Try again.
-
-## photoDescribeInvalidImage
-Could not read that photo. Choose another.
-
-## imagePackGateTitle
-Picture pack required
-
-## imagePackGateBody
-Illustrations need a picture pack (~2 GB). Download it once over Wi‑Fi — it stays private inside the app. If automatic download fails, use Import from Files.
-
-## imagePackGateDownload
-Download picture pack
-
-## imagePackGateFilenameHint
-Pack: AnimeImg2Img-SD15 (zip or folder). Prefer Wi‑Fi.
-
-## storyAddPhoto
-Add a photo (optional)
-
-## storyClearPhoto
-Remove photo
-
 ## storyWriting
 Writing the story…
 
-## storyPreparingPictures
-Preparing pictures…
-
 ## storyPipelineFailed
 Could not finish the storybook. Try again.
-
-## readerWaitingPicture
-Drawing this page…
 
 ## storyHistoryTitle
 Story History
@@ -212,9 +170,6 @@ Story History
 
 ## storyHistoryEmpty
 No stories yet. Every story you create is saved here automatically.
-
-## storyHistoryPages
-Illustrations {{count}}/{{total}}
 
 ## readerBack
 Back
