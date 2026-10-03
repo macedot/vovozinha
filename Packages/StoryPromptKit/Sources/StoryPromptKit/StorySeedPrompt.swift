@@ -4,7 +4,7 @@ import VovoUI
 /// Base story idea typed by the parent. Length is measured in **words**.
 public struct StorySeedPrompt: Equatable, Sendable {
     public static let minWords = 10
-    public static let maxWords = 20
+    public static let maxWords = 50
 
     public var text: String
     /// Language for generation (UI language when the parent taps Create).

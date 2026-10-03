@@ -15,8 +15,10 @@ final class StoryPromptKitTests: XCTestCase {
         XCTAssertTrue(ok.isValid)
 
         let long = StorySeedPrompt(
-            text: "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twentyone"
+            text: Array(repeating: "word", count: StorySeedPrompt.maxWords + 1)
+                .joined(separator: " ")
         )
+        XCTAssertEqual(long.wordCount, StorySeedPrompt.maxWords + 1)
         XCTAssertGreaterThan(long.wordCount, StorySeedPrompt.maxWords)
         XCTAssertFalse(long.isValid)
     }
@@ -32,7 +34,7 @@ final class StoryPromptKitTests: XCTestCase {
         let keys: [VovoL10n.Key] = [
             .language, .storySeedTitle, .storyCreate, .storyGenerateFailed,
             .storyModelNotInstalled, .storySeedPlaceholder, .storyHistoryTitle,
-            .storyHistoryEmptyTitle, .storyHistorySaveFailed
+            .storyHistoryEmptyTitle, .storyHistorySaveFailed, .storyOriginalDescription
         ]
         for lang in AppLanguage.allCases {
             for key in keys {

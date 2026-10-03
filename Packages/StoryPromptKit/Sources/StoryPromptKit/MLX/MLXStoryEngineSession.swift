@@ -34,9 +34,10 @@ import MLXVLM
 final class MLXStoryEngineSession: MLXStoryEngineSessioning, @unchecked Sendable {
     private let modelDirectory: URL
 
-    /// Story band ~150–480 words + title/summary + format overhead.
-    /// With thinking disabled this is enough for 10 short paragraphs; leave headroom.
-    static let defaultMaxTokens = 1536
+    /// Story band ~1400 words (10 paragraphs × ~140 words) + title/summary + format overhead.
+    /// With thinking disabled, 4096 leaves headroom above the ~2500 tokens a 1400-word
+    /// reply can consume; truncation would drop paragraphs and fail parsing.
+    static let defaultMaxTokens = 4096
     static let defaultTemperature: Float = 0.7
     static let defaultTopP: Float = 0.95
     static let defaultTopK = 20

@@ -23,7 +23,9 @@ final class StorybookKitTests: XCTestCase {
         let store = StoryHistoryStore(rootURL: root)
 
         try store.upsert(story)
-        XCTAssertEqual(try store.load().first?.title, "The Quiet Night")
+        let loaded = try XCTUnwrap(try store.load().first)
+        XCTAssertEqual(loaded.title, "The Quiet Night")
+        XCTAssertEqual(loaded.seedPrompt, "a quiet night in a glowing garden")
 
         var finished = story
         finished.phase = .finished
@@ -32,6 +34,36 @@ final class StorybookKitTests: XCTestCase {
 
         try store.delete(finished)
         XCTAssertTrue(try store.load().isEmpty)
+    }
+
+    func testLegacyHistoryWithoutSeedPromptStillOpens() throws {
+        let root = try makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let id = UUID()
+        let json = """
+        [{
+          "id": "\(id.uuidString)",
+          "title": "Old Lantern",
+          "summary": "A saved story from before descriptions were stored.",
+          "language": "en-US",
+          "phase": "finished",
+          "pages": [{"index": 1, "text": "Once there was a lantern."}],
+          "createdAt": 0
+        }]
+        """
+        let store = StoryHistoryStore(rootURL: root)
+        try FileManager.default.createDirectory(
+            at: store.historyURL().deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data(json.utf8).write(to: store.historyURL())
+
+        let loaded = try XCTUnwrap(try store.load().first)
+        XCTAssertEqual(loaded.id, id)
+        XCTAssertEqual(loaded.title, "Old Lantern")
+        XCTAssertEqual(loaded.pages.count, 1)
+        XCTAssertEqual(loaded.seedPrompt, "")
     }
 
     func testStorybookJSONRoundTripAndDelete() throws {

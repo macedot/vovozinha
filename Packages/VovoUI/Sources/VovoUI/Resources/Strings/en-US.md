@@ -203,3 +203,6 @@ Story not found.
 
 ## storyHistorySaveFailed
 Could not save this story to history.
+
+## storyOriginalDescription
+Original description

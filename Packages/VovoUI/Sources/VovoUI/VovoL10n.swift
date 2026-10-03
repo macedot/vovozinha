@@ -74,6 +74,7 @@ public enum VovoL10n {
         case storyHistoryMissing
         case storyHistoryPageCount
         case storyHistorySaveFailed
+        case storyOriginalDescription
     }
 
     public static func t(_ key: Key, _ lang: AppLanguage) -> String {

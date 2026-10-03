@@ -224,6 +224,11 @@ public struct StorybookFeatureView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
             }
+            if !activeSeedPrompt.isEmpty {
+                StoryOriginalDescription(text: activeSeedPrompt, lang: lang)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
             TabView {
                 ForEach(pages) { page in
                     VovoScreen(
@@ -300,27 +305,44 @@ public struct StorybookFeatureView: View {
 
     private func historyRow(_ book: Storybook) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "book.fill")
-                .foregroundStyle(VovoTheme.amber)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(book.title.isEmpty ? VovoL10n.t(.storyScene, lang) : book.title)
-                    .font(.headline)
-                    .foregroundStyle(VovoTheme.cream)
-                    .lineLimit(2)
-                Text(book.createdAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(VovoTheme.cream.opacity(0.7))
-                Text(VovoL10n.historyPageCount(book.pages.count, lang: lang))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(VovoTheme.mint)
+            Button {
+                openBook(book)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "book.fill")
+                        .foregroundStyle(VovoTheme.amber)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(book.title.isEmpty ? VovoL10n.t(.storyScene, lang) : book.title)
+                            .font(.headline)
+                            .foregroundStyle(VovoTheme.cream)
+                            .lineLimit(2)
+                        Text(book.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption)
+                            .foregroundStyle(VovoTheme.cream.opacity(0.7))
+                        Text(VovoL10n.historyPageCount(book.pages.count, lang: lang))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(VovoTheme.mint)
+                        let preview = book.seedPrompt.isEmpty ? book.summary : book.seedPrompt
+                        if !preview.isEmpty {
+                            Text(preview)
+                                .font(.caption)
+                                .foregroundStyle(VovoTheme.cream.opacity(0.72))
+                                .lineLimit(2)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
             }
-            Spacer()
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("storyHistoryItem_\(book.id.uuidString)")
+
             Button {
                 deleteBook(book)
             } label: {
                 Image(systemName: "trash")
                     .foregroundStyle(VovoTheme.softPink)
             }
+            .buttonStyle(.borderless)
             .accessibilityIdentifier("storyHistoryDelete_\(book.id.uuidString)")
         }
         .padding(12)
@@ -328,10 +350,6 @@ public struct StorybookFeatureView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(VovoTheme.cardFill)
         )
-        .contentShape(Rectangle())
-        .onTapGesture { openBook(book) }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("storyHistoryItem_\(book.id.uuidString)")
     }
 
     @MainActor
@@ -404,6 +422,7 @@ public struct StorybookFeatureView: View {
         pages = []
         title = ""
         summary = ""
+        activeSeedPrompt = ""
         errorMessage = nil
         phase = .story
         isRunning = false
@@ -413,7 +432,24 @@ public struct StorybookFeatureView: View {
     }
 
     private func loadHistory() {
-        historyBooks = StoryFileStore(rootURL: documentsURL).loadAllStorybooks()
+        let fromFiles = StoryFileStore(rootURL: documentsURL).loadAllStorybooks()
+        let fromHistory = (try? historyStore.load()) ?? []
+        var byID: [UUID: Storybook] = [:]
+        for book in fromFiles {
+            byID[book.id] = book
+        }
+        for book in fromHistory {
+            guard let file = byID[book.id] else {
+                byID[book.id] = book
+                continue
+            }
+            var chosen = book
+            if chosen.pages.isEmpty { chosen.pages = file.pages }
+            if chosen.seedPrompt.isEmpty { chosen.seedPrompt = file.seedPrompt }
+            if chosen.title.isEmpty { chosen.title = file.title }
+            byID[book.id] = chosen
+        }
+        historyBooks = byID.values.sorted { $0.createdAt > $1.createdAt }
     }
 
     @MainActor
@@ -423,8 +459,11 @@ public struct StorybookFeatureView: View {
         setIdleTimer(false)
         errorMessage = nil
         storyID = book.id
+        storyCreatedAt = book.createdAt
         title = book.title
         summary = book.summary
+        activeSeedPrompt = book.seedPrompt
+        activeLanguage = AppLanguage.resolve(preferenceRaw: book.language)
         pages = book.pages
         readerOrigin = .history
         screen = .reader
@@ -436,7 +475,7 @@ public struct StorybookFeatureView: View {
             isRunning = false
             setIdleTimer(false)
         }
-        try? StoryFileStore(rootURL: documentsURL).deleteStory(id: book.id)
+        try? historyStore.delete(book)
         loadHistory()
     }
 

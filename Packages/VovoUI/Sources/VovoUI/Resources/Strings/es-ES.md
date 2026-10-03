@@ -203,3 +203,6 @@ Cuento no encontrado.
 
 ## storyHistorySaveFailed
 No se pudo guardar este cuento en el historial.
+
+## storyOriginalDescription
+Descripción original

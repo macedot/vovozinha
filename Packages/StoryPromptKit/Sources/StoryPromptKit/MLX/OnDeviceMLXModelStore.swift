@@ -621,7 +621,10 @@ public actor OnDeviceMLXModelStore {
     }
 
     static func validateArchiveSafety(at zipURL: URL, destination: URL) throws {
-        guard let archive = try? Archive(url: zipURL, accessMode: .read) else {
+        let archive: Archive
+        do {
+            archive = try Archive(url: zipURL, accessMode: .read)
+        } catch {
             throw ImportError.unzipFailed
         }
         let destCanonical = destination.resolvingSymlinksInPath().path

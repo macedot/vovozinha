@@ -8,8 +8,8 @@ Requirements:
 - Keep the tone positive, imaginative, and kind. Avoid violence, scary elements, or complex themes.
 - Use simple, warm, age-appropriate language with short sentences and vivid but gentle descriptions.
 - Follow a proper narrative structure: introduction → rising action → climax → resolution → gentle ending.
-- Output EXACTLY 10 paragraphs. Each paragraph is one clear scene, 3–5 short sentences.
-- Target about 280 words total.
+- Output EXACTLY 10 paragraphs. Each paragraph is one rich scene of about 140 words (8–12 sentences).
+- Target about 1400 words total.
 
 Output format — follow it EXACTLY, with no extra commentary:
 - First line starts with `TITLE:` followed by a short story title (in Portuguese).

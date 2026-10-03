@@ -29,9 +29,11 @@ public struct StoryHistoryView: View {
             if stories.isEmpty {
                 emptyState
             } else {
-                LazyVStack(spacing: 14) {
+                VStack(spacing: 14) {
                     ForEach(stories) { story in
-                        NavigationLink(value: story.id) {
+                        NavigationLink {
+                            StoryHistoryReaderView(story: story)
+                        } label: {
                             historyCard(story)
                         }
                         .buttonStyle(.plain)
@@ -51,14 +53,6 @@ public struct StoryHistoryView: View {
         }
         .task { reload() }
         .refreshable { reload() }
-        .navigationDestination(for: UUID.self) { id in
-            if let story = stories.first(where: { $0.id == id }) {
-                StoryHistoryReaderView(story: story)
-            } else {
-                Text(VovoL10n.t(.storyHistoryMissing, lang))
-                    .foregroundStyle(VovoTheme.cream)
-            }
-        }
     }
 
     private var emptyState: some View {
@@ -96,8 +90,9 @@ public struct StoryHistoryView: View {
                 .font(.caption)
                 .foregroundStyle(VovoTheme.amber.opacity(0.9))
 
-            if !story.summary.isEmpty {
-                Text(story.summary)
+            let preview = story.seedPrompt.isEmpty ? story.summary : story.seedPrompt
+            if !preview.isEmpty {
+                Text(preview)
                     .font(.subheadline)
                     .foregroundStyle(VovoTheme.cream.opacity(0.72))
                     .lineLimit(2)
@@ -146,26 +141,64 @@ public struct StoryHistoryReaderView: View {
     private var lang: AppLanguage { languageStore.language }
 
     public var body: some View {
-        TabView {
-            ForEach(story.pages) { page in
-                VovoScreen(
-                    title: story.title.isEmpty ? VovoL10n.t(.storyScene, lang) : story.title,
-                    subtitle: story.summary,
-                    scrolls: true
-                ) {
-                    Text(page.text)
-                        .font(.body)
-                        .foregroundStyle(VovoTheme.cream)
-                        .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 0) {
+            if !story.seedPrompt.isEmpty {
+                StoryOriginalDescription(text: story.seedPrompt, lang: lang)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+            }
+            TabView {
+                ForEach(story.pages) { page in
+                    VovoScreen(
+                        title: story.title.isEmpty ? VovoL10n.t(.storyScene, lang) : story.title,
+                        subtitle: story.summary,
+                        scrolls: true
+                    ) {
+                        Text(page.text)
+                            .font(.body)
+                            .foregroundStyle(VovoTheme.cream)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
+            #if os(iOS)
+            .tabViewStyle(.page(indexDisplayMode: .always))
+            #endif
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        #if os(iOS)
-        .tabViewStyle(.page(indexDisplayMode: .always))
-        #endif
+        .background(VovoTheme.backgroundGradient.ignoresSafeArea())
         .navigationTitle(story.title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+}
+
+/// Parent's original description, shown beside the generated pages.
+struct StoryOriginalDescription: View {
+    let text: String
+    let lang: AppLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(VovoL10n.t(.storyOriginalDescription, lang))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(VovoTheme.amber)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(VovoTheme.cream)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(VovoTheme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(VovoTheme.cardStroke)
+                )
+        )
+        .accessibilityIdentifier("storyOriginalDescription")
     }
 }
